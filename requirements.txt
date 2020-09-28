@@ -1,9 +1,9 @@
 mkl
 blas=*=mkl
 numpy
+mock
+coverage
 pytest
 pytest-mock
 pytest-cov
-mock
 flake8
-coverage
