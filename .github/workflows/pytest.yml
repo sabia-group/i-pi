@@ -65,8 +65,6 @@ jobs:
       shell: bash
       run: |
          pwd
-         cd ipi_tests/regression_tests/
-         python -u test_run.py 
          pytest 
         #pytest --cov=./ --cov-report=xml
 
