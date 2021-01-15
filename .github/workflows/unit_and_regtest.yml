@@ -19,8 +19,8 @@ jobs:
       with:
          activate-conda: true
 
-    # name: Install Python ${{ matrix.python-version }}         
-    - run: |
+    - name: Install Python ${{ matrix.python-version }}         
+      run: |
            conda --version
            conda install python=${{matrix.python-version}}
 
@@ -35,7 +35,7 @@ jobs:
          pip install .
          echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
-    # name: Install Gfortran and Compile Driver
+    - name: Install Gfortran and Compile Driver
       shell: bash
       run: |
          sudo apt-get update
@@ -43,13 +43,13 @@ jobs:
          cd drivers
          make
 
-    # name: unit-tests
+    - name: unit-tests
       shell: bash
       run: |
          pwd
          i-pi-tests -t unit
 
-    # name: regtests
+    - name: regtests
       shell: bash
       run: |
          pwd
