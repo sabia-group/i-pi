@@ -12,16 +12,14 @@ jobs:
         os: ["ubuntu-latest"]
 
     runs-on: "${{ matrix.os }}"
-
-   - name: Regression and unitary tests 
-     steps:
-      uses: actions/checkout@v2
-      uses: s-weigand/setup-conda@v1
+    
+    name: Regression and unitary tests 
+    steps:
+    - uses: actions/checkout@v2
+    - uses: s-weigand/setup-conda@v1
       with:
          activate-conda: true
-
-
-      run: |
+    - run: |
            conda --version
            conda install python=${{matrix.python-version}}
 
