@@ -13,8 +13,8 @@ jobs:
 
     runs-on: "${{ matrix.os }}"
     
-    name: Set up conda and install Python ${{ matrix.python-version }}         
     steps:
+    - name: Set up conda and install Python ${{ matrix.python-version }}         
     - uses: actions/checkout@v2
     - uses: s-weigand/setup-conda@v1
       with:
