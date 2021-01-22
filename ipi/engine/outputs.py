@@ -488,31 +488,12 @@ class TrajectoryOutput(BaseOutput):
                         index = el
                     try:
                         if self.xtratype == "friction":
-                            fatom = Atoms(self.system.beads.natoms)
-                            fatom.names[:] = self.system.beads.names
-                            stream.write(
-                                "#     %s\n"
-                                % "      ".join(
-                                    "%15s" % el
-                                    for el in [
-                                        "xx",
-                                        "yy",
-                                        "zz",
-                                        "xy=yx",
-                                        "xz=zx",
-                                        "yz=zy",
-                                    ]
-                                )
-                            )
-                            for na in range(self.system.beads.natoms):
-                                stream.write(
-                                    "%3s      %s\n"
-                                    % (
-                                        fatom.names[na],
-                                        "      ".join(
+                            for na in range(self.system.beads.natoms * 3):
+                                stream.write("%s\n"
+                                    % ("".join(
                                             "%15.8f" % el
                                             for el in data[index][b][self.xtratype][
-                                                na * 6 : (na + 1) * 6
+                                                na * (3 * self.system.beads.natoms) : (na + 1) * (3 * self.system.beads.natoms)
                                             ]
                                         ),
                                     )
