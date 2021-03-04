@@ -1,14 +1,14 @@
-        filename                                       format            use_column
---------------------------------------------------------------------------------------------
-ref_simulation.out                                      numpy
-ref_simulation.dip_0                                    numpy
-ref_simulation.dip_1                                    numpy
-ref_simulation.dip_2                                    numpy
-ref_simulation.dip_3                                    numpy
-ref_simulation.dip_4                                    numpy
-ref_simulation.friction_0                               numpy              0 1 2
-ref_simulation.friction_1                               numpy              0 1 2
-ref_simulation.friction_2                               numpy              0 1 2
-ref_simulation.friction_3                               numpy              0 1 2
-ref_simulation.friction_4                               numpy              0 1 2
-ref_simulation.friction_5                               numpy              0 1 2
+        filename                                       format            use_column          absolute_tol           relative_tol
+----------------------------------------------------------------------------------------------------------------------------------
+ref_simulation.out                                      numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_0                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_1                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_2                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_3                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_4                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.friction_0                               numpy              0,1,2               default                default
+ref_simulation.friction_1                               numpy              0,1,2               default                default
+ref_simulation.friction_2                               numpy              0,1,2               default                default
+ref_simulation.friction_3                               numpy              0,1,2               default                default
+ref_simulation.friction_4                               numpy              0,1,2               default                default
+ref_simulation.friction_5                               numpy              0,1,2               default                default

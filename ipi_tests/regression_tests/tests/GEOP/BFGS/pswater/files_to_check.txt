@@ -1,5 +1,5 @@
-        filename                        format
-----------------------------------------------------------
-ref_simulation.frc_c.xyz                  xyz
-ref_simulation.pos_c.xyz                  xyz
-ref_simulation.out                       numpy
+        filename                        format            use_column          absolute_tol           relative_tol
+-----------------------------------------------------------------------------------------------------------------------------
+ref_simulation.frc_c.xyz                  xyz                all               default                 default
+ref_simulation.pos_c.xyz                  xyz                all               default                 default
+ref_simulation.out                       numpy               all               1.0e-4                    1.0

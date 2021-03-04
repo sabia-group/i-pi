@@ -57,6 +57,8 @@ class Runner_regression(Runner):
         """
 
         super().run(cwd, nid)
+        self.atol = list()
+        self.rtol = list()
 
         with open(self.tmp_dir / "files_to_check.txt") as f:
             lines = f.readlines()
@@ -64,13 +66,23 @@ class Runner_regression(Runner):
             if nl > 1:
                 self.files.append(line.split()[0])
                 self.forms.append(line.split()[1])
-                if len(line.split()) > 2:
-                    listll = []
-                    for ll in line.split()[2:]:
+                listll = []
+                if line.split()[2] == "all":
+                    self.usecol.append(None)
+                else:
+                    for ll in line.split()[2].split(","):
                         listll.append(int(ll))
                     self.usecol.append(listll)
+                if line.split()[3] != "default":
+                    self.atol.append(float(line.split()[3]))
+                    self.rtol.append(float(line.split()[4]))
                 else:
-                    self.usecol.append(None)
+                    if self.forms[-1] == "xyz":
+                        self.atol.append(1.0e-8)
+                        self.rtol.append(1.0e-7)
+                    elif self.forms[-1] == "numpy":
+                        self.atol.append(1.0e-15)
+                        self.rtol.append(1.0e-7)
 
         if self.check_numpy_output:
             self._check_numpy_output(cwd)
@@ -108,10 +120,10 @@ class Runner_regression(Runner):
                 test_output = np.loadtxt(self.tmp_dir / fname, usecols=self.usecol[ii])
 
                 try:
+
                     np.testing.assert_allclose(
-                        test_output, ref_output, rtol=1.0e-7, atol=1.0e-15
+                        test_output, ref_output, rtol=self.rtol[ii], atol=self.atol[ii]
                     )
-                    # print("No anomaly during the regtest for {}".format(refname))
                 except AssertionError:
                     raise AssertionError(
                         "ANOMALY: Disagreement between reference and {} in {}".format(
@@ -180,9 +192,8 @@ class Runner_regression(Runner):
 
                 try:
                     np.testing.assert_allclose(
-                        test_xyz, ref_xyz, rtol=1.0e-7, atol=1.0e-8
+                        test_xyz, ref_xyz, rtol=self.rtol[ii], atol=self.atol[ii]
                     )
-                    # print("No anomaly during the regtest for {}".format(refname))
                 except AssertionError:
                     raise AssertionError(
                         "ANOMALY: {} in {}".format(

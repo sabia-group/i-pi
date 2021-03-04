@@ -1,11 +1,11 @@
-        filename                                       format
--------------------------------------------------------------------
-ref_simulation.dip_0                                    numpy
-ref_simulation.dip_1                                    numpy
-ref_simulation.dip_2                                    numpy
-ref_simulation.dip_3                                    numpy
-ref_simulation.dip_4                                    numpy
-ref_simulation.dip_5                                    numpy
-ref_simulation.dip_6                                    numpy
-ref_simulation.dip_7                                    numpy
-ref_simulation.out                                      numpy
+        filename                                       format            use_column          absolute_tol           relative_tol
+----------------------------------------------------------------------------------------------------------------------------------------
+ref_simulation.dip_0                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_1                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_2                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_3                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_4                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_5                                    numpy               all                1.0e-15                1.0e-7
+ref_simulation.dip_6                                    numpy               all                default                default
+ref_simulation.dip_7                                    numpy               all                default                default
+ref_simulation.out                                      numpy               all                default                default

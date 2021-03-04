@@ -28,10 +28,15 @@ To add a new regression test please provide:
      first line
    
    - file_to_check.txt specifying the files serving as reference with their
-     respective filenames
+     respective filenames, file format ('xyz' or 'numpy'), used columns for comparison
+     ('all' if all columns), absolute tolerance and relative tolerance.
+     Default tolerances:
+                                    xyz            numpy
+        absolute tolerance        1.0e-8          1.0e-15
+        relative tolerance        1.0e-7          1.0e-7
 
      for an existing example, please see:
-	tests/INSTANTON/100K/files_to_check.txt
+	 tests/INSTANTON/100K/files_to_check.txt
 
    - reference files that are listed in the files_to_check.txt file. Currently,
      the available formats are .xyz and numpy-accessible which should be
