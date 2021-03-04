@@ -2,4 +2,4 @@
 -----------------------------------------------------------------------------------------------------------------------------
 ref_simulation.frc_c.xyz                  xyz                all               default                 default
 ref_simulation.pos_c.xyz                  xyz                all               default                 default
-ref_simulation.out                       numpy               all                1.0-4                    1.0
+ref_simulation.out                       numpy               all                1.0e-4                    1.0

@@ -75,6 +75,7 @@ class Runner_regression(Runner):
                     self.usecol.append(listll)
                 if line.split()[3] != "default":
                     self.atol.append(float(line.split()[3]))
+                if line.split()[4] != "default":
                     self.rtol.append(float(line.split()[4]))
                 else:
                     if self.forms[-1] == "xyz":
