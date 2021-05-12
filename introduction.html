@@ -1,0 +1,539 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Introduction &#8212; i-PI TODO VERSION documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/agogo.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting started" href="getting-started.html" />
+    <link rel="prev" title="Welcome to i-PI’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+          <p class="logo"><a href="index.html">
+            <img class="logo" src="_static/ipi-logo.svg" alt="Logo"/>
+          </a></p>
+        <div class="headertitle"><a
+          href="index.html">i-PI TODO VERSION documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="index.html" title="Welcome to i-PI’s documentation!"
+             accesskey="P">previous</a> |
+          <a href="getting-started.html" title="Getting started"
+             accesskey="N">next</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#path-integral-molecular-dynamics">Path Integral Molecular Dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-features">Core features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#licence-and-credits">Licence and credits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#on-line-resources">On-line resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="user-guide.html">User guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">A simple tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="input-reference.html">Input file reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently asked questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<section id="path-integral-molecular-dynamics">
+<h2>Path Integral Molecular Dynamics<a class="headerlink" href="#path-integral-molecular-dynamics" title="Permalink to this headline">¶</a></h2>
+<p>Molecular dynamics (MD) is a technique used to study the properties of a
+system of interacting particles by applying Newton’s equations of motion
+to produce trajectories which can be used to efficiently explore the
+phase space. This can be used to calculate many equilibrium and
+dynamical properties and to study systems from isolated gas molecules to
+condensed phase bulk materials.</p>
+<p>However, while this technique has been very successful, in most MD
+implementations the assumption is made that the nuclei behave as
+classical particles, which for light nuclei such as hydrogen is often a
+very poor approximation as the effect of zero-point energy (ZPE) and
+quantum tunnelling can be large. For example, even at room temperature
+the vibrational frequency of an OH stretch in water is over 15 times
+larger than the available thermal energy, and so this motion will be
+highly quantized. The current state-of-the-art method to include nuclear
+quantum effects (NQE) in the calculation of static properties of
+condensed phase systems is path integral molecular dynamics (PIMD).</p>
+<p>PIMD generates the quantum-mechanical ensemble of a system of
+interacting particles by using MD in an extended phase space. This is
+derived from the path integral formalism
+<span id="id1">[<a class="reference internal" href="bibliography.html#id359">FH64</a>]</span>, which relates the statistics of a
+collection of quantum particles to those of a set of classical ring
+polymers, a ring polymer being a number of replicas of a particle
+coupled by harmonic springs. This so-called classical isomorphism is
+exact in the limit as the number of replicas goes to infinity, but in
+practice is converged numerically with only a finite number.</p>
+<p>This then allows quantum phase space averages to be calculated from
+classical trajectories, with only about an order of magnitude more
+computing time than would be required for standard MD. Also, since PIMD
+is simply classical MD in an extended phase space, many of the
+techniques developed to improve the scope and efficiency of MD
+simulations can be applied straightforwardly to the equivalent PIMD
+calculations <span id="id2">[<a class="reference internal" href="bibliography.html#id199">CPMM10</a>, <a class="reference internal" href="bibliography.html#id768">MHT99</a>]</span>. Finally, several
+techniques designed specifically for PIMD simulations are now available
+to increase the rate of convergence with respect to the number of
+replicas used
+<span id="id3">[<a class="reference internal" href="bibliography.html#id205">CBRM11</a>, <a class="reference internal" href="bibliography.html#id202">CMP11</a>, <a class="reference internal" href="bibliography.html#id235">Chi97</a>, <a class="reference internal" href="bibliography.html#id756">MM08b</a>, <a class="reference internal" href="bibliography.html#id899">PerezT11</a>, <a class="reference internal" href="bibliography.html#id1125">Suz95</a>]</span>,
+further reducing the computational overhead of the method. All of these
+facts mean that it is now feasible to do PIMD simulations with thousands
+of molecules, or even to use <em>ab initio</em> electronic structure
+calculations to propagate the dynamics for small systems.</p>
+<p>Furthermore, the framework used to run PIMD simulations can be adapted
+to generate approximate quantum dynamical information
+<span id="id4">[<a class="reference internal" href="bibliography.html#id135">BM06</a>, <a class="reference internal" href="bibliography.html#id173">CV93</a>, <a class="reference internal" href="bibliography.html#id174">CV94</a>, <a class="reference internal" href="bibliography.html#id256">CM04</a>]</span>,
+and so can also be used to calculate correlation functions. While
+real-time quantum coherences cannot be captured, the inclusion of
+quantum statistical information and the rapid decoherence observed in
+condensed phase systems mean that in many cases very accurate results
+can be obtained from such approximate treatments of quantum dynamics
+<span id="id5">[<a class="reference internal" href="bibliography.html#id480">HMMM13</a>]</span>.</p>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<section id="automated-evaluation-depend-objects">
+<h3>Automated evaluation (depend objects)<a class="headerlink" href="#automated-evaluation-depend-objects" title="Permalink to this headline">¶</a></h3>
+<p>i-PI uses a caching mechanism with automatic value updating to make the
+code used to propagate the dynamics as simple and clear as possible.
+Every physical quantity that is referenced in the code is created using
+a “depend” object class, which is given the parameters on which it
+depends and a function used to calculate its value.</p>
+<figure class="align-default" id="id42">
+<a class="reference internal image-reference" href="_images/ipi-depend.svg"><img alt="_images/ipi-depend.svg" src="_images/ipi-depend.svg" width="90.0%" /></a>
+<figcaption>
+<p><span class="caption-text">Schematic overview of the functioning of the
+<em>depend</em> class used as the base for properties and physical
+quantities in i-PI. A few “primitive” quantities – such as atomic
+positions or momenta – can be modified directly. For most properties,
+one defines a function that can compute that property based on the
+value of other properties. Whenever one property is modified, all the
+quantities that depend on it are marked as tainted, so that when the
+value of one of the properties is used, the function can be invoked
+and the updated value obtained. If a quantity is not marked as
+tainted, the cached value is returned instead.</span><a class="headerlink" href="#id42" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>“Depend” objects can be called to get the physical quantity they
+represent. However, they have further functionality. Firstly, once the
+value of a “depend” object has been calculated, its value is cached, so
+further references to that quantity will not need to evaluate the
+function that calculates it. Furthermore, the code keeps track of when
+any of the dependencies of the variable are updated, and makes sure that
+the quantity is automatically recomputed when it is needed (i.e., when
+the quantity is assessed again).</p>
+<p>This choice makes implementation slightly more complex when the physical
+observables are first introduced as variables, as one has to take care
+of stating their dependencies as well as the function that computes
+them. However, the advantage is that when the physical quantities are
+used, in the integrator of the dynamics or in the evaluation of physical
+properties, one does not need to take care of book-keeping and the code
+can be clean, transparent and readable.</p>
+<figure class="align-default" id="id43">
+<a class="reference internal image-reference" href="_images/ipi-forces.svg"><img alt="_images/ipi-forces.svg" src="_images/ipi-forces.svg" width="90.0%" /></a>
+<figcaption>
+<p><span class="caption-text">Schematic representation of the different objects that
+are involved in the evaluation of the forces. The multiple layers and
+complex structure are necessary to give the possibility of
+decomposing the evaluation of the forces between multiple different
+clients and using different imaginary time partitioning (e.g. one can
+compute the bonded interactions using one client, and use a different
+client to compute the long-range electrostatic interactions,
+contracted on a single bead <span id="id6">[<a class="reference internal" href="bibliography.html#id756">MM08b</a>]</span>).</span><a class="headerlink" href="#id43" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="force-evaluation">
+<h3>Force evaluation<a class="headerlink" href="#force-evaluation" title="Permalink to this headline">¶</a></h3>
+<p>Within i-PI, the evaluation of the forces plays a crucial role, as it is
+the step requiring communication with the client code. In order to have
+a flexible infrastructure that makes it possible to perform simulations
+with advanced techniques such as ring-polymer
+contraction <span id="id7">[<a class="reference internal" href="bibliography.html#id756">MM08b</a>]</span>, the force evaluation
+machinery in i-PI might appear complicated at first, and deserves a
+brief discussion.</p>
+<p>A scheme of the objects involved in the calculation of the forces is
+presented in Figure <a class="reference external" href="#fig:forces">1.3</a>. The infrastracture comprises
+a force provider class that deals with the actual subdivision of work
+among the clients, and a sequence of objects that translate the request
+of the overall force of the system into atomic evaluations of one
+component of the force for an individual bead: i-PI is built to hide the
+path integral infrastructure from the client, and so beads must be
+transferred individually.</p>
+<p>Let us discuss for clarity a practical example – a calculation of an
+empirical water model where the bonded interactions are computed on 32
+beads by the program A, and the non-bonded interactions are computed by
+client B, ring-polymer contracted on 8 beads. Each client “type” is
+associated with a object in the input. In the case of a interface, the
+forcefield object specifies the address to which a client should
+connect, and so multiple clients of type A or B can connect to i-PI at
+the same time. Each forcefield object deals with queueing force
+evaluation requests and computing them in a first-in-first-out fashion,
+possibly executing multiple requests in parallel.</p>
+<p>On the force evaluation side, the task of splitting the request of a
+force evaluation into individual components and individual beads is
+accomplished by a chain of three objects, Forces, ForceComponent and
+ForceBead. is the main force Forces evaluator, that is built from the
+prototypes listed within the field of . Each item within the tag
+describe one component of the force – in our example one ForceComponent
+bound to a forcefield of type A, evaluated on 32 beads, and one
+ForceComponent bound to type B, evaluated on 8 beads. Forces contains
+the machinery that automatically contracts the actual ring polymer to
+the number of beads required by each component, and combines the various
+components with the given weights to provide the overall force, energy
+and virial where required. Note that in order to support ring polymer
+contraction (RPC), the RPC procedure is executed even if no contraction
+was required (i.e. even if all clients contain the full amount of
+beads). ForceComponent is a very simple helper class that associates
+with each bead a ForceBead object, that is the entity in charge of
+filing force requests to the appropriate ForceField object and waiting
+for completion of the evaluation.</p>
+</section>
+<section id="communication-protocol">
+<h3>Communication protocol<a class="headerlink" href="#communication-protocol" title="Permalink to this headline">¶</a></h3>
+<p>Since i-PI is designed to be used with a wide range of codes and
+platforms, it has to rely on a simple and robust method for
+communicating between the server and client. Even though other choices
+are possible, and it should be relatively simple to implement other
+means of communication, the preferred approach relies on sockets as the
+underlying infrastructure. Both Internet and Unix domain sockets can be
+used: the latter allow for fast communication on a single node, whereas
+the former make it possible to realise a distributed computing paradigm,
+with clients running on different nodes or even on different HPC
+facilities. In order to facilitate implementation of the socket
+communication in client codes, a simple set of C wrappers to the
+standard libraries socket implementation is provided as part of the i-PI
+distribution, that can be used in any programming language that can be
+linked with C code.</p>
+<p>As far as the communication protocol is concerned, the guiding principle
+has been keeping it to the lowest common denominator, and avoiding any
+feature that may be code-specific. Only a minimal amount of information
+is transferred between the client and the server; the position of the
+atoms and cell parameters in one direction, and the forces, virial and
+potential in the other.</p>
+<p>For more details about sockets and communication, see
+<a class="reference external" href="#distrib">3.3</a>.</p>
+</section>
+<section id="internal-units">
+<span id="units"></span><h3>Internal units<a class="headerlink" href="#internal-units" title="Permalink to this headline">¶</a></h3>
+<p>All the units used internally by i-PI are atomic units, as given below.
+By default, both input and output data are given in atomic units, but in
+most cases the default units can be overridden if one wishes so. For
+details on how to do this, see <a class="reference external" href="#inputunits">3.1.1.1</a> and
+<a class="reference external" href="#propertyfile">3.2.1</a>.</p>
+<div class="center docutils container">
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 33%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Unit</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>S.I. Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Length</p></td>
+<td><p>Bohr radius</p></td>
+<td><p>5.2917721e-11 m</p></td>
+</tr>
+<tr class="row-odd"><td><p>Time</p></td>
+<td><p>N.A.</p></td>
+<td><p>2.4188843e-17 s</p></td>
+</tr>
+<tr class="row-even"><td><p>Mass</p></td>
+<td><p>Electron mass</p></td>
+<td><p>9.1093819e-31 kg</p></td>
+</tr>
+<tr class="row-odd"><td><p>Temperature</p></td>
+<td><p>Hartree</p></td>
+<td><p>315774.66 K</p></td>
+</tr>
+<tr class="row-even"><td><p>Energy</p></td>
+<td><p>Hartree</p></td>
+<td><p>4.3597438e-18 J</p></td>
+</tr>
+<tr class="row-odd"><td><p>Pressure</p></td>
+<td><p>N.A.</p></td>
+<td><p>2.9421912e13 Pa</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Regarding the specification of these units in the i-PI input files, the
+user is able to specify units both in the i-PI input file or in the
+structure file. If the structure file is of the .xyz format, the units
+specifications should be present in the comment line. Examples of such
+inputs can be found in <code class="docutils literal notranslate"><span class="pre">examples/pes-regtest/io-units/</span></code> . The code
+then behaves in the following way, depending on the user’s choice:</p>
+<ul class="simple">
+<li><p>If no units are specified in the input, i-PI tries to guess from the
+comment line of the structure file and it nothing is present, assumes
+atomic units, or angstrom for PDB files.</p></li>
+<li><p>If units are specified in both input and structure file and they
+match, conversion happens just once. If they do not match, an error
+is raised and i-PI stops.</p></li>
+</ul>
+</section>
+</section>
+<section id="core-features">
+<h2>Core features<a class="headerlink" href="#core-features" title="Permalink to this headline">¶</a></h2>
+<p>i-PI includes a large number of advanced molecular dynamics features,
+with an obvious focus on path integral molecular dynamics, but also
+several methods for sampling classical trajectories.</p>
+<section id="features-in-version-1-0">
+<h3>Features in version 1.0<a class="headerlink" href="#features-in-version-1-0" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>molecular dynamics and PIMD in the <em>NVE</em>, <em>NVT</em> and <em>NPT</em> ensembles,
+with the high-frequency internal vibrations of the path propagated in
+the normal-mode representation <span id="id8">[<a class="reference internal" href="bibliography.html#id199">CPMM10</a>]</span> to
+allow for longer time steps;</p></li>
+<li><p>ring polymer
+contraction <span id="id9">[<a class="reference internal" href="bibliography.html#id755">MM08a</a>, <a class="reference internal" href="bibliography.html#id756">MM08b</a>]</span>,
+implemented by exposing multiple socket interfaces to deal with short
+and long-range components of the potential energy separately;
+treating different components that have different computational cost
+and characteristic time scale separately can reduce substantially the
+overall effort associated with a simulation</p></li>
+<li><p>efficient stochastic velocity rescaling
+<span id="id10">[<a class="reference internal" href="bibliography.html#id163">BDP07</a>]</span> and path integral Langevin equation
+thermostats <span id="id11">[<a class="reference internal" href="bibliography.html#id199">CPMM10</a>]</span> to sample efficiently the
+canonical ensemble;</p></li>
+<li><p>various generalized Langevin equation (GLE) thermostats, including
+the optimal sampling <span id="id12">[<a class="reference internal" href="bibliography.html#id196">CBP09a</a>, <a class="reference internal" href="bibliography.html#id200">CBP10</a>]</span>,
+quantum  <span id="id13">[<a class="reference internal" href="bibliography.html#id197">CBP09b</a>]</span>, and
+<span class="math notranslate nohighlight">\(\delta\)</span> <span id="id14">[<a class="reference internal" href="bibliography.html#id190">CP10</a>]</span> thermostats; the
+parameters for different GLE flavors and the conditions in which they
+should be applied can be obtained from a separate
+website <span id="id15">[<a class="reference internal" href="bibliography.html#id430">Cer10</a>]</span>;</p></li>
+<li><p>mixed path integral–generalized Langevin equation techniques for
+accelerated convergence, including both
+PI+GLE <span id="id16">[<a class="reference internal" href="bibliography.html#id202">CMP11</a>]</span> and the more recent and
+effective version PIGLET <span id="id17">[<a class="reference internal" href="bibliography.html#id188">CM12</a>]</span>; these
+techniques reduce the number of path integral replicas needed, while
+allowing for systematic convergence;</p></li>
+<li><p>all the standard estimators for structural properties, the quantum
+kinetic energy, pressure, etc.;</p></li>
+<li><p>more sophisticated estimators such as the scaled-coordinate heat
+capacity estimator <span id="id18">[<a class="reference internal" href="bibliography.html#id1271">Yam05</a>]</span>, estimators to
+obtain isotope fractionation free energies by re-weighting a
+simulation of the most abundant
+isotope <span id="id19">[<a class="reference internal" href="bibliography.html#id189">CM13</a>]</span>, and a displaced-path
+estimator for the particle momentum
+distribution <span id="id20">[<a class="reference internal" href="bibliography.html#id695">LMCP10</a>]</span>;</p></li>
+<li><p>the infrastructure that is needed to perform approximate quantum
+dynamics calculations such as ring polymer molecular dynamics
+(RPMD) <span id="id21">[<a class="reference internal" href="bibliography.html#id256">CM04</a>, <a class="reference internal" href="bibliography.html#id480">HMMM13</a>]</span> and centroid
+molecular dynamics
+(CMD) <span id="id22">[<a class="reference internal" href="bibliography.html#id173">CV93</a>, <a class="reference internal" href="bibliography.html#id174">CV94</a>]</span>.</p></li>
+</ul>
+</section>
+<section id="features-added-in-version-2-0">
+<h3>Features added in version 2.0<a class="headerlink" href="#features-added-in-version-2-0" title="Permalink to this headline">¶</a></h3>
+<p>Further details can be found in Ref. <span id="id23">[<a class="reference internal" href="bibliography.html#id596">KRM+19</a>]</span>.</p>
+<ul class="simple">
+<li><p>reweighted fourth-order path integral MD (M. Ceriotti, G.A.R.
+Brain) <span id="id24">[<a class="reference internal" href="bibliography.html#id205">CBRM11</a>, <a class="reference internal" href="bibliography.html#id575">JV01</a>]</span>; this method
+makes it possible to obtain fourth-order statistics by re-weighting
+second-order trajectories; attention should be paid to avoid
+statistical inefficiencies;</p></li>
+<li><p>finite-differences implementation of fourth-order path integrals (V.
+Kapil, M. Ceriotti) <span id="id25">[<a class="reference internal" href="bibliography.html#id594">KBC16</a>]</span>; this schemes
+enables explicit fourth-order path integral simulations, that
+converge faster than conventional Trotter methods;</p></li>
+<li><p>perturbed path integrals (I.
+Poltavsky) <span id="id26">[<a class="reference internal" href="bibliography.html#id926">PT16</a>]</span>; essentially, a
+truncated cumulant expansion of fourth-order reweighting, that often
+enables fast convergence avoiding statistical instability;</p></li>
+<li><p>open path integrals and momentum distribution estimators (V. Kapil,
+A. Cuzzocrea, M. Ceriotti) <span id="id27">[<a class="reference internal" href="bibliography.html#id595">KCC18</a>]</span>; makes it
+possible to compute the particle momentum distribution including
+quantum fluctuations of nuclei;</p></li>
+<li><p>quantum alchemical transformations (B. Cheng)
+<span id="id28">[<a class="reference internal" href="bibliography.html#id229">CBC16</a>, <a class="reference internal" href="bibliography.html#id711">LAM+13</a>]</span>; Monte Carlo exchanges
+between isotopes of different mass, useful to sample isotope
+propensity for different molecules or environments;</p></li>
+<li><p>direct isotope fractionation estimators (B. Cheng, M. Ceriotti)
+ <span id="id29">[<a class="reference internal" href="bibliography.html#id216">CC14</a>]</span>; avoid thermodynamic integration
+to obtain isotope fractionation ratios;</p></li>
+<li><p>spatially localized ring polymer contraction (M. Rossi, M. Ceriotti)
+<span id="id30">[<a class="reference internal" href="bibliography.html#id701">LDCR18</a>]</span>; simple contraction scheme for weakly
+bound molecules, e.g. on surfaces;</p></li>
+<li><p>ring polymer instantons (Y. Litman, J.O. Richardson, M. Rossi);
+evaluation of reaction rates and tunnelling splittings for molecular
+rearrangements and chemical reactions;</p></li>
+<li><p>thermodynamic integration (M. Rossi, M. Ceriotti)
+<span id="id31">[<a class="reference internal" href="bibliography.html#id1011">RGC16</a>]</span>; classical scheme to compute free
+energy differences;</p></li>
+<li><p>geometry optimizers for minimization and saddle point search (B.
+Helfrecht, R. Petraglia, Y. Litman, M. Rossi)
+<span id="id32">[<a class="reference internal" href="bibliography.html#id1011">RGC16</a>]</span></p></li>
+<li><p>harmonic vibrations through finite differences (V. Kapil, S.
+Bienvenue) <span id="id33">[<a class="reference internal" href="bibliography.html#id1011">RGC16</a>]</span>; simple evaluation of the
+harmonic Hessian;</p></li>
+<li><p>multiple time stepping (V. Kapil, M. Ceriotti)
+<span id="id34">[<a class="reference internal" href="bibliography.html#id593">KVC16</a>]</span>; accelerated simulations by separating
+slow and fast degrees of freedom into different components of the
+potential energy;</p></li>
+<li><p>metadynamics through a PLUMED interface (G. Tribello, M. Ceriotti);
+simulation of rare events and free energy calculations;</p></li>
+<li><p>replica exchange MD (R. Petraglia, R. Meissner, M.
+Ceriotti) <span id="id35">[<a class="reference internal" href="bibliography.html#id905">PNicolaiW+16</a>]</span>; accelerated convergence of
+averages by performing Monte Carlo exchanges of configurations
+between parallel calculations</p></li>
+<li><p>thermostatted RPMD <span id="id36">[<a class="reference internal" href="bibliography.html#id1007">RCM14</a>]</span>, including
+optimized-GLE TRPMD <span id="id37">[<a class="reference internal" href="bibliography.html#id1012">RKC18</a>]</span>; reduces
+well-known artifacts in the simulation of dynamical properties by
+path integral methods;</p></li>
+<li><p>dynamical corrections to Langevin trajectories (M. Rossi, V. Kapil,
+M. Ceriotti) <span id="id38">[<a class="reference internal" href="bibliography.html#id1012">RKC18</a>]</span>; eliminates the artifacts
+introduced into dynamical properties by the presence of thermostats;</p></li>
+<li><p>fast forward Langevin thermostat (M. Hijazi, D. M. Wilkins, M.
+Ceriotti); a simple scheme to reduce the impact of strongly-damped
+Langevin thermostats on sampling efficiency;
+<span id="id39">[<a class="reference internal" href="bibliography.html#id531">HWC18</a>]</span></p></li>
+<li><p>Langevin sampling for noisy and/or dissipative forces (J. Kessler, T.
+D. Kühne); suitable to stabilize and correct the artifacts that are
+introduced in MD trajectories by different extrapolation schemes;</p></li>
+</ul>
+</section>
+</section>
+<section id="licence-and-credits">
+<h2>Licence and credits<a class="headerlink" href="#licence-and-credits" title="Permalink to this headline">¶</a></h2>
+<p>Most of this code is distributed under the GPL licence. For more details
+see <a class="reference external" href="www.gnu.org/licences/gpl.html">www.gnu.org/licences/gpl.html</a>.
+So that they can easily be incorporated in other codes, the files in the
+directory “drivers” are all held under the MIT licence. For more details
+see <a class="reference external" href="https://fedoraproject.org/wiki/Licensing:MIT">https://fedoraproject.org/wiki/Licensing:MIT</a>.</p>
+<p>If you use this code in any future publications, please cite this using
+<span id="id40">[<a class="reference internal" href="bibliography.html#id208">CMM14</a>]</span> for v1 and
+<span id="id41">[<a class="reference internal" href="bibliography.html#id596">KRM+19</a>]</span> for v2.</p>
+<section id="contributors">
+<h3>Contributors<a class="headerlink" href="#contributors" title="Permalink to this headline">¶</a></h3>
+<p>i-PI was originally written by M. Ceriotti and J. More at Oxford
+University, together with D. Manolopoulos. Several people contributed to
+its further development. Developers who implemented a specific feature
+are acknowledged above.</p>
+</section>
+</section>
+<section id="on-line-resources">
+<h2>On-line resources<a class="headerlink" href="#on-line-resources" title="Permalink to this headline">¶</a></h2>
+<section id="python-resources">
+<h3>Python resources<a class="headerlink" href="#python-resources" title="Permalink to this headline">¶</a></h3>
+<p>For help with Python programming, see
+<a class="reference external" href="www.python.org">www.python.org</a>. For information about the NumPy
+mathematical library, see <a class="reference external" href="www.numpy.org">www.numpy.org</a>, and for
+worked examples of its capabilities see
+<a class="reference external" href="www.scipy.org/Tentative_NumPy_Tutorial">www.scipy.org/Tentative_NumPy_Tutorial</a>.
+Finally, see <a class="reference external" href="http://hgomersall.github.io/pyFFTW/">http://hgomersall.github.io/pyFFTW/</a> for documentation on
+the Python FFTW library that is currently implemented with i-PI.</p>
+</section>
+<section id="client-code-resources">
+<span id="librarywebsites"></span><h3>Client code resources<a class="headerlink" href="#client-code-resources" title="Permalink to this headline">¶</a></h3>
+<p>Several codes provide out-of-the-box an i-PI interface, including CP2K,
+DFTB+, Lammps, Quantum ESPRESSO, Siesta, FHI-aims, Yaff, deMonNano, TBE.
+If you are interested in interfacing your code to i-PI please get in
+touch, we are always glad to help!</p>
+<p>There are several Fortran and C libraries that most client codes will
+probably need to run, such as FFTW, BLAS and LAPACK. These can be found
+at <a class="reference external" href="www.fftw.org">www.fftw.org</a>,
+<a class="reference external" href="www.netlib.org/blas">www.netlib.org/blas</a> and
+<a class="reference external" href="www.netlib.org/lapack">www.netlib.org/lapack</a> respectively.</p>
+<p>These codes do not come as part of the i-PI package, and must be
+downloaded separately. See chapter <a class="reference external" href="#clientinstall">2.2</a> for more
+details of how to do this.</p>
+</section>
+<section id="i-pi-resources">
+<h3>i-PI resources<a class="headerlink" href="#i-pi-resources" title="Permalink to this headline">¶</a></h3>
+<p>For more information about i-PI and to download the source code go to
+<a class="reference external" href="http://ipi-code.org/">http://ipi-code.org/</a>.</p>
+<p>In <a class="reference external" href="http://gle4md.org/">http://gle4md.org/</a> one can also obtain colored-noise parameters to
+run Path Integral with Generalized Langevin Equation thermostat
+(PI+GLE/PIGLET) calculations.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="index.html" title="Welcome to i-PI’s documentation!"
+              >previous</a> |
+            <a href="getting-started.html" title="Getting started"
+              >next</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/introduction.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, The i-PI developers.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.1.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
