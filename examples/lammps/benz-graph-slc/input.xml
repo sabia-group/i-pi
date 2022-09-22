@@ -1,20 +1,20 @@
 <simulation verbosity="high">
-  <ffsocket mode='unix' name='benbeads' pbc='true'>
+  <ffsocket mode='inet' name='benbeads' pbc='true'>
     <latency>  1.00000000e-03</latency>
     <port> 13234 </port>
-    <address> benzenebeads3 </address>
+    <address> localhost </address>
     <activelist>[128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139] </activelist>
   </ffsocket>
-  <ffsocket mode='unix' name='bencent' pbc='true'>
+  <ffsocket mode='inet' name='bencent' pbc='true'>
     <latency>  1.00000000e-03</latency>
-    <port> 13234 </port>
-    <address> benzenecent3 </address>
+    <port> 13235 </port>
+    <address> localhost </address>
     <activelist>[128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139]</activelist>
   </ffsocket>
-  <ffsocket mode='unix' name='full' pbc='true'>
+  <ffsocket mode='inet' name='full' pbc='true'>
     <latency>  1.00000000e-03</latency>
-    <port> 13234 </port>
-    <address> fullcent3 </address>
+    <port> 13236 </port>
+    <address> localhost </address>
   </ffsocket>
   <total_steps>105000</total_steps>
   <output prefix='simulation'>

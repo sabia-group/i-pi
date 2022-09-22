@@ -23,7 +23,7 @@ pair_coeff    * *    ./CH.airebo    C    H
 
 timestep	0.00025
 
-fix 1 all ipi fullcent3 13234 unix
+fix 1 all ipi 127.0.0.1 13236
 
 run		1000000000
 
