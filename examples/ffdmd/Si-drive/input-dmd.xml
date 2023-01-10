@@ -23,7 +23,7 @@
     </forces>
     <initialize nbeads='1'>
       <file mode='xyz'>init.xyz</file>
-        <velocities mode='thermal' units='kelvin'>20</velocities> 
+        <velocities mode='thermal' units='kelvin'>20</velocities>
     </initialize>
     <ensemble>
       <temperature units='kelvin'>20</temperature>
@@ -32,8 +32,11 @@
          </bias>
     </ensemble>
     <motion mode='dynamics'>
-      <dynamics mode='nve'>
+      <dynamics mode='eda'>
         <timestep units='femtosecond'>0.25</timestep>
+        <BEC mode='file'> BEC.scalar.csv </BEC>        <!-- how to compute/read the BEC tensors -->
+        <Eamp units="V/A" > [ 1.0 , 0.0 , 0.0] </Eamp> <!-- amplitude of the E-field in cartesian coordinates-->
+        <Efreq units="hertz" > 0.0 </Efreq>           <!-- frequency of the oscillating E-field in hertz-->
       </dynamics>
     </motion>
   </system>

@@ -97,6 +97,32 @@ class InputDynamics(InputDictionary):
                 "help": "Number of iterations for each MTS level (including the outer loop, that should in most cases have just one iteration).",
             },
         ),
+        "Eamp": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": np.asarray([0,0,1]),
+                "help": "The amplitude of the external electric field (in cartesian coordinates)",
+                "dimension": "V/A",
+            },
+        ),
+        "Efreq": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "The frequency of the external electric field (in hertz)",
+                "dimension": "hertz",
+            },
+        ),
+        "BEC": (
+            InputArray,
+            {   
+                "dtype": float, 
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The Born Effective Charges tensor(s)",
+            },
+        ),
     }
 
     dynamic = {}
