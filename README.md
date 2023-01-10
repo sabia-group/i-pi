@@ -1,6 +1,8 @@
 i-PI: a Universal Force Engine
 ==============================
 
+## (EDA-int branch)
+
 A Python interface for ab initio path integral molecular dynamics simulations.
 i-PI is composed of a Python server (i-pi itself, that does not need to be
 compiled but only requires a relatively recent version of Python and Numpy)
@@ -23,16 +25,19 @@ Quick Setup and Test
 To use i-PI with already existing drivers, install and update using Pip:
 
 Last version::
+
 ```bash
 python -m pip install git+https://github.com/i-pi/i-pi.git
 ```
 
 Last Release::
+
 ```bash
 pip install -U i-PI
 ```
 
 Test with Pytest::
+
 ```bash
 pip install pytest
 pytest --pyargs ipi.tests
@@ -46,6 +51,7 @@ instructions. It is assumed that i-PI will
 be run from a Linux environment, with a recent version of Python, Numpy and
 gfortran, and that the terminal is initially in the i-pi package directory (the
 directory containing this file), which you can obtain by cloning the repository
+
 ```bash
 git clone https://github.com/i-pi/i-pi.git
 ```
@@ -53,7 +59,6 @@ git clone https://github.com/i-pi/i-pi.git
 Source the environment settings file `env.sh` as `source env.sh` or `.
 env.sh`.  It is useful to put this in your `.bashrc` or other settings file if
 you always want to have i-PI available.
-
 
 ### Compile the driver code
 
@@ -82,7 +87,6 @@ tail -f log
 ```
 
 The monitoring can be interrupted with CTRL+C when the run has finished (5000 steps).
-
 
 ### Run the automatic test suite
 

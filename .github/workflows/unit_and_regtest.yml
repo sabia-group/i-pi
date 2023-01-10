@@ -1,6 +1,6 @@
 name: Regression and unitary tests
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
@@ -11,8 +11,8 @@ jobs:
         os: ["ubuntu-22.04"]
 
     runs-on: "${{ matrix.os }}"
-    
-    name: Regression and unitary tests 
+
+    name: Regression and unitary tests
     steps:
     - uses: actions/checkout@v2
     - uses: s-weigand/setup-conda@v1
@@ -29,7 +29,7 @@ jobs:
          conda install -c conda-forge --file requirements.txt
          conda install scipy
          conda install pip
-         
+
          pip install .
          pip install ase>=3.22.1
          echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
@@ -53,4 +53,3 @@ jobs:
       run: |
          pwd
          i-pi-tests -t regtests
-
