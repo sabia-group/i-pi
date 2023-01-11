@@ -138,7 +138,7 @@ class Dynamics(Motion):
 
         if not self.enstype == "eda" and BEC is not  None :
             warning("BEC is used only for EDA dynamics: BEC will be ignored"); eda_type_none = True
-            
+
         if eda_type_none == False :
             self.Efreq = Efreq
             self.Eamp = Eamp
@@ -297,17 +297,21 @@ class DummyIntegrator(dobject):
     def bind(self, motion):
         """Reference all the variables for simpler access."""
 
-        self.beads = motion.beads
-        self.bias = motion.ensemble.bias
-        self.ensemble = motion.ensemble
-        self.forces = motion.forces
-        self.prng = motion.prng
-        self.nm = motion.nm
+        self.beads      = motion.beads
+        self.bias       = motion.ensemble.bias
+        self.ensemble   = motion.ensemble
+        self.forces     = motion.forces
+        self.prng       = motion.prng
+        self.nm         = motion.nm
         self.thermostat = motion.thermostat
-        self.barostat = motion.barostat
-        self.fixcom = motion.fixcom
-        self.fixatoms = motion.fixatoms
-        self.enstype = motion.enstype
+        self.barostat   = motion.barostat
+        self.fixcom     = motion.fixcom
+        self.fixatoms   = motion.fixatoms
+        self.enstype    = motion.enstype
+        # ES
+        self.Eamp       = motion.Eamp
+        self.Efreq      = motion.Efreq
+        self.BEC        = motion.BEC
 
         dself = dd(self)
         dmotion = dd(motion)
@@ -339,7 +343,7 @@ class DummyIntegrator(dobject):
         )  # thermostat
 
         dpipe(dself.qdt, dd(self.nm).dt)
-        dpipe(dself.dt, dd(self.barostat).dt)
+        dpipe(dself.dt , dd(self.barostat).dt)
         dpipe(dself.qdt, dd(self.barostat).qdt)
         dpipe(dself.pdt, dd(self.barostat).pdt)
         dpipe(dself.tdt, dd(self.barostat).tdt)
@@ -411,116 +415,6 @@ class DummyIntegrator(dobject):
                 bp[self.fixatoms * 3 + 1] = 0.0
                 bp[self.fixatoms * 3 + 2] = 0.0
 
-# ES
-class EDAIntegrator(DummyIntegrator):
-
-    """Integrator object for constant energy simulations.
-
-    Has the relevant conserved quantity and normal mode propagator for the
-    constant energy ensemble. Note that a temperature of some kind must be
-    defined so that the spring potential can be calculated.
-
-    Attributes:
-        ptime: The time taken in updating the velocities.
-        qtime: The time taken in updating the positions.
-        ttime: The time taken in applying the thermostat steps.
-
-    Depend objects:
-        econs: Conserved energy quantity. Depends on the bead kinetic and
-            potential energy, and the spring potential energy.
-    """
-
-    def pstep(self, level=0):
-        """Velocity Verlet momentum propagator."""
-
-        # halfdt/alpha
-        self.beads.p += self.forces.forces_mts(level) * self.pdt[level]
-        if level == 0:  # adds bias in the outer loop
-            self.beads.p += dstrip(self.bias.f) * self.pdt[level]
-
-    def qcstep(self):
-        """Velocity Verlet centroid position propagator."""
-        # dt/inmts
-        self.nm.qnm[0, :] += (
-            dstrip(self.nm.pnm)[0, :] / dstrip(self.beads.m3)[0] * self.qdt
-        )
-
-    # now the idea is that for BAOAB the MTS should work as follows:
-    # take the BAB MTS, and insert the O in the very middle. This might imply breaking a A step in two, e.g. one could have
-    # Bbabb(a/2) O (a/2)bbabB
-    def mtsprop_ba(self, index):
-        """Recursive MTS step"""
-
-        mk = int(self.nmts[index] / 2)
-
-        for i in range(mk):  # do nmts/2 full sub-steps
-
-            self.pstep(index)
-            self.pconstraints()
-            if index == self.nmtslevels - 1:
-                # call Q propagation for dt/alpha at the inner step
-                self.qcstep()
-                self.nm.free_qstep()
-                self.qcstep()
-                self.nm.free_qstep()
-
-            else:
-                self.mtsprop(index + 1)
-
-            self.pstep(index)
-            self.pconstraints()
-
-        if self.nmts[index] % 2 == 1:
-            # propagate p for dt/2alpha with force at level index
-            self.pstep(index)
-            self.pconstraints()
-            if index == self.nmtslevels - 1:
-                # call Q propagation for dt/alpha at the inner step
-                self.qcstep()
-                self.nm.free_qstep()
-            else:
-                self.mtsprop_ba(index + 1)
-
-    def mtsprop_ab(self, index):
-        """Recursive MTS step"""
-
-        if self.nmts[index] % 2 == 1:
-            if index == self.nmtslevels - 1:
-                # call Q propagation for dt/alpha at the inner step
-                self.qcstep()
-                self.nm.free_qstep()
-            else:
-                self.mtsprop_ab(index + 1)
-
-            # propagate p for dt/2alpha with force at level index
-            self.pstep(index)
-            self.pconstraints()
-
-        for i in range(int(self.nmts[index] / 2)):  # do nmts/2 full sub-steps
-            self.pstep(index)
-            self.pconstraints()
-            if index == self.nmtslevels - 1:
-                # call Q propagation for dt/alpha at the inner step
-                self.qcstep()
-                self.nm.free_qstep()
-                self.qcstep()
-                self.nm.free_qstep()
-            else:
-                self.mtsprop(index + 1)
-
-            self.pstep(index)
-            self.pconstraints()
-
-    def mtsprop(self, index):
-        # just calls the two pieces together
-        self.mtsprop_ba(index)
-        self.mtsprop_ab(index)
-
-    def step(self, step=None):
-        """Does one simulation time step."""
-
-        self.mtsprop(0)
-
 
 class NVEIntegrator(DummyIntegrator):
 
@@ -545,6 +439,7 @@ class NVEIntegrator(DummyIntegrator):
 
         # halfdt/alpha
         self.beads.p += self.forces.forces_mts(level) * self.pdt[level]
+        # ES: should we keep it, in the end?
         if level == 0:  # adds bias in the outer loop
             self.beads.p += dstrip(self.bias.f) * self.pdt[level]
 
@@ -630,6 +525,71 @@ class NVEIntegrator(DummyIntegrator):
         """Does one simulation time step."""
 
         self.mtsprop(0)
+
+# ES
+class EDAIntegrator(NVEIntegrator):
+
+    """Integrator object for simulations with constant energy, volume, and particle number
+    using the electric dipole approximation when an external electric field is applied.
+
+    Has the relevant conserved quantity and normal mode propagator for the
+    constant energy ensemble. Note that a temperature of some kind must be
+    defined so that the spring potential can be calculated.
+
+    Attributes:
+        ptime: The time taken in updating the velocities.
+        qtime: The time taken in updating the positions.
+        ttime: The time taken in applying the thermostat steps.
+
+    Depend objects:
+        econs: Conserved energy quantity. Depends on the bead kinetic and
+            potential energy, and the spring potential energy.
+    """
+
+    # self.__dict__.keys() = ['_direct', 'beads', 'bias', 'ensemble',  \
+    #                         'forces', 'prng', 'nm', 'thermostat',    \
+    #                         'barostat', 'fixcom', 'fixatoms',        \
+    #                         'enstype', 'splitting', 'dt', 'nmts',    \
+    #                         'inmts', 'nmtslevels', 'qdt', 'pdt', 'tdt']
+    
+    # self.forces.__dict__.keys() = ['_direct', 'bound', 'dforces', 'dbeads',       \
+    #                                'dcell', 'natoms', 'nbeads', 'beads',          \
+    #                                'cell', 'nforces', 'fcomp', 'ff',              \
+    #                                'open_paths', 'output_maker', 'mforces',       \
+    #                                'mbeads', 'mrpc', 'f', 'pots', 'virs',         \
+    #                                'extras', 'pot', 'vir', 'alpha',               \
+    #                                'nmtslevels', 'omegan2', 'potssc',             \
+    #                                'potsc', 'coeffsc_part_1', 'coeffsc_part_2',   \
+    #                                'fvir_4th_order', 'f_4th_order', 'fsc_part_1', \
+    #                                'fsc_part_2', 'fsc', 'virs_4th_order',         \
+    #                                'virssc_part_1', 'virssc_part_2',              \
+    #                                'virssc', 'virsc'])
+    
+    # self.forces.extras = {'polarization': [{...}], 'raw': ['{ "polarization":{ "...0.69141]}}']}
+    
+    # ES: there is a polarization dict for each bead
+    # self.forces.extras['polarization'][i] = {'total'    : [0.67751 , 1.05147, 0.35179 ], \
+    #                                          'electrons': [-0.57454, 0.04825, -1.02842], \
+    #                                          'ions'     : [-0.01654, 0.27079, -0.69141]}
+
+    def pstep(self, level=0):
+        """Velocity Verlet momentum propagator."""
+
+        super(EDAIntegrator,self).pstep(level)
+        self.beads.p += self._ions_forces(level)
+        self.beads.p += self._elec_forces(level)
+
+        pass
+
+    def _ions_forces(self,level):
+        forces = np.zeros(shape=self.beads.p.shape)       
+        # ES: not coded yet
+        return forces
+
+    def _elec_forces(self,level):
+        forces = np.zeros(shape=self.beads.p.shape)
+        # ES: not coded yet
+        return forces
 
 
 class NVTIntegrator(NVEIntegrator):

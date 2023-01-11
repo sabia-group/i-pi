@@ -146,6 +146,10 @@ class InputDynamics(InputDictionary):
         self.barostat.store(dyn.barostat)
         self.nmts.store(dyn.nmts)
         self.splitting.store(dyn.splitting)
+        # ES
+        self.Eamp.store(dyn.Eamp)
+        self.Efreq.store(dyn.Efreq)
+        self.BEC.store(dyn.BEC)
 
     def fetch(self):
         """Creates an ensemble object.
