@@ -11,6 +11,7 @@ arrays of atoms and for individual atoms.
 
 
 import numpy as np
+from copy import copy
 
 from ipi.utils.depend import *
 
@@ -30,9 +31,10 @@ class Atom(dobject):
        kstress: The contribution of the atom to the kinetic stress tensor.
 
     Depend objects:
-       p: The three components of the momentum of the atom.
-       q: The three components of the position of the atom.
-       m: The mass of the atom.
+        p: The three components of the momentum of the atom.
+        q: The three components of the position of the atom.
+        m: The mass of the atom.
+        Z: The charge of the atom
        name: The name of the atom.
        m3: An array of 3 elements with each element being the mass of the atom.
           Used when each degree of freedom needs to be divided by the mass.
@@ -51,8 +53,10 @@ class Atom(dobject):
         dself.p = system.p[3 * index : 3 * index + 3]
         dself.q = system.q[3 * index : 3 * index + 3]
         dself.m = system.m[index : index + 1]
+        dself.Z = system.Z[index : index + 1]
         dself.name = system.names[index : index + 1]
         dself.m3 = system.m3[3 * index : 3 * index + 3]
+        # dself.Z3 = system.Z3[9 * index : 9 * index + 9]
 
     @property
     def kin(self):
@@ -85,13 +89,15 @@ class Atoms(dobject):
        natoms: The number of atoms.
 
     Depend objects:
-       p: An array giving the components of the atom positions.
-       q: An array giving the components of the atom momenta.
-       m: An array giving the atom masses.
+        p: An array giving the components of the atom positions.
+        q: An array giving the components of the atom momenta.
+        m: An array giving the atom masses.
+        Z: An array giving the atom charge in unit of elementary charges (atomic number).
        names: An array giving the atom names.
        m3: An array of 3*n elements where each element of m has been copied
           three times. Used when each degree of freedom needs to be divided
           by the mass.
+       Z3: same as m3 but for the charge Z
        M: The total mass of all the atoms.
        kin: The total kinetic energy of the atoms. Depends on p and m3.
        kstress: The contribution of the atoms to the kinetic stress tensor.
@@ -104,6 +110,7 @@ class Atoms(dobject):
        pz: An array giving the z components of the momenta.
     """
 
+    # I should fix this class when _prebind is not None
     def __init__(self, natoms, _prebind=None):
         """Initialises Atoms.
 
@@ -111,9 +118,9 @@ class Atoms(dobject):
         and so slices of the global position and momentum arrays must be used in
         the initialisation so that they always agree with each other.
 
-        Args:
+        Args: TO FIX
            natoms: An integer giving the number of atoms.
-           _prebind: An optional tuple of four elements; a depend_array of length
+           _prebind: An optional tuple of six elements; a depend_array of length
               3*natoms for the positions, another for the momenta, a depend_array
               of length natoms for the masses and another for the names.
         """
@@ -126,20 +133,29 @@ class Atoms(dobject):
             dself.q = depend_array(name="q", value=np.zeros(3 * natoms, float))
             dself.p = depend_array(name="p", value=np.zeros(3 * natoms, float))
             dself.m = depend_array(name="m", value=np.zeros(natoms, float))
+            dself.Z = depend_array(name="Z", value=np.zeros(natoms, int))
             dself.names = depend_array(
                 name="names", value=np.zeros(natoms, np.dtype("|U6"))
             )
         else:
-            dself.q = _prebind[0]
-            dself.p = _prebind[1]
-            dself.m = _prebind[2]
-            dself.names = _prebind[3]
+            dself.q     = _prebind[0]
+            dself.p     = _prebind[1]
+            dself.m     = _prebind[2]
+            dself.Z     = _prebind[3]
+            dself.names = _prebind[4]
 
         dself.m3 = depend_array(
             name="m3",
             value=np.zeros(3 * natoms, float),
             func=self.mtom3,
             dependencies=[dself.m],
+        )
+
+        dself.Z3 = depend_array(
+            name="Z3",
+            value=np.zeros(3 * natoms, int),
+            func=self.ZtoZ3,
+            dependencies=[dself.Z],
         )
 
         dself.M = depend_value(name="M", func=self.get_msum, dependencies=[dself.m])
@@ -150,19 +166,23 @@ class Atoms(dobject):
             name="kstress", func=self.get_kstress, dependencies=[dself.p, dself.m]
         )
 
+    # ES: why do I need this function? Cannot I just use the copy module?
+    # def copy(self):
+    #     """Creates a new Atoms object.
+    #
+    #     Returns:
+    #        An Atoms object with the same q, p, m and names arrays as the original.
+    #     """
+    #
+    #     newat = Atoms(self.natoms)
+    #     newat.q[:] = self.q
+    #     newat.p[:] = self.p
+    #     newat.m[:] = self.m
+    #     newat.names[:] = self.names
+    #     return newat
+
     def copy(self):
-        """Creates a new Atoms object.
-
-        Returns:
-           An Atoms object with the same q, p, m and names arrays as the original.
-        """
-
-        newat = Atoms(self.natoms)
-        newat.q[:] = self.q
-        newat.p[:] = self.p
-        newat.m[:] = self.m
-        newat.names[:] = self.names
-        return newat
+        return copy.deepcopy(self)
 
     def __len__(self):
         """Length function.
@@ -224,6 +244,7 @@ class Atoms(dobject):
         pat.p = value.p
         pat.q = value.q
         pat.m = value.m
+        pat.Z = value.Z
         pat.name = value.name
 
     def get_msum(self):
@@ -245,6 +266,16 @@ class Atoms(dobject):
         m3[1 : 3 * self.natoms : 3] = m3[0 : 3 * self.natoms : 3]
         m3[2 : 3 * self.natoms : 3] = m3[0 : 3 * self.natoms : 3]
         return m3
+
+    def ZtoZ3(self):
+        """Returns a 3*n charge array.
+
+        Returns:
+           An array of 3*n elements where each element of m has been copied
+           three times.
+        """
+
+        return np.asarray([self.Z,self.Z,self.Z]).T.flatten()
 
     def get_kin(self):
         """Calculates the total kinetic energy of the system."""

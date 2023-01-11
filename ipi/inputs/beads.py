@@ -88,6 +88,14 @@ class InputBeads(Input):
                 "help": "The names of the atoms, in the format [name1, name2, ... ].",
             },
         ),
+        "Z": (
+            InputArray,
+            {
+                "dtype": int,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
+            },
+        ),
     }
 
     default_help = "Describes the bead configurations in a path integral simulation."
@@ -107,8 +115,9 @@ class InputBeads(Input):
         self.q.store(dstrip(beads.q))
         self.p.store(dstrip(beads.p))
         self.m.store(dstrip(beads.m))
+        self.Z.store(dstrip(beads.Z))
         self.names.store(dstrip(beads.names))
-
+        
     def fetch(self):
         """Creates a beads object.
 
@@ -148,5 +157,11 @@ class InputBeads(Input):
             beads.names = n
         elif len(n) != 0:
             raise ValueError("Array shape mismatches for names in <beads> input.")
+
+        Z = self.Z.fetch()
+        if Z.shape == (beads.natoms,):
+            beads.Z = Z
+        elif len(Z) != 0:
+            raise ValueError("Array shape mismatches for Z in <beads> input.")
 
         return beads

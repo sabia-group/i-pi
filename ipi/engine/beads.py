@@ -119,6 +119,7 @@ class Beads(dobject):
         # positions and momenta. bead representation, base storage used everywhere
         dself.q = depend_array(name="q", value=np.zeros((nbeads, 3 * natoms), float))
         dself.p = depend_array(name="p", value=np.zeros((nbeads, 3 * natoms), float))
+        dself.Z = depend_array(name="Z", value=np.zeros(3 * natoms, int))
 
         # position and momentum of the centroid
         dself.qc = depend_array(
@@ -148,7 +149,7 @@ class Beads(dobject):
         # create proxies to access the individual beads as Atoms objects
         # TODO: ACTUALLY THIS IS ONLY USED HERE METHINK, SO PERHAPS WE COULD REMOVE IT TO DECLUTTER THE CODE.
         self._blist = [
-            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.names))
+            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.Z, self.names))
             for i in range(nbeads)
         ]
 

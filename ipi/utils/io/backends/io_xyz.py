@@ -129,14 +129,15 @@ def read_xyz(filedesc):
     cell = h
 
     qatoms = np.zeros(3 * natoms)
-    names = np.zeros(natoms, dtype="|U4")
+    names  = np.zeros(natoms, dtype="|U4")
     masses = np.zeros(natoms)
+    Z      = np.zeros(natoms,dtype=int)
 
     # Extracting a time-frame information
     atom_counter = 0
     for iat, line in enumerate(filedesc):
         body = line.split()
-        names[iat], masses[iat] = body[0], Elements.mass(body[0])
+        names[iat], masses[iat], Z[iat] = body[0], Elements.mass(body[0]), Elements.atomic_number(body[0]) # ES
         x, y, z = float(body[1]), float(body[2]), float(body[3])
 
         if usegenh:
@@ -155,4 +156,4 @@ def read_xyz(filedesc):
         raise ValueError(
             "The number of atom records does not match the header of the xyz file."
         )
-    return comment, cell, qatoms, names, masses
+    return comment, cell, qatoms, names, masses, Z

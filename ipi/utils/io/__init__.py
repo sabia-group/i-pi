@@ -242,12 +242,13 @@ def read_file_raw(mode, filedesc):
     """
     reader = _get_io_function(mode, "read")
 
-    comment, cell, atoms, names, masses = reader(filedesc=filedesc)
+    comment, cell, atoms, names, masses, Z = reader(filedesc=filedesc)
 
     return {
         "comment": comment,
         "data": atoms,
         "masses": masses,
+        "Z": Z,
         "names": names,
         "natoms": len(names),
         "cell": cell,
@@ -310,11 +311,12 @@ def iter_file_raw(mode, filedesc):
 
     try:
         while True:
-            comment, cell, atoms, names, masses = reader(filedesc=filedesc)
+            comment, cell, atoms, names, masses, Z = reader(filedesc=filedesc) #ES
             yield {
                 "comment": comment,
                 "data": atoms,
                 "masses": masses,
+                "Z":Z, # ES
                 "names": names,
                 "natoms": len(names),
                 "cell": cell,

@@ -79,13 +79,14 @@ def auto_units(
 
     return dimension, units, cell_units
 
-
+# ES
 def process_units(
     comment,
     cell,
     data,
     names,
     masses,
+    Z,
     natoms,
     dimension="automatic",
     units="automatic",
@@ -100,6 +101,7 @@ def process_units(
         data:
         names:
         masses:
+        Z:
         output:
 
     Returns:
@@ -125,6 +127,7 @@ def process_units(
     atoms.q[:] = data
     atoms.names[:] = names
     atoms.m[:] = masses
+    atoms.Z[:] = Z
 
     return {
         "atoms": atoms,
