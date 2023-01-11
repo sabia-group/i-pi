@@ -30,14 +30,11 @@ class InputBeads(Input):
        natoms: An optional integer giving the number of atoms. Defaults to 0.
 
     Fields:
-       q: An optional array giving the bead positions. Defaults to an empty
-          array with no elements.
-       p: An optional array giving the bead momenta. Defaults to an empty
-          array with no elements.
-       m: An optional array giving the bead masses. Defaults to an empty array
-          with no elements.
-       names: An optional array giving the bead names. Defaults to an empty
-          array with no elements.
+        q: An optional array giving the bead positions. Defaults to an empty array with no elements.
+        p: An optional array giving the bead momenta. Defaults to an empty array with no elements.
+        m: An optional array giving the bead masses. Defaults to an empty array with no elements.
+        Z: An optional array giving the bead atomic numbers. Defaults to an empty array with no elements.
+        names: An optional array giving the bead names. Defaults to an empty array with no elements.
     """
 
     attribs = {
@@ -48,6 +45,14 @@ class InputBeads(Input):
         "nbeads": (
             InputAttribute,
             {"dtype": int, "default": 0, "help": "The number of beads."},
+        ),
+        "Z": (
+            InputArray,
+            {
+                "dtype": int,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
+            },
         ),
     }
     fields = {
@@ -86,14 +91,6 @@ class InputBeads(Input):
                     factory=np.zeros, args=(0,), kwargs={"dtype": np.dtype("|U6")}
                 ),
                 "help": "The names of the atoms, in the format [name1, name2, ... ].",
-            },
-        ),
-        "Z": (
-            InputArray,
-            {
-                "dtype": int,
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
             },
         ),
     }

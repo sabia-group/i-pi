@@ -575,9 +575,44 @@ class EDAIntegrator(NVEIntegrator):
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
 
+        self._check()
         super(EDAIntegrator,self).pstep(level)
-        self.beads.p += self._ions_forces(level)
-        self.beads.p += self._elec_forces(level)
+        self.beads.p += self._ions_forces(level) # add ionic contribution (straightforward)
+        self.beads.p += self._elec_forces(level) # add electronic contribution
+
+        pass
+
+    def _check(self):
+        """ check that everything is ok"""
+
+        msg = "Error in EDAIntegrator"
+
+        # check whether the driver returned to i-pi the polarization values
+        if "polarization" not in self.forces.extras:
+            raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in EDAIntegrator)")
+ 
+        N = self.beads.nbeads
+        # check whether the number of polarization values is correct, i.e. equal to the number of beads 
+        # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
+        if len(self.forces.extras["polarization"]) != N:
+            raise ValueError(msg+": number of polarization values (accessed in EDAIntegrator) should be equal to number of beads")
+
+        # check whether the total, electronic, and ionic polarizations are all available
+        for word in ["total","ions","electrons"]:
+            if not np.all([word in self.forces.extras["polarization"][i] for i in range(N)]):
+                raise ValueError(msg+": "+word+" polarization non present for all the beads")
+
+        # check whether the polarizations (total, electronic, and ionic) are identically vanishing
+        from numpy import linalg as LA
+        for word in ["total","ions","electrons"]:
+            if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
+                warning(word+" polarization is vanishing for all the beads")
+
+        # the ionic polarization is straighforward
+        # check if its value is correct
+        elec_pol = np.zeros(shape=(N,3))
+        for i in range(N):
+            elec_pol[i] = self.beads[i].q    # self.beads[i].q.reshape((self.beads.natoms,-1))           
 
         pass
 

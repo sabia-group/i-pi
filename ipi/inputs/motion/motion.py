@@ -355,9 +355,6 @@ class InputMotionBase(Input):
                 **self.string_optimizer.fetch()
             )
         elif mode == "dynamics":
-            fixcom=self.fixcom.fetch()
-            fixatoms=self.fixatoms.fetch()
-            a = self.dynamics.fetch()
             sc = Dynamics(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),

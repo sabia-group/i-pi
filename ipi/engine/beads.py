@@ -32,31 +32,32 @@ class Beads(dobject):
     neighbouring replicas.
 
     Attributes:
-       natoms: The number of atoms.
-       nbeads: The number of beads.
-       _blist: A list of Atoms objects for each replica of the system. Each
-          replica is assumed to have the same mass and atom label.
-       centroid: An atoms object giving the centroid coordinate of the beads.
+        natoms: The number of atoms.
+        nbeads: The number of beads.
+        Z: An array giving all the bead atomic numbers.
+        _blist: A list of Atoms objects for each replica of the system. Each
+            replica is assumed to have the same mass and atom label.
+            centroid: An atoms object giving the centroid coordinate of the beads.
 
     Depend objects:
-       names: An array giving the atom names.
-       m: An array giving the atom masses.
-       m3: An array giving the mass associated with each degree of freedom.
-       sm3: An array giving the square root of m3.
-       q: An array giving all the bead positions.
-       p: An array giving all the bead momenta.
-       qc: An array giving the centroid positions. Depends on qnm.
-       pc: An array giving the centroid momenta. Depends on pnm.
-       vpath: The spring potential between the beads, divided by omegan**2.
-          Depends on q.
-       fpath: The spring force between the beads, divided by omegan**2.
-          Depends on q.
-       kins: A list of the kinetic energy of each replica.
-       kin: The total kinetic energy of the system. Note that this is not the
-          same as the estimate of the kinetic energy of the system, which is
-          contained in the properties module.
-       kstress: The total kinetic stress tensor for the system.
-       rg: An array giving the radius of gyration of each atom.
+        names: An array giving the atom names.
+        m: An array giving the atom masses.
+        m3: An array giving the mass associated with each degree of freedom.
+        sm3: An array giving the square root of m3.
+        q: An array giving all the bead positions.
+        p: An array giving all the bead momenta.
+        qc: An array giving the centroid positions. Depends on qnm.
+        pc: An array giving the centroid momenta. Depends on pnm.
+        vpath: The spring potential between the beads, divided by omegan**2.
+            Depends on q.
+        fpath: The spring force between the beads, divided by omegan**2.
+            Depends on q.
+        kins: A list of the kinetic energy of each replica.
+        kin: The total kinetic energy of the system. Note that this is not the
+            same as the estimate of the kinetic energy of the system, which is
+            contained in the properties module.
+        kstress: The total kinetic stress tensor for the system.
+        rg: An array giving the radius of gyration of each atom.
     """
 
     def __init__(self, natoms, nbeads):
@@ -119,7 +120,9 @@ class Beads(dobject):
         # positions and momenta. bead representation, base storage used everywhere
         dself.q = depend_array(name="q", value=np.zeros((nbeads, 3 * natoms), float))
         dself.p = depend_array(name="p", value=np.zeros((nbeads, 3 * natoms), float))
-        dself.Z = depend_array(name="Z", value=np.zeros(3 * natoms, int))
+
+        # atomic numbers of the atoms
+        dself.Z = depend_array(name="Z", value=np.zeros(natoms, int))
 
         # position and momentum of the centroid
         dself.qc = depend_array(
@@ -186,6 +189,7 @@ class Beads(dobject):
         newbd.q[:] = self.q[:nbeads]
         newbd.p[:] = self.p[:nbeads]
         newbd.m[:] = self.m
+        newbd.Z[:] = self.Z
         newbd.names[:] = self.names
         return newbd
 
@@ -208,6 +212,21 @@ class Beads(dobject):
         m3[:, 1 : 3 * self.natoms : 3] = m3[:, 0 : 3 * self.natoms : 3]
         m3[:, 2 : 3 * self.natoms : 3] = m3[:, 0 : 3 * self.natoms : 3]
         return m3
+    
+    def ZtoZ3(self):
+        """Takes the atomic numbers array for each bead and returns one with an element
+        for each degree of freedom.
+
+        Returns:
+           An array of size (nbeads,3*natoms), with each element corresponding
+           to the atomic number associated with the appropriate degree of freedom in q.
+        """
+
+        Z3 = np.zeros((self.nbeads, 3 * self.natoms), int)
+        Z3[:, 0 : 3 * self.natoms : 3] = self.Z3
+        Z3[:, 1 : 3 * self.natoms : 3] = Z3[:, 0 : 3 * self.natoms : 3]
+        Z3[:, 2 : 3 * self.natoms : 3] = Z3[:, 0 : 3 * self.natoms : 3]
+        return Z3
 
     def get_qc(self):
         """Gets the centroid coordinates."""
@@ -346,4 +365,6 @@ class Beads(dobject):
         self._blist[index].p[:] = value.p
         self._blist[index].q[:] = value.q
         self._blist[index].m[:] = value.m
+        self._blist[index].Z[:] = value.Z
         self._blist[index].names[:] = value.names
+        

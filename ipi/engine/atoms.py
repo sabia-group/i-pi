@@ -56,7 +56,7 @@ class Atom(dobject):
         dself.Z = system.Z[index : index + 1]
         dself.name = system.names[index : index + 1]
         dself.m3 = system.m3[3 * index : 3 * index + 3]
-        # dself.Z3 = system.Z3[9 * index : 9 * index + 9]
+        dself.Z3 = system.Z3[3 * index : 3 * index + 3]
 
     @property
     def kin(self):

@@ -590,6 +590,37 @@ class Initializer(dobject):
                 fmom = True
             elif k == "gle":
                 pass  # thermostats must be initialised in a second stage
+            elif k == "Z": # ES: copied and pasted from masses
+                if simul.beads.nbeads == 0:
+                    raise ValueError(
+                        "Cannot initialize the atomic numbers before the size of the system is known"
+                    )
+                if fmass:
+                    warning("Overwriting previous atomic numbers", verbosity.medium)
+                if v.mode == "manual":
+                    rm = v.value * unit_to_internal("Z", v.units, 1.0)
+                else:
+                    rm = init_beads(v, self.nbeads).Z
+
+                if v.bead < 0:  # we are initializing the path
+                    if fmom and fmass:
+                        # warning(
+                        #     "Rescaling momenta to make up for changed mass",
+                        #     verbosity.medium,
+                        # )
+                        # simul.beads.p /= (
+                        #     simul.beads.sm3
+                        # )  # go to mass-scaled momenta, that are mass-invariant
+                        pass
+                    if v.index < 0:
+                        simul.beads.Z = rm
+                    else:  # we are initializing a specific atom
+                        simul.beads.Z[v.index : v.index + 1] = rm
+                    # if fmom and fmass:  # finishes correcting the momenta
+                    #     simul.beads.p *= simul.beads.sm3  # back to normal momenta
+                else:
+                    raise ValueError("Cannot change the mass of a single bead")
+                fmass = True
 
         if simul.beads.natoms == 0:
             raise ValueError("Initializer could not initialize the atomic positions")

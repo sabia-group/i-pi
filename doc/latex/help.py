@@ -96,6 +96,7 @@ objects = {
     "init_mom": initializer.InputInitMomenta(),
     "init_lab": initializer.InputInitLabels(),
     "init_mass": initializer.InputInitMasses(),
+    "init_Z": initializer.InputInitAtomicNumbers(),
     "init_vel": initializer.InputInitVelocities(),
     "init_cell": initializer.InputInitCell(),
     "init_therm": initializer.InputInitThermo(),

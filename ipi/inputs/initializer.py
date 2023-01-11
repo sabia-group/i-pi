@@ -23,6 +23,7 @@ __all__ = [
     "InputInitMomenta",
     "InputInitVelocities",
     "InputInitMasses",
+    "InputInitAtomicNumbers",
     "InputInitLabels",
     "InputInitCell",
     "InputInitThermo",
@@ -276,6 +277,15 @@ class InputInitMasses(InputInitPositions):
     default_label = "INITMASSES"
     default_help = "This is the class to initialize atomic masses."
 
+class InputInitAtomicNumbers(InputInitPositions):
+
+    """Class to handle initialization of the atomic numbers."""
+
+    attribs = deepcopy(InputInitPositions.attribs)
+
+    default_label = "INITATOMICNUMBERS"
+    default_help = "This is the class to initialize atomic numbers."
+
 
 class InputInitLabels(InputInitPositions):
 
@@ -421,6 +431,12 @@ class InputInitializer(Input):
                 "help": "Initializes atomic masses. Will take a 'units' attribute of dimension 'mass'"
             },
         ),
+        "Z": (
+            InputInitAtomicNumbers,
+            {
+                "help": "Initializes atomic numbers."
+            },
+        ),
         "labels": (InputInitLabels, {"help": "Initializes atomic labels"}),
         "cell": (
             InputInitCell,
@@ -477,6 +493,9 @@ class InputInitializer(Input):
             elif k == "masses":
                 ip = InputInitMasses()
                 ip.store(el)
+            elif k == "Z":
+                ip = InputInitAtomicNumbers()
+                ip.store(el)
             elif k == "labels":
                 ip = InputInitLabels()
                 ip.store(el)
@@ -519,7 +538,8 @@ class InputInitializer(Input):
                 if mode == "xyz" or mode == "pdb" or mode == "chk" or mode == "ase":
                     rm = v.fetch(initclass=ei.InitIndexed)
                     rm.units = ""
-                    initlist.append(("masses", rm))
+                    initlist.append(("masses", rm)); 
+                    initlist.append(("Z", rm))
                     initlist.append(("labels", v.fetch(initclass=ei.InitIndexed)))
                     rm = v.fetch(initclass=ei.InitIndexed)
                     rm.units = v.cell_units.fetch()
