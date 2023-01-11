@@ -316,19 +316,21 @@ class InputMotionBase(Input):
 
         super(InputMotionBase, self).fetch()
 
-        if self.mode.fetch() == "replay":
+        # we could use match-case statement
+        mode = self.mode.fetch() 
+        if mode == "replay":
             sc = Replay(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 intraj=self.file.fetch(),
             )
-        elif self.mode.fetch() == "minimize":
+        elif mode == "minimize":
             sc = GeopMotion(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.optimizer.fetch()
             )
-        elif self.mode.fetch() == "neb":
+        elif mode == "neb":
             #            raise ValueError(
             #                "The nudged elastic band calculation has been "
             #                "temporarily disabled until further bug-fixes."
@@ -338,7 +340,7 @@ class InputMotionBase(Input):
                 fixatoms=self.fixatoms.fetch(),
                 **self.neb_optimizer.fetch()
             )
-        elif self.mode.fetch() == "string":
+        elif mode == "string":
             softexit.trigger(
                 status="bad",
                 message=(
@@ -352,65 +354,68 @@ class InputMotionBase(Input):
                 fixatoms=self.fixatoms.fetch(),
                 **self.string_optimizer.fetch()
             )
-        elif self.mode.fetch() == "dynamics":
+        elif mode == "dynamics":
+            fixcom=self.fixcom.fetch()
+            fixatoms=self.fixatoms.fetch()
+            a = self.dynamics.fetch()
             sc = Dynamics(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.dynamics.fetch()
             )
-        elif self.mode.fetch() == "constrained_dynamics":
+        elif mode == "constrained_dynamics":
             sc = ConstrainedDynamics(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.constrained_dynamics.fetch()
             )
-        elif self.mode.fetch() == "vibrations":
+        elif mode == "vibrations":
             sc = DynMatrixMover(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.vibrations.fetch()
             )
-        elif self.mode.fetch() == "normalmodes":
+        elif mode == "normalmodes":
             sc = NormalModeMover(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.normalmodes.fetch()
             )
-        elif self.mode.fetch() == "scp":
+        elif mode == "scp":
             sc = SCPhononsMover(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.scp.fetch()
             )
-        elif self.mode.fetch() == "alchemy":
+        elif mode == "alchemy":
             sc = AlchemyMC(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.alchemy.fetch()
             )
-        elif self.mode.fetch() == "atomswap":
+        elif mode == "atomswap":
             sc = AtomSwap(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.atomswap.fetch()
             )
-        elif self.mode.fetch() == "instanton":
+        elif mode == "instanton":
             sc = InstantonMotion(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.instanton.fetch()
             )
-        elif self.mode.fetch() == "planetary":
+        elif mode == "planetary":
             sc = Planetary(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.planetary.fetch()
             )
-        elif self.mode.fetch() == "t_ramp":
+        elif mode == "t_ramp":
             sc = TemperatureRamp(**self.t_ramp.fetch())
-        elif self.mode.fetch() == "p_ramp":
+        elif mode == "p_ramp":
             sc = PressureRamp(**self.p_ramp.fetch())
-        elif self.mode.fetch() == "al-kmc":
+        elif mode == "al-kmc":
             sc = AlKMC(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),

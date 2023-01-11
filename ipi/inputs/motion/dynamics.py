@@ -103,7 +103,7 @@ class InputDynamics(InputDictionary):
                 "dtype": float,
                 "default": np.asarray([0,0,1]),
                 "help": "The amplitude of the external electric field (in cartesian coordinates)",
-                "dimension": "V/A",
+                #"dimension": "V/A",
             },
         ),
         "Efreq": (
@@ -112,7 +112,7 @@ class InputDynamics(InputDictionary):
                 "dtype": float,
                 "default": 0.0,
                 "help": "The frequency of the external electric field (in hertz)",
-                "dimension": "hertz",
+                #"dimension": "hertz",
             },
         ),
         "BEC": (

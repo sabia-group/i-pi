@@ -12,6 +12,7 @@ appropriate conserved energy quantity for the ensemble of choice.
 
 import numpy as np
 
+from ipi.utils.messages import warning
 from ipi.engine.motion import Motion
 from ipi.utils.depend import *
 from ipi.engine.thermostats import Thermostat
@@ -58,6 +59,9 @@ class Dynamics(Motion):
         fixcom=False,
         fixatoms=None,
         nmts=None,
+        Eamp=np.asarray([0,0,1]),
+        Efreq=0.0,
+        BEC=None
     ):
         """Initialises a "dynamics" motion object.
 
@@ -123,6 +127,24 @@ class Dynamics(Motion):
             self.fixatoms = np.zeros(0, int)
         else:
             self.fixatoms = fixatoms
+
+        # ES: EDA parameters
+        eda_type_none = False
+        if not self.enstype == "eda" and Efreq is not  None :
+            warning("Efreq is used only for EDA dynamics: Efreq will be ignored"); eda_type_none = True
+
+        if not self.enstype == "eda" and Eamp is not  None :
+            warning("Eamp is used only for EDA dynamics: Eamp will be ignored"); eda_type_none = True
+
+        if not self.enstype == "eda" and BEC is not  None :
+            warning("BEC is used only for EDA dynamics: BEC will be ignored"); eda_type_none = True
+            
+        if eda_type_none == False :
+            self.Efreq = Efreq
+            self.Eamp = Eamp
+            self.BEC = BEC
+
+        pass
 
     def get_fixdof(self):
         """Calculate the number of fixed degrees of freedom, required for
@@ -407,9 +429,6 @@ class EDAIntegrator(DummyIntegrator):
         econs: Conserved energy quantity. Depends on the bead kinetic and
             potential energy, and the spring potential energy.
     """
-    attribs = {}
-
-    attribs.update(DummyIntegrator.attribs)
 
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
