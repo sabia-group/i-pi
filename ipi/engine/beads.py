@@ -221,12 +221,8 @@ class Beads(dobject):
            An array of size (nbeads,3*natoms), with each element corresponding
            to the atomic number associated with the appropriate degree of freedom in q.
         """
-
-        Z3 = np.zeros((self.nbeads, 3 * self.natoms), int)
-        Z3[:, 0 : 3 * self.natoms : 3] = self.Z3
-        Z3[:, 1 : 3 * self.natoms : 3] = Z3[:, 0 : 3 * self.natoms : 3]
-        Z3[:, 2 : 3 * self.natoms : 3] = Z3[:, 0 : 3 * self.natoms : 3]
-        return Z3
+        
+        return np.asarray([self.Z,self.Z,self.Z]).T.flatten()
 
     def get_qc(self):
         """Gets the centroid coordinates."""

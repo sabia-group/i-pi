@@ -12,12 +12,13 @@ appropriate conserved energy quantity for the ensemble of choice.
 
 import numpy as np
 
-from ipi.utils.messages import warning
+from ipi.utils.messages import verbosity,warning
 from ipi.engine.motion import Motion
 from ipi.utils.depend import *
 from ipi.engine.thermostats import Thermostat
 from ipi.engine.barostats import Barostat
 from ipi.utils.softexit import softexit
+from ipi.utils.units import Constants
 
 
 # __all__ = ['Dynamics', 'NVEIntegrator', 'NVTIntegrator', 'NPTIntegrator', 'NSTIntegrator', 'SCIntegrator`']
@@ -131,13 +132,13 @@ class Dynamics(Motion):
         # ES: EDA parameters
         eda_type_none = False
         if not self.enstype == "eda" and Efreq is not  None :
-            warning("Efreq is used only for EDA dynamics: Efreq will be ignored"); eda_type_none = True
+            warning("Efreq is used only for EDA dynamics: Efreq will be ignored",verbosity.low); eda_type_none = True
 
         if not self.enstype == "eda" and Eamp is not  None :
-            warning("Eamp is used only for EDA dynamics: Eamp will be ignored"); eda_type_none = True
+            warning("Eamp is used only for EDA dynamics: Eamp will be ignored",verbosity.low); eda_type_none = True
 
         if not self.enstype == "eda" and BEC is not  None :
-            warning("BEC is used only for EDA dynamics: BEC will be ignored"); eda_type_none = True
+            warning("BEC is used only for EDA dynamics: BEC will be ignored",verbosity.low); eda_type_none = True
 
         if eda_type_none == False :
             self.Efreq = Efreq
@@ -537,20 +538,19 @@ class EDAIntegrator(NVEIntegrator):
     defined so that the spring potential can be calculated.
 
     Attributes:
-        ptime: The time taken in updating the velocities.
-        qtime: The time taken in updating the positions.
-        ttime: The time taken in applying the thermostat steps.
+        ? ptime: The time taken in updating the velocities.
+        ? qtime: The time taken in updating the positions.
+        ? ttime: The time taken in applying the thermostat steps.
 
     Depend objects:
         econs: Conserved energy quantity. Depends on the bead kinetic and
             potential energy, and the spring potential energy.
     """
 
-    # self.__dict__.keys() = ['_direct', 'beads', 'bias', 'ensemble',  \
-    #                         'forces', 'prng', 'nm', 'thermostat',    \
-    #                         'barostat', 'fixcom', 'fixatoms',        \
-    #                         'enstype', 'splitting', 'dt', 'nmts',    \
-    #                         'inmts', 'nmtslevels', 'qdt', 'pdt', 'tdt']
+    # self.__dict__.keys() = ['_direct', 'beads', 'bias', 'ensemble', 'forces', 'prng', \
+    #                         'nm', 'thermostat', 'barostat', 'fixcom', 'fixatoms',     \
+    #                         'enstype', 'Eamp', 'Efreq', 'BEC', 'splitting', 'dt',     \
+    #                         'nmts', 'inmts', 'nmtslevels', 'qdt', 'pdt', 'tdt']
     
     # self.forces.__dict__.keys() = ['_direct', 'bound', 'dforces', 'dbeads',       \
     #                                'dcell', 'natoms', 'nbeads', 'beads',          \
@@ -577,13 +577,14 @@ class EDAIntegrator(NVEIntegrator):
 
         self._check()
         super(EDAIntegrator,self).pstep(level)
+        self._update_field(level)
         self.beads.p += self._ions_forces(level) # add ionic contribution (straightforward)
         self.beads.p += self._elec_forces(level) # add electronic contribution
 
         pass
 
     def _check(self):
-        """ check that everything is ok"""
+        """Check that everything is okay before computing the external electric field contribution to the forces."""
 
         msg = "Error in EDAIntegrator"
 
@@ -606,25 +607,76 @@ class EDAIntegrator(NVEIntegrator):
         from numpy import linalg as LA
         for word in ["total","ions","electrons"]:
             if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
-                warning(word+" polarization is vanishing for all the beads")
+                warning(word+" polarization is vanishing for all the beads",verbosity.high,)
 
         # the ionic polarization is straighforward
         # check if its value is correct
-        elec_pol = np.zeros(shape=(N,3))
+        volume = self.ensemble.cell.V # Bohr^3
+        Z = self.beads.ZtoZ3().reshape((-1,3))
         for i in range(N):
-            elec_pol[i] = self.beads[i].q    # self.beads[i].q.reshape((self.beads.natoms,-1))           
+            q = self.beads[i].q.reshape((-1,3))
+            ions_pol = Constants.e /volume * np.sum( Z * q , axis=0) * 4.486318 # conversion from C/m^2 to atomic units (e/a_0^2)
+            driver_pol = self.forces.extras["polarization"][i]["ions"]
+            if not np.all( ions_pol == driver_pol ) :
+                warning("ions polarization returned from the driver does not match the one compute din ipi:"+ \
+                        "\n driver:"+str(driver_pol)+\
+                        "\n   i-pi:"+str(ions_pol)+\
+                        "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
 
         pass
 
-    def _ions_forces(self,level):
-        forces = np.zeros(shape=self.beads.p.shape)       
-        # ES: not coded yet
-        return forces
+    def _update_field(self,level):
+        """Update the value of the external electric field"""
+        #self.Efield = self.Eamp * np.sin( self.Efreq * self.pdt[level] + self.ttime)
+        self.Efield = self.Eamp.copy()
+        pass
 
-    def _elec_forces(self,level):
-        forces = np.zeros(shape=self.beads.p.shape)
-        # ES: not coded yet
-        return forces
+    def _ions_forces(self,level=0):
+        """Compute the contribution to the forces due to the ionic polarization"""
+        Z = self.beads.ZtoZ3().reshape((-1,3))
+        forces = Constants.e * Z * self.Efield # the electric field has to be updated!
+        return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1   
+
+
+    def _elec_forces(self,level=0):
+        """Compute the contribution to the forces due to the electronic polarization"""
+        BEC,mult = self._get_BEC()
+        forces = Constants.e * mult(BEC,self.Efield) # the electric field has to be updated!
+        return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
+
+    def _get_BEC(self):
+        """Return the BEC tensors.
+        The BEC tensor are stored in a compact form.
+        This method trasform the BEC tensors into another data structure, suitable for computation.
+        A lambda function is also returned to peform fast matrix multiplication.
+        """
+
+        N = len(self.BEC)      # lenght of the BEC array
+        Na = self.beads.natoms # number of atoms
+
+        if N == Na:     # scalar BEC
+            Z = np.zeros((Na,3))
+            for i in range(Na):
+                Z[i].fill(self.BEC[i])
+            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+
+        elif N == 3*Na: # diagonal BEC
+            Z = np.zeros((Na,3))
+            temp = self.BEC.reshape((Na,3))
+            for i in range(Na):
+                Z[i,:] = temp[i]
+            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+        
+        elif N == 9*Na: # all-components BEC
+            Z = np.zeros((Na,3,3))
+            temp = self.BEC.reshape((Na,3,3))
+            for i in range(Na):
+                Z[i,:,:] = self.BEC[i,:,:]
+            return Z, lambda a,b : a@b # rows-by-columns (matrix) multplication (all the elements have been allocated)
+
+        else :
+            raise ValueError("BEC tensor with wrong size!")
+
 
 
 class NVTIntegrator(NVEIntegrator):

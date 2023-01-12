@@ -595,23 +595,23 @@ class Initializer(dobject):
                     raise ValueError(
                         "Cannot initialize the atomic numbers before the size of the system is known"
                     )
-                if fmass:
-                    warning("Overwriting previous atomic numbers", verbosity.medium)
+                # if fmass:
+                #     warning("Overwriting previous atomic numbers", verbosity.medium)
                 if v.mode == "manual":
                     rm = v.value * unit_to_internal("Z", v.units, 1.0)
                 else:
                     rm = init_beads(v, self.nbeads).Z
 
                 if v.bead < 0:  # we are initializing the path
-                    if fmom and fmass:
-                        # warning(
-                        #     "Rescaling momenta to make up for changed mass",
-                        #     verbosity.medium,
-                        # )
-                        # simul.beads.p /= (
-                        #     simul.beads.sm3
-                        # )  # go to mass-scaled momenta, that are mass-invariant
-                        pass
+                    # if fmom and fmass:
+                    #     warning(
+                    #         "Rescaling momenta to make up for changed mass",
+                    #         verbosity.medium,
+                    #     )
+                    #     simul.beads.p /= (
+                    #         simul.beads.sm3
+                    #     )  # go to mass-scaled momenta, that are mass-invariant
+                    #     pass
                     if v.index < 0:
                         simul.beads.Z = rm
                     else:  # we are initializing a specific atom

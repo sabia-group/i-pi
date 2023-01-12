@@ -89,8 +89,8 @@ class Atoms(dobject):
        natoms: The number of atoms.
 
     Depend objects:
-        p: An array giving the components of the atom positions.
-        q: An array giving the components of the atom momenta.
+        p: An array giving the components of the atom momenta.
+        q: An array giving the components of the atom position.
         m: An array giving the atom masses.
         Z: An array giving the atom charge in unit of elementary charges (atomic number).
        names: An array giving the atom names.

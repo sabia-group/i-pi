@@ -134,19 +134,10 @@
       <trajectory filename='pos' stride='2' cell_units='angstrom'>positions{angstrom}</trajectory>
    </output>
    <total_steps>3000</total_steps>
-   <smotion mode='eda'>
-      <eda>
-         <dmdff shape='(1)'> [ ffeda ] </dmdff>
-      </eda>
-   </smotion>
    <ffsocket mode='unix' name='FHI-aims'>
       <address>exercise</address>
       <latency>  1.00000000e-03</latency>
    </ffsocket>
-   <ffeda name='ffeda'>
-      <amplitude shape='(3)'> [   1.00000000e+00,   0.00000000e+00,   0.00000000e+00 ] </amplitude>
-      <timestep>  2.06706865e+01</timestep>
-   </ffeda>
    <system>
       <forces>
          <force forcefield='FHI-aims'>
@@ -155,23 +146,21 @@
       <ensemble>
          <temperature>  6.33363040e-05</temperature>
          <eens>  7.77746179e-05</eens>
-         <bias>
-            <force nbeads='1' forcefield='ffeda'>
-            </force>
-         </bias>
-         <bias_weights shape='(1)'> [   1.00000000e+00 ] </bias_weights>
          <hamiltonian_weights shape='(1)'> [   1.00000000e+00 ] </hamiltonian_weights>
       </ensemble>
       <motion mode='dynamics'>
-         <dynamics>
+         <dynamics mode='eda'>
             <timestep>  1.03353433e+01</timestep>
             <nmts shape='(1)'> [ 1 ] </nmts>
+            <Eamp shape='(3)'> [   1.00000000e+00,   0.00000000e+00,   0.00000000e+00 ] </Eamp>
+            <BEC shape='(2)'> [   2.00000000e+00,  -2.00000000e+00 ] </BEC>
          </dynamics>
       </motion>
-      <beads natoms='2' nbeads='1'>
+      <beads natoms='2' nbeads='1' <Z shape='(2)'> [ 12, 8 ] </Z>
+>
          <q shape='(1, 6)'>
-          [   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   2.11310000e+00,   2.11310000e+00, 
-              2.11310000e+00 ]
+          [   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   5.64720962e+00,   3.26041799e+00, 
+              2.30546368e+00 ]
          </q>
          <p shape='(1, 6)'>
           [  -2.14207325e-02,  -7.07009330e-01,  -1.69158193e-01,   2.14207325e-02,   7.07009330e-01, 
@@ -181,8 +170,8 @@
          <names shape='(2)'> [ Mg, O ] </names>
       </beads>
       <cell shape='(3, 3)'>
-       [   5.64720834e+00,   2.82360417e+00,   2.82360417e+00,   0.00000000e+00,   4.89062589e+00, 
-           1.63020863e+00,   0.00000000e+00,   0.00000000e+00,   4.61092630e+00 ]
+       [   5.64720963e+00,   2.82360481e+00,   2.82360481e+00,   0.00000000e+00,   4.89062700e+00, 
+           1.63020900e+00,   0.00000000e+00,   0.00000000e+00,   4.61092735e+00 ]
       </cell>
    </system>
 </simulation>

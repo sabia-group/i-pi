@@ -28,6 +28,7 @@ class Constants(object):
     kb = 1.0
     hbar = 1.0
     amu = 1822.8885
+    e   = 1.0 # elementary charge, electron charge = - |e|
 
 
 class Elements(dict):
