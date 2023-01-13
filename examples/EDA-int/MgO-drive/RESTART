@@ -131,9 +131,12 @@
       <set_pos>16</set_pos>
    </prng>
    <output prefix='MgO'>
-      <trajectory filename='pos' stride='2' cell_units='angstrom'>positions{angstrom}</trajectory>
+      <properties shape='(6)' filename='properties.out'>
+       [ step, time{femtosecond}, conserved, temperature{kelvin}, potential, 
+         kinetic_md ]
+      </properties>
    </output>
-   <total_steps>3000</total_steps>
+   <total_steps>10</total_steps>
    <ffsocket mode='unix' name='FHI-aims'>
       <address>exercise</address>
       <latency>  1.00000000e-03</latency>
@@ -150,7 +153,7 @@
       </ensemble>
       <motion mode='dynamics'>
          <dynamics mode='eda'>
-            <timestep>  1.03353433e+01</timestep>
+            <timestep>  4.13413730e+00</timestep>
             <nmts shape='(1)'> [ 1 ] </nmts>
             <Eamp shape='(3)'> [   1.00000000e+00,   0.00000000e+00,   0.00000000e+00 ] </Eamp>
             <BEC shape='(2)'> [   2.00000000e+00,  -2.00000000e+00 ] </BEC>

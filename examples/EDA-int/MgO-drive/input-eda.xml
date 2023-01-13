@@ -1,5 +1,6 @@
 <simulation verbosity='medium'>
-  <total_steps>3000</total_steps>
+
+  <total_steps>10</total_steps>
 
   <ffsocket mode='unix' name='FHI-aims' pbc='True'>
     <address>exercise</address>
@@ -7,34 +8,35 @@
   </ffsocket>
 
   <output prefix='MgO'>
-    <trajectory stride='2' filename='pos' cell_units='angstrom'>positions{angstrom}</trajectory>
+    <!--trajectory filename='pos' cell_units='angstrom'>positions{angstrom}</trajectory-->
     <!--trajectory stride='2' filename='vel'>velocities</trajectory-->
-    <!--properties stride='2'> [ step, time, conserved, temperature{kelvin}, potential, kinetic_md ] </properties-->
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, potential, kinetic_md ] </properties>
   </output>
+
   <prng>
     <seed>10545</seed>
   </prng>
 
   <system>
-    <forces>
-      <force forcefield='FHI-aims'/>
-    </forces>
+    <forces> <force forcefield='FHI-aims'/> </forces>
+
     <initialize nbeads='1'>
       <file mode='xyz' units='atomic_unit' > MgO.xyz </file>
-        <velocities mode='thermal' units='kelvin'>20</velocities>
-        <cell mode="abcABC" units="angstrom">[ 2.988374678651, 2.988374678651, 2.988374678651, 60, 60, 60 ]</cell>
+      <velocities mode='thermal' units='kelvin'>20</velocities>
+      <cell mode="abcABC" units="angstrom">[ 2.988374678651, 2.988374678651, 2.988374678651, 60, 60, 60 ]</cell>
     </initialize>
-    <ensemble>
-      <temperature units='kelvin'>20</temperature>
-    </ensemble>
+
+    <ensemble> <temperature units='kelvin'>20</temperature> </ensemble>
+
     <motion mode='dynamics'>
       <dynamics mode='eda'>
-        <timestep units='femtosecond'>0.25</timestep>
+        <timestep units='femtosecond'>0.1</timestep>
         <BEC mode='file'> BEC.scalar.csv </BEC>  <!-- how to compute/read the BEC tensors -->
         <Eamp > [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
         <!-- phase units="rad" > 0.0 </phase-->  <!-- units: rad, deg -->
         <Efreq > 0.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
       </dynamics>
     </motion>
+
   </system>
 </simulation>
