@@ -1105,7 +1105,7 @@ class Forces(dobject):
 
         # gives an error is number of beads is not even.
         if self.nbeads % 2 != 0:
-            warning("ERROR: Suzuki-Chin factorization requires even number of beads!")
+            warning("ERROR (in Forces.forcesvirs_4th_order): Suzuki-Chin factorization requires even number of beads!")
             exit()
 
         # calculates the finite displacement.
@@ -1436,7 +1436,7 @@ class Forces(dobject):
     def get_potssc(self):
         """Obtains Suzuki-Chin contribution to the potential."""
         if self.nbeads % 2 != 0:
-            warning("ERROR: Suzuki-Chin factorization requires even number of beads!")
+            warning("ERROR (in Forces.get_potssc): Suzuki-Chin factorization requires even number of beads!")
             exit()
 
         # this evaluates the square forces contribution to the SC potential (only the difference with the Trotter potential is returned)

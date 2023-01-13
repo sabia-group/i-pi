@@ -247,6 +247,13 @@ class Properties(dobject):
                 "size": 6,
                 "func": (lambda: np.asarray(h2abc_deg(self.cell.h))),
             },
+            # ES
+            # "Efield": {
+            #     "dimension": "eV/A",
+            #     "help": "The applied external electric field. Returns its 3 cartesian components in the form [Ex, Ey, Ez].",
+            #     "size": 3,
+            #     "func": (lambda: self.tensor2vec(self.cell.h)),
+            # },
             "conserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved energy quantity per bead.",

@@ -19,6 +19,7 @@ from ipi.engine.thermostats import Thermostat
 from ipi.engine.barostats import Barostat
 from ipi.utils.softexit import softexit
 from ipi.utils.units import Constants
+from copy import deepcopy
 
 
 # __all__ = ['Dynamics', 'NVEIntegrator', 'NVTIntegrator', 'NPTIntegrator', 'NSTIntegrator', 'SCIntegrator`']
@@ -222,7 +223,12 @@ class Dynamics(Motion):
         )
 
         # now that the timesteps are decided, we proceed to bind the integrator.
+        # ES: self.integrator.__dict__.keys() = ['_direct']
         self.integrator.bind(self)
+        # ES: ['_direct', 'beads', 'bias', 'ensemble', 'forces', 'prng', 
+        #      'nm', 'thermostat', 'barostat', 'fixcom', 'fixatoms', 
+        #      'enstype', 'Eamp', 'Efreq', 'BEC', 'splitting', 'dt', 
+        #      'nmts', 'inmts', 'nmtslevels', 'qdt', 'pdt', 'tdt' ]
 
         self.ensemble.add_econs(dthrm.ethermo)
         self.ensemble.add_econs(dbaro.ebaro)
@@ -265,8 +271,20 @@ class Dynamics(Motion):
     def step(self, step=None):
         """Advances the dynamics by one time step"""
 
+        # ES: I need that these two variable are the same
+        # Pay attention that I can not bind these variable!
+        # I need them to be equal only here and after self.integrator.step(step)
+        # In the meanwhile they could be different!
+        if hasattr(self.integrator, 'cptime'): 
+            self.integrator.cptime = self.ensemble.time
+
         self.integrator.step(step)
         self.ensemble.time += self.dt  # increments internal time
+        
+        # ES: check that the times are identical 
+        # this check should never go wrong ... if it does, read the description of _ckeck_time
+        if hasattr(self.integrator, '_check_time'):
+            self.integrator._ckeck_time() 
 
 
 class DummyIntegrator(dobject):
@@ -297,7 +315,7 @@ class DummyIntegrator(dobject):
 
     def bind(self, motion):
         """Reference all the variables for simpler access."""
-
+        
         self.beads      = motion.beads
         self.bias       = motion.ensemble.bias
         self.ensemble   = motion.ensemble
@@ -309,7 +327,7 @@ class DummyIntegrator(dobject):
         self.fixcom     = motion.fixcom
         self.fixatoms   = motion.fixatoms
         self.enstype    = motion.enstype
-        # ES
+        # ES: this is not the best place for these variables
         self.Eamp       = motion.Eamp
         self.Efreq      = motion.Efreq
         self.BEC        = motion.BEC
@@ -533,19 +551,22 @@ class EDAIntegrator(NVEIntegrator):
     """Integrator object for simulations with constant energy, volume, and particle number
     using the electric dipole approximation when an external electric field is applied.
 
-    Has the relevant conserved quantity and normal mode propagator for the
-    constant energy ensemble. Note that a temperature of some kind must be
-    defined so that the spring potential can be calculated.
+    The electric field has to be assumed homogeneous all over the system, and slowly varying.
+    The first assumption need to be done in orderfor the Electric Dipole Approximation to be valid,
+    the second one in stead is neeed in order to DFT calculations to be reliable, 
+    since they are performed without any external electric field applied 
+    to keep the KS equations simple(r) and computationally affordable.
 
     Attributes:
         ? ptime: The time taken in updating the velocities.
         ? qtime: The time taken in updating the positions.
         ? ttime: The time taken in applying the thermostat steps.
+        TODO: add the EDA attributes
 
-    Depend objects:
-        econs: Conserved energy quantity. Depends on the bead kinetic and
-            potential energy, and the spring potential energy.
     """
+
+    # This class was coded by Elia Stocco (ES)
+    # ES institutional email: stocco@fhi-berlin.mpg.de
 
     # self.__dict__.keys() = ['_direct', 'beads', 'bias', 'ensemble', 'forces', 'prng', \
     #                         'nm', 'thermostat', 'barostat', 'fixcom', 'fixatoms',     \
@@ -572,15 +593,52 @@ class EDAIntegrator(NVEIntegrator):
     #                                          'electrons': [-0.57454, 0.04825, -1.02842], \
     #                                          'ions'     : [-0.01654, 0.27079, -0.69141]}
 
+    def __init__(self):
+        super(EDAIntegrator,self).__init__()    # it does nothing
+        dself = dd(self)
+        dself.cptime = depend_value(name="cptime") # continous time of the momenta p (along the MTS for loops)
+        pass
+
+    def bind(self,motion):
+        super(EDAIntegrator,self).bind(motion) 
+        dself = dd(self)
+        # external electric field
+        dself.Efield = depend_array(
+            name="Efield",
+            value=np.zeros(3, float),
+            func=self.get_Efield,
+            dependencies=[dself.cptime],
+        )
+        # flag to know if this is the first step/level of the Integration procedure and if it is everything okay
+        dself._okay = depend_array(
+            name="_okay",
+            value=False,
+            func=self._check,
+            dependencies=[self.ensemble.time], # this variable is update just once for each step
+        )
+        pass
+
+    # # ES : the following would have been a very pythonic, but also a really bad method to do a relly simple thing -> KISS
+    # @staticmethod
+    # def _update_p(p_update):
+    #     """Update the continous time, i.e. the "real" time that flows over the MTS loops."""
+    #     def wrapper_p_update(self,level):
+    #         self.p_update(level)          # call pstep
+    #         self.cptime += self.pdt[level] # update cptime
+    #         #self._update_field(level)
+    #         pass               
+    #     return wrapper_p_update
+
+    #@_update_cptime
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
-
-        self._check()
-        super(EDAIntegrator,self).pstep(level)
-        self._update_field(level)
-        self.beads.p += self._ions_forces(level) # add ionic contribution (straightforward)
-        self.beads.p += self._elec_forces(level) # add electronic contribution
-
+        # check that everything is okay (but just once for each step)
+        # and if it is so, go on!
+        if self._okay:                   
+            super(EDAIntegrator,self).pstep(level)   # update momenta using the NVEIntegrator (i.e. add the forces)
+            self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
+            self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
+            self.cptime  += self.pdt[level]          # update cptime -> Efield will update automatically, ready for the next step/level
         pass
 
     def _check(self):
@@ -601,13 +659,13 @@ class EDAIntegrator(NVEIntegrator):
         # check whether the total, electronic, and ionic polarizations are all available
         for word in ["total","ions","electrons"]:
             if not np.all([word in self.forces.extras["polarization"][i] for i in range(N)]):
-                raise ValueError(msg+": "+word+" polarization non present for all the beads")
+                raise ValueError(msg+": "+word+" polarization not present for all the beads")
 
         # check whether the polarizations (total, electronic, and ionic) are identically vanishing
         from numpy import linalg as LA
         for word in ["total","ions","electrons"]:
             if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
-                warning(word+" polarization is vanishing for all the beads",verbosity.high,)
+                warning(word+" polarization is vanishing for all the beads",verbosity.high)
 
         # the ionic polarization is straighforward
         # check if its value is correct
@@ -623,13 +681,27 @@ class EDAIntegrator(NVEIntegrator):
                         "\n   i-pi:"+str(ions_pol)+\
                         "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
 
-        pass
+        return True
 
-    def _update_field(self,level):
-        """Update the value of the external electric field"""
-        #self.Efield = self.Eamp * np.sin( self.Efreq * self.pdt[level] + self.ttime)
-        self.Efield = self.Eamp.copy()
-        pass
+    def _ckeck_time(self):
+        """Check that self.cptime is equal to self.ensemble.time.
+        Pay attention that this is not always true all over the simulation!
+        These variable have to be equal only before and after the Integration procedure.
+        In fact, this method is called only in Dynamics.step, after self.integrator.step(step).
+        The two variable are also forces to be equal before the INtegration procedure at each step.
+
+        This method should always return True, but perhaps future code changes could "break" this.
+        Better to be sure that everythin is fine :) """
+        if self.cptime != self.ensemble.time:
+            raise ValueError("Error in EDAIntegrator._ckeck_time: the 'continous' time of EDAIntegrator does not match"+\
+                "Ensemble.time.\nThis seems to be a coding error, not due to wrong input parameters."+\
+                "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
+                "And then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
+        return True
+
+    def get_Efield(self):
+        """Get the value of the external electric field"""
+        return self.Eamp * np.sin( self.Efreq * self.cptime )
 
     def _ions_forces(self,level=0):
         """Compute the contribution to the forces due to the ionic polarization"""
@@ -640,16 +712,17 @@ class EDAIntegrator(NVEIntegrator):
 
     def _elec_forces(self,level=0):
         """Compute the contribution to the forces due to the electronic polarization"""
-        BEC,mult = self._get_BEC()
+        BEC,mult = self._get_BEC(level)
         forces = Constants.e * mult(BEC,self.Efield) # the electric field has to be updated!
         return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
 
-    def _get_BEC(self):
+    def _get_BEC(self,level=0):
         """Return the BEC tensors.
         The BEC tensor are stored in a compact form.
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to peform fast matrix multiplication.
         """
+        # one day this method will be (re)coded again from scratch, and perhaps the 'level' will be used
 
         N = len(self.BEC)      # lenght of the BEC array
         Na = self.beads.natoms # number of atoms
@@ -676,7 +749,6 @@ class EDAIntegrator(NVEIntegrator):
 
         else :
             raise ValueError("BEC tensor with wrong size!")
-
 
 
 class NVTIntegrator(NVEIntegrator):
