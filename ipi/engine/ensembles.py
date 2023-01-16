@@ -20,7 +20,7 @@ from ipi.engine.thermostats import *
 from ipi.engine.barostats import *
 from ipi.engine.motion.alchemy import *
 from ipi.engine.forces import Forces, ScaledForceComponent
-
+from ipi.engine.motion.polarization import *
 
 __all__ = ["Ensemble", "ensemble_swap"]
 
@@ -104,6 +104,8 @@ class Ensemble(dobject):
             self.stressext = np.reshape(np.asarray(stressext), (3, 3))
         else:
             self.stressext = -1.0
+
+        # ES: devo aggiungere Efield qui
 
         dself.pext = depend_value(name="pext")
         if pext is not None:
@@ -236,6 +238,11 @@ class Ensemble(dobject):
         self._xlkin = []
         for k in xlkin:
             self.add_xlkin(k)
+        
+        # ES: polarization(s)
+        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self.get_pol(what="ions") ,value=np.zeros(3,dtype=float))
+        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self.get_pol(what="elec") ,value=np.zeros(3,dtype=float))
+        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self.get_pol(what="total"),value=np.zeros(3,dtype=float))
 
     def add_econs(self, e):
         self._elist.append(e)
@@ -249,12 +256,16 @@ class Ensemble(dobject):
         self._xlkin.append(k)
         dd(self).lpens.add_dependency(k)
 
+    def get_enthalpy(self):
+        return self.econs - self.cell.V * self.TotalPol @ 
+
     def get_econs(self):
         """Calculates the conserved energy quantity for constant energy
         ensembles.
         """
 
         eham = self.nm.vspring + self.nm.kin + self.forces.pot
+        Ipol = self.IonsPol #ES: it woooorks!
 
         eham += self.bias.pot  # bias
 
@@ -278,3 +289,8 @@ class Ensemble(dobject):
 
         lpens *= -1.0 / (Constants.kb * self.temp * self.beads.nbeads)
         return lpens
+
+    # ES
+    get_pol    = get_pol
+    _check_pol = _check_pol
+

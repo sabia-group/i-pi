@@ -58,6 +58,9 @@ class Beads(dobject):
             contained in the properties module.
         kstress: The total kinetic stress tensor for the system.
         rg: An array giving the radius of gyration of each atom.
+        IonsPol : an array giving the ionic polarization.
+        ElecPol : an array giving the ionic polarization.
+        TotalPol: an array giving the ionic polarization.
     """
 
     def __init__(self, natoms, nbeads):
@@ -121,8 +124,12 @@ class Beads(dobject):
         dself.q = depend_array(name="q", value=np.zeros((nbeads, 3 * natoms), float))
         dself.p = depend_array(name="p", value=np.zeros((nbeads, 3 * natoms), float))
 
-        # atomic numbers of the atoms
+        # ES: atomic numbers of the atoms
         dself.Z = depend_array(name="Z", value=np.zeros(natoms, int))
+        # ES: polarization of the beads
+        dself.IonsPol  = depend_array(name="IonsPol" , value=np.zeros((nbeads, 3 * natoms), float))
+        dself.ElecPol  = depend_array(name="ElecPol" , value=np.zeros((nbeads, 3 * natoms), float))
+        dself.TotalPol = depend_array(name="TotalPol", value=np.zeros((nbeads, 3 * natoms), float))
 
         # position and momentum of the centroid
         dself.qc = depend_array(
@@ -152,7 +159,8 @@ class Beads(dobject):
         # create proxies to access the individual beads as Atoms objects
         # TODO: ACTUALLY THIS IS ONLY USED HERE METHINK, SO PERHAPS WE COULD REMOVE IT TO DECLUTTER THE CODE.
         self._blist = [
-            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.Z, self.names))
+            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.Z, self.names)) 
+            #                        self.IonsPol[i, :], self.ElecPol[i, :], self.TotalPol[i, :]))
             for i in range(nbeads)
         ]
 
@@ -190,6 +198,9 @@ class Beads(dobject):
         newbd.p[:] = self.p[:nbeads]
         newbd.m[:] = self.m
         newbd.Z[:] = self.Z
+        newbd.IonsPol[:]  = self.IonsPol [:nbeads]
+        newbd.ElecPol[:]  = self.ElecPol [:nbeads]
+        newbd.TotalPol[:] = self.TotalPol[:nbeads]
         newbd.names[:] = self.names
         return newbd
 
@@ -362,5 +373,8 @@ class Beads(dobject):
         self._blist[index].q[:] = value.q
         self._blist[index].m[:] = value.m
         self._blist[index].Z[:] = value.Z
+        # self._blist[index].IonsPol[:]  = value.IonsPol
+        # self._blist[index].ElecPol[:]  = value.ElecPol
+        # self._blist[index].TotalPol[:] = value.TotalPol
         self._blist[index].names[:] = value.names
         
