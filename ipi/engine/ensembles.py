@@ -14,7 +14,7 @@ appropriate conserved energy quantity for the ensemble of choice.
 import numpy as np
 
 from ipi.utils.messages import warning
-from ipi.utils.depend import *
+from ipi.utils.depend import dd
 from ipi.utils.units import Constants
 from ipi.engine.thermostats import *
 from ipi.engine.barostats import *
@@ -140,9 +140,7 @@ class Ensemble(dobject):
 
         # Internal time counter
         dself.time = depend_value(name="time",value=time)
-        #self.time = time
-
-        pass
+        
 
     def copy(self):
         return Ensemble(

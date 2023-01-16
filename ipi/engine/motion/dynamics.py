@@ -595,26 +595,23 @@ class EDAIntegrator(NVEIntegrator):
 
     def __init__(self):
         super(EDAIntegrator,self).__init__()    # it does nothing
-        dself = dd(self)
-        dself.cptime = depend_value(name="cptime") # continous time of the momenta p (along the MTS for loops)
-        pass
+        dd(self).cptime = depend_value(name="cptime",value=0) # continous time of the momenta p (along the MTS for loops)
 
     def bind(self,motion):
         super(EDAIntegrator,self).bind(motion) 
-        dself = dd(self)
         # external electric field
-        dself.Efield = depend_array(
+        dd(self).Efield = depend_array(
             name="Efield",
             value=np.zeros(3, float),
             func=self.get_Efield,
-            dependencies=[dself.cptime],
+            dependencies=[dd(self).cptime],
         )
         # flag to know if this is the first step/level of the Integration procedure and if it is everything okay
-        dself._okay = depend_value(
+        dd(self)._okay = depend_value(
             name="_okay",
             value=False,
             func=self._check,
-            dependencies=[dself.ensemble.time], # this variable is update just once for each step
+            dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         )
         pass
 
