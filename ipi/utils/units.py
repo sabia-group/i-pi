@@ -372,13 +372,10 @@ UnitMap = {
         "hertz*rad": 2.4188843e-17,
         "hertz": 1.5198298e-16,
     },
-    "Efreq": {  # NB Internally, ANGULAR frequencies are used.
+    "electric-field": {  # Hartree/Bohr radius
         "": 1.00,
         "automatic": 1.00,
-        "atomic_unit": 1.00,
-        "inversecm": 4.5563353e-06,
-        "hertz*rad": 2.4188843e-17,
-        "hertz": 1.5198298e-16,
+        "atomic_unit": 1.00
     },
     "ms-momentum": {  # TODO fill up units here (mass-scaled momentum)
         "": 1.00,

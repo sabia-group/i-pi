@@ -139,8 +139,10 @@ class Ensemble(dobject):
         self.hweights = np.asarray(hweights)
 
         # Internal time counter
-        dd(self).time = depend_value(name="time")
-        self.time = time
+        dself.time = depend_value(name="time",value=time)
+        #self.time = time
+
+        pass
 
     def copy(self):
         return Ensemble(

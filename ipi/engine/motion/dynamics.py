@@ -177,7 +177,7 @@ class Dynamics(Motion):
             prng: The random number generator object which controls random number
                 generation.
         """
-
+        
         super(Dynamics, self).bind(ens, beads, nm, cell, bforce, prng, omaker)
 
         # Checks if the number of mts levels is equal to the dimensionality of the mts weights.
@@ -610,11 +610,11 @@ class EDAIntegrator(NVEIntegrator):
             dependencies=[dself.cptime],
         )
         # flag to know if this is the first step/level of the Integration procedure and if it is everything okay
-        dself._okay = depend_array(
+        dself._okay = depend_value(
             name="_okay",
             value=False,
             func=self._check,
-            dependencies=[self.ensemble.time], # this variable is update just once for each step
+            dependencies=[dself.ensemble.time], # this variable is update just once for each step
         )
         pass
 
