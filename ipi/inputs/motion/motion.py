@@ -89,7 +89,7 @@ class InputMotionBase(Input):
             InputAttribute,
             {
                 "dtype": str,
-                "help": "How atoms should be moved at each step in the simulatio. 'replay' means that a simulation is replayed from trajectories provided to i-PI.",
+                "help": "How atoms should be moved at each step in the simulatio. 'replay' means that a simulation is replayed from  provided to i-PI.",
                 "options": [
                     "vibrations",
                     "minimize",

@@ -136,6 +136,7 @@
          kinetic_md ]
       </properties>
    </output>
+   <step>2</step>
    <total_steps>10</total_steps>
    <ffsocket mode='unix' name='FHI-aims'>
       <address>exercise</address>
@@ -150,6 +151,7 @@
          <temperature>  6.33363040e-05</temperature>
          <eens>  7.77746179e-05</eens>
          <hamiltonian_weights shape='(1)'> [   1.00000000e+00 ] </hamiltonian_weights>
+         <time>  8.26827460e+00</time>
       </ensemble>
       <motion mode='dynamics'>
          <dynamics mode='eda'>
@@ -162,12 +164,12 @@
       <beads natoms='2' nbeads='1' <Z shape='(2)'> [ 12, 8 ] </Z>
 >
          <q shape='(1, 6)'>
-          [   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   5.64720962e+00,   3.26041799e+00, 
-              2.30546368e+00 ]
+          [  -3.99772045e-06,  -1.31948179e-04,  -3.15697577e-05,   5.64721569e+00,   3.26061844e+00, 
+              2.30551164e+00 ]
          </q>
          <p shape='(1, 6)'>
-          [  -2.14207325e-02,  -7.07009330e-01,  -1.69158193e-01,   2.14207325e-02,   7.07009330e-01, 
-              1.69158193e-01 ]
+          [  -2.14244185e-02,  -7.07131867e-01,  -1.69187476e-01,   2.14244185e-02,   7.07131867e-01, 
+              1.69187476e-01 ]
          </p>
          <m shape='(2)'> [   4.43053050e+04,   2.91651223e+04 ] </m>
          <names shape='(2)'> [ Mg, O ] </names>

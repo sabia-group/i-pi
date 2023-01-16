@@ -8,9 +8,9 @@
   </ffsocket>
 
   <output prefix='MgO'>
-    <!--trajectory filename='pos' cell_units='angstrom'>positions{angstrom}</trajectory-->
-    <!--trajectory stride='2' filename='vel'>velocities</trajectory-->
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, potential, kinetic_md ] </properties>
+    <trajectory filename='polarization'>polarization</trajectory>
+    <trajectory filename='position'>positions</trajectory>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, potential, kinetic_md, Efield ] </properties>
   </output>
 
   <prng>
@@ -32,9 +32,9 @@
       <dynamics mode='eda'>
         <timestep units='femtosecond'>0.1</timestep>
         <BEC mode='file'> BEC.scalar.csv </BEC>  <!-- how to compute/read the BEC tensors -->
-        <Eamp > [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+        <Eamp units='atomic_unit'> [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
         <!-- phase units="rad" > 0.0 </phase-->  <!-- units: rad, deg -->
-        <Efreq > 0.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
+        <Efreq units='hertz'> 0.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
       </dynamics>
     </motion>
 

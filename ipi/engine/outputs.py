@@ -525,6 +525,10 @@ class TrajectoryOutput(BaseOutput):
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names
             fatom.q[:] = data[b]
+        elif key == "polarization":
+            fatom = Atoms(3)
+            fatom.names[:] = ["ions","elec","total"]
+            fatom.q[:] = data[b]
         else:
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names

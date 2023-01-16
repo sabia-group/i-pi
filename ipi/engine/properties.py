@@ -248,12 +248,12 @@ class Properties(dobject):
                 "func": (lambda: np.asarray(h2abc_deg(self.cell.h))),
             },
             # ES
-            # "Efield": {
-            #     "dimension": "eV/A",
-            #     "help": "The applied external electric field. Returns its 3 cartesian components in the form [Ex, Ey, Ez].",
-            #     "size": 3,
-            #     "func": (lambda: self.tensor2vec(self.cell.h)),
-            # },
+            "Efield": {
+                "dimension": "atomic_unit",
+                "help": "The external applied electric field (cartesian coordinates).",
+                "size": 3,
+                "func": (lambda: np.asarray(self.motion.integrator.Efield) ),
+            },
             "conserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved energy quantity per bead.",
@@ -2616,6 +2616,13 @@ class Trajectories(dobject):
                 "dimension": "momentum",
                 "help": "The momentum trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",
                 "func": (lambda: 1.0 * self.system.beads.p),
+            },
+            # ES
+            "polarization": {
+                "dimension": "polarization",
+                "help": "The polarization expressed in cartesian coordinates.",
+                "size": 9,
+                "func": (lambda: self.system.motion.integrator.get_pol(what="all")),
             },
             "forces": {
                 "dimension": "force",

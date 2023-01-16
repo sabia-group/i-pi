@@ -373,9 +373,18 @@ UnitMap = {
         "hertz": 1.5198298e-16,
     },
     "electric-field": {  # Hartree/Bohr radius
+        # 1Hartree = 27.2113862459 eV 
+        #    1Bohr = 0.5291772109  A
         "": 1.00,
         "automatic": 1.00,
-        "atomic_unit": 1.00
+        "atomic_unit": 1.00,
+        "eV/A": 0.019446903811441516 #0.5291772109/27.2113862459
+    },
+    "polarization": {  # electron charge/Bohr radius^2
+        "": 1.00,
+        "automatic": 1.00,
+        "atomic_unit": 1.00,
+        "C/m^2": 57.214766
     },
     "ms-momentum": {  # TODO fill up units here (mass-scaled momentum)
         "": 1.00,

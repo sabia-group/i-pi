@@ -282,9 +282,9 @@ class Dynamics(Motion):
         self.ensemble.time += self.dt  # increments internal time
         
         # ES: check that the times are identical 
-        # this check should never go wrong ... if it does, read the description of _ckeck_time
+        # this check should never go wrong ... if it does, read the description of _check_time
         if hasattr(self.integrator, '_check_time'):
-            self.integrator._ckeck_time() 
+            self.integrator._check_time() 
 
 
 class DummyIntegrator(dobject):
@@ -589,9 +589,21 @@ class EDAIntegrator(NVEIntegrator):
     # self.forces.extras = {'polarization': [{...}], 'raw': ['{ "polarization":{ "...0.69141]}}']}
     
     # ES: there is a polarization dict for each bead
-    # self.forces.extras['polarization'][i] = {'total'    : [0.67751 , 1.05147, 0.35179 ], \
-    #                                          'electrons': [-0.57454, 0.04825, -1.02842], \
-    #                                          'ions'     : [-0.01654, 0.27079, -0.69141]}
+    # self.forces.extras['polarization'][i] = {'total': [0.67751 , 1.05147, 0.35179 ], \
+    #                                          'elec' : [-0.57454, 0.04825, -1.02842], \
+    #                                          'ions' : [-0.01654, 0.27079, -0.69141]}
+
+    # the conversion factor for the polarization from C/m^2 to atomic unit
+    # 1e    = 1.602176634×10−19 C
+    # 1Bohr = 5.291772109×10−11 m
+    # C/m^2 = (5.291772109×10−11)^2/1.602176634×10−19 = 1.7478E-2 
+    from_Cm2_to_atomic = 1.7478E-2 
+    from_atomic_to_Cm2 = 57.214766
+
+    # threshold for the comparison between the ionic polarization computed by the driven and the one computed by i-pi
+    # pay attention that they could be numerically different but anyway equivalent due to a different branch mapping
+    thr_pol_comparison = 1.0
+    
 
     def __init__(self):
         super(EDAIntegrator,self).__init__()    # it does nothing
@@ -605,6 +617,20 @@ class EDAIntegrator(NVEIntegrator):
             value=np.zeros(3, float),
             func=self.get_Efield,
             dependencies=[dd(self).cptime],
+        )
+        # EDA enthalpy = volume x PxE
+        dd(self).EDAenergy = depend_value(
+            name="EDAenergy",
+            value=0.0,
+            func=self.get_EDAenergy,
+            dependencies=[dd(self).Efield], # aggiungo l'energia del sistema
+        )
+        # electric enthalpy = E - volume x PxE
+        dd(self).Eenthalpy = depend_value(
+            name="Eenthalpy",
+            value=0.0,
+            func=self.get_Eenthalpy,
+            dependencies=[dd(self).EDAenergy], # aggiungo l'energia del sistema
         )
         # flag to know if this is the first step/level of the Integration procedure and if it is everything okay
         dd(self)._okay = depend_value(
@@ -631,22 +657,47 @@ class EDAIntegrator(NVEIntegrator):
         """Velocity Verlet momentum propagator."""
         # check that everything is okay (but just once for each step)
         # and if it is so, go on!
-        if self._okay:                   
+        okay = self._okay
+        if okay:                   
             super(EDAIntegrator,self).pstep(level)   # update momenta using the NVEIntegrator (i.e. add the forces)
             self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
             self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
             self.cptime  += self.pdt[level]          # update cptime -> Efield will update automatically, ready for the next step/level
+        else : 
+            warning("Something not okay in EDAIntegrator.pstep",verbosity.low)
         pass
 
     def _check(self):
         """Check that everything is okay before computing the external electric field contribution to the forces."""
 
+        self._check_pol()
+
+        # the ionic polarization is straighforward
+        # check if its value is correct
+        N = self.beads.nbeads
+        volume = self.ensemble.cell.V # Bohr^3
+        Z = self.beads.ZtoZ3().reshape((-1,3))
+        for i in range(N):
+            q = self.beads[i].q.reshape((-1,3))
+            ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
+            driver_pol = self.forces.extras["polarization"][i]["ions"]
+            if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
+                warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
+                        "\n driver (atomic units):"+str(driver_pol)+\
+                        "\n   i-pi (atomic units):"+str(ions_pol)+\
+                        "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
+
+        return True
+
+    def _check_pol(self):
+        """Check that the polarization is correctly formatted."""
+        # check whether the driver returned to i-pi the polarization values
+
         msg = "Error in EDAIntegrator"
 
-        # check whether the driver returned to i-pi the polarization values
         if "polarization" not in self.forces.extras:
             raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in EDAIntegrator)")
- 
+
         N = self.beads.nbeads
         # check whether the number of polarization values is correct, i.e. equal to the number of beads 
         # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
@@ -654,33 +705,19 @@ class EDAIntegrator(NVEIntegrator):
             raise ValueError(msg+": number of polarization values (accessed in EDAIntegrator) should be equal to number of beads")
 
         # check whether the total, electronic, and ionic polarizations are all available
-        for word in ["total","ions","electrons"]:
+        for word in ["total","ions","elec"]:
             if not np.all([word in self.forces.extras["polarization"][i] for i in range(N)]):
                 raise ValueError(msg+": "+word+" polarization not present for all the beads")
 
         # check whether the polarizations (total, electronic, and ionic) are identically vanishing
         from numpy import linalg as LA
-        for word in ["total","ions","electrons"]:
+        for word in ["total","ions","elec"]:
             if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
                 warning(word+" polarization is vanishing for all the beads",verbosity.high)
-
-        # the ionic polarization is straighforward
-        # check if its value is correct
-        volume = self.ensemble.cell.V # Bohr^3
-        Z = self.beads.ZtoZ3().reshape((-1,3))
-        for i in range(N):
-            q = self.beads[i].q.reshape((-1,3))
-            ions_pol = Constants.e /volume * np.sum( Z * q , axis=0) * 4.486318 # conversion from C/m^2 to atomic units (e/a_0^2)
-            driver_pol = self.forces.extras["polarization"][i]["ions"]
-            if not np.all( ions_pol == driver_pol ) :
-                warning("ions polarization returned from the driver does not match the one compute din ipi:"+ \
-                        "\n driver:"+str(driver_pol)+\
-                        "\n   i-pi:"+str(ions_pol)+\
-                        "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
-
         return True
 
-    def _ckeck_time(self):
+
+    def _check_time(self):
         """Check that self.cptime is equal to self.ensemble.time.
         Pay attention that this is not always true all over the simulation!
         These variable have to be equal only before and after the Integration procedure.
@@ -690,7 +727,7 @@ class EDAIntegrator(NVEIntegrator):
         This method should always return True, but perhaps future code changes could "break" this.
         Better to be sure that everythin is fine :) """
         if self.cptime != self.ensemble.time:
-            raise ValueError("Error in EDAIntegrator._ckeck_time: the 'continous' time of EDAIntegrator does not match"+\
+            raise ValueError("Error in EDAIntegrator._check_time: the 'continous' time of EDAIntegrator does not match"+\
                 "Ensemble.time.\nThis seems to be a coding error, not due to wrong input parameters."+\
                 "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
                 "And then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
@@ -699,6 +736,37 @@ class EDAIntegrator(NVEIntegrator):
     def get_Efield(self):
         """Get the value of the external electric field"""
         return self.Eamp * np.sin( self.Efreq * self.cptime )
+
+    def get_Eenthalpy(self,bead=None):
+        pass
+
+    def get_pol(self,what,bead=None):
+        """Return the polarization vector"""
+        self._check_pol()
+
+        # check that bead is a correct value
+        N = self.beads.nbeads
+        if bead is not None:
+            if bead < 0:
+                raise ValueError("Error in EDAIntegrator.get_polarization: 'beads' is negative") 
+            if bead >= N :
+                raise ValueError("Error in EDAIntegrator.get_polarization: 'beads' is greater than the number of beads") 
+
+        # return the polarization
+        if what in ["total","elec","ions"]:
+            pol = np.asarray([self.forces.extras["polarization"][i][what] for i in range(N)])
+            return pol if bead is None else pol[bead] 
+        elif what == "all":
+            # ES: pay attention, these following have to be in the same order to line 530 in /ipi/engine/outputs.py
+            pol = [ np.asarray(list(self.forces.extras["polarization"][i]["ions"])+\
+                               list(self.forces.extras["polarization"][i]["elec"])+\
+                               list(self.forces.extras["polarization"][i]["total"])) for i in range(N)]
+            return pol if bead is None else pol[bead] 
+        else:
+            raise ValueError("Error in EDAIntegrator.get_polarization: '"+what+"' is not a 'polarization' key") 
+
+    def get_EDAenergy(self):
+        return self.ensemble.cell.V * self.Efield @ self.polarization
 
     def _ions_forces(self,level=0):
         """Compute the contribution to the forces due to the ionic polarization"""
