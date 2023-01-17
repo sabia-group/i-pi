@@ -239,11 +239,19 @@ class Ensemble(dobject):
         for k in xlkin:
             self.add_xlkin(k)
         
-        # ES: polarization(s)
-        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self.get_pol(what="ions") ,value=np.zeros(3,dtype=float))
-        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self.get_pol(what="elec") ,value=np.zeros(3,dtype=float))
-        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self.get_pol(what="total"),value=np.zeros(3,dtype=float))
+        # ES: polarization(s) for each beads
+        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self.get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self.get_pol(what="elec") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self.get_pol(what="total"),value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
 
+        # ES: Ensemble polarization(s): the average over the bead of the previous quantities
+        dself.EnsIonsPol  = depend_array(name="EnsIonsPol" , func=lambda:self.get_enspol(what="ions") ,value=np.zeros(3,dtype=float),dependencies=[dself.IonsPol ,dself.time])
+        dself.EnsElecPol  = depend_array(name="EnsElecPol" , func=lambda:self.get_enspol(what="elec") ,value=np.zeros(3,dtype=float),dependencies=[dself.ElecPol ,dself.time])
+        dself.EnsTotalPol = depend_array(name="EnsTotalPol", func=lambda:self.get_enspol(what="total"),value=np.zeros(3,dtype=float),dependencies=[dself.TotalPol,dself.time])
+
+        # dself.EDAenergy = depend_array(name="EDAenergy", func=self.get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
+        # dself.Eenthalpy = depend_array(name="Eenthalpy", func=self.get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        
     def add_econs(self, e):
         self._elist.append(e)
         dd(self).econs.add_dependency(e)
@@ -256,8 +264,12 @@ class Ensemble(dobject):
         self._xlkin.append(k)
         dd(self).lpens.add_dependency(k)
 
-    def get_enthalpy(self):
-        return self.econs - self.cell.V * self.TotalPol @ 
+    def get_EDAenergy(self):
+        VEP = self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
+        return VEP
+
+    def get_Eenthalpy(self):
+        return self.econs - self.EDAenergy
 
     def get_econs(self):
         """Calculates the conserved energy quantity for constant energy
@@ -265,7 +277,7 @@ class Ensemble(dobject):
         """
 
         eham = self.nm.vspring + self.nm.kin + self.forces.pot
-        Ipol = self.IonsPol #ES: it woooorks!
+        #Ipol = self.IonsPol #ES: it woooorks!
 
         eham += self.bias.pot  # bias
 
@@ -293,4 +305,11 @@ class Ensemble(dobject):
     # ES
     get_pol    = get_pol
     _check_pol = _check_pol
+
+    def get_enspol(self,what=None):
+        """Return the ensemble average of the polarization(s)"""
+        pol = self.get_pol(what)
+        enspol = np.asarray(pol).mean(axis=0)
+        return enspol
+
 

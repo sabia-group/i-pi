@@ -10,7 +10,7 @@
   <output prefix='MgO'>
     <trajectory filename='polarization'>polarization</trajectory>
     <trajectory filename='position'>positions</trajectory>
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, potential, kinetic_md, Efield ] </properties>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, Efield, ionspol, elecpol, totalpol, EDAenergy, Eenthalpy ] </properties>
   </output>
 
   <prng>
@@ -26,7 +26,9 @@
       <cell mode="abcABC" units="angstrom">[ 2.988374678651, 2.988374678651, 2.988374678651, 60, 60, 60 ]</cell>
     </initialize>
 
-    <ensemble> <temperature units='kelvin'>20</temperature> </ensemble>
+    <ensemble>
+      <temperature units='kelvin'>20</temperature>
+    </ensemble>
 
     <motion mode='dynamics'>
       <dynamics mode='eda'>

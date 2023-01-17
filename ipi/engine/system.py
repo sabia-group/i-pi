@@ -11,6 +11,7 @@ forcefields which govern the interaction potential.
 
 
 import threading
+import numpy as np
 
 from ipi.utils.depend import *
 from ipi.utils.units import *
@@ -98,7 +99,11 @@ class System(dobject):
             open_paths=self.nm.open_paths,
             output_maker=simul.output_maker,
         )
+
+        info(" # Binding the normal modes ", verbosity.low)
         self.nm.bind(self.ensemble, self.motion, beads=self.beads, forces=self.forces)
+
+        info(" # Binding the ensemble", verbosity.low)
         self.ensemble.bind(
             self.beads,
             self.nm,
@@ -107,6 +112,8 @@ class System(dobject):
             self.simul.fflist,
             simul.output_maker,
         )
+
+        info(" # Binding the motion integrator", verbosity.low)
         self.motion.bind(
             self.ensemble,
             self.beads,
@@ -116,6 +123,16 @@ class System(dobject):
             self.prng,
             simul.output_maker,
         )
+
+        # ES: this badly coded, but it works
+        if hasattr(self.motion.integrator,"Efield"):
+            dd(self.ensemble).Efield = depend_array(name="Efield",value=np.zeros(3, float))
+            dpipe(dfrom=dd(self.motion.integrator).Efield,dto=dd(self.ensemble).Efield)
+
+            dself = dd(self.ensemble)
+            dself.EDAenergy = depend_value(name="EDAenergy", func=self.ensemble.get_EDAenergy,value=0.0,dependencies=[dd(self.ensemble.cell).V,dself.EnsTotalPol,dself.Efield])
+            dself.Eenthalpy = depend_value(name="Eenthalpy", func=self.ensemble.get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+
 
         dpipe(dd(self.nm).omegan2, dd(self.forces).omegan2)
 

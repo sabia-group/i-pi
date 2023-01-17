@@ -3,3 +3,53 @@
     ions -0.00000e+00 -0.00000e+00  0.00000e+00
     elec  0.00000e+00  0.00000e+00 -0.00000e+00
    total  0.00000e+00  0.00000e+00  0.00000e+00
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           1  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -1.00000e-05  0.00000e+00  0.00000e+00
+    elec  3.90000e-04 -1.40000e-04 -3.00000e-05
+   total  3.80000e-04 -1.40000e-04 -3.00000e-05
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           2  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -5.00000e-05  1.00000e-05  0.00000e+00
+    elec  1.58000e-03 -2.90000e-04 -7.00000e-05
+   total  1.53000e-03 -2.80000e-04 -7.00000e-05
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           3  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -1.10000e-04  1.00000e-05  0.00000e+00
+    elec  3.57000e-03 -4.40000e-04 -1.00000e-04
+   total  3.46000e-03 -4.20000e-04 -1.00000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           4  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -2.00000e-04  2.00000e-05  0.00000e+00
+    elec  6.35000e-03 -5.80000e-04 -1.40000e-04
+   total  6.16000e-03 -5.60000e-04 -1.30000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           5  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -3.10000e-04  2.00000e-05  1.00000e-05
+    elec  9.94000e-03 -7.30000e-04 -1.70000e-04
+   total  9.63000e-03 -7.10000e-04 -1.70000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           6  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -4.50000e-04  3.00000e-05  1.00000e-05
+    elec  1.43200e-02 -8.70000e-04 -2.10000e-04
+   total  1.38800e-02 -8.50000e-04 -2.00000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           7  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -6.10000e-04  3.00000e-05  1.00000e-05
+    elec  1.95100e-02 -1.02000e-03 -2.40000e-04
+   total  1.89000e-02 -9.90000e-04 -2.40000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           8  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -8.00000e-04  4.00000e-05  1.00000e-05
+    elec  2.55100e-02 -1.17000e-03 -2.80000e-04
+   total  2.47200e-02 -1.13000e-03 -2.70000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           9  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -1.01000e-03  4.00000e-05  1.00000e-05
+    elec  3.23300e-02 -1.31000e-03 -3.10000e-04
+   total  3.13300e-02 -1.27000e-03 -3.00000e-04
+3
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:          10  Bead:       0 polarization{atomic_unit}  cell{atomic_unit}
+    ions -1.24000e-03  5.00000e-05  1.00000e-05
+    elec  3.99800e-02 -1.46000e-03 -3.50000e-04
+   total  3.87300e-02 -1.42000e-03 -3.40000e-04

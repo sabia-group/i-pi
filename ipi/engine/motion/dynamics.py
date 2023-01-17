@@ -603,7 +603,8 @@ class EDAIntegrator(NVEIntegrator):
 
     # threshold for the comparison between the ionic polarization computed by the driven and the one computed by i-pi
     # pay attention that they could be numerically different but anyway equivalent due to a different branch mapping
-    thr_pol_comparison = 1.0
+    thr_pol_comparison  = 1.0
+    thr_time_comparison = 0.1
 
     get_pol    = get_pol
     _check_pol = _check_pol
@@ -622,20 +623,20 @@ class EDAIntegrator(NVEIntegrator):
             func=self.get_Efield,
             dependencies=[dd(self).cptime],
         )
-        # EDA enthalpy = volume x PxE
-        dd(self).EDAenergy = depend_value(
-            name="EDAenergy",
-            value=0.0,
-            func=self.get_EDAenergy,
-            dependencies=[dd(self).Efield], # aggiungo l'energia del sistema
-        )
-        # electric enthalpy = E - volume x PxE
-        dd(self).Eenthalpy = depend_value(
-            name="Eenthalpy",
-            value=0.0,
-            func=self.get_Eenthalpy,
-            dependencies=[dd(self).EDAenergy], # aggiungo l'energia del sistema
-        )
+        # # EDA enthalpy = volume x PxE
+        # dd(self).EDAenergy = depend_value(
+        #     name="EDAenergy",
+        #     value=0.0,
+        #     func=self.get_EDAenergy,
+        #     dependencies=[dd(self).Efield], # aggiungo l'energia del sistema
+        # )
+        # # electric enthalpy = E - volume x PxE
+        # dd(self).Eenthalpy = depend_value(
+        #     name="Eenthalpy",
+        #     value=0.0,
+        #     func=self.get_Eenthalpy,
+        #     dependencies=[dd(self).EDAenergy], # aggiungo l'energia del sistema
+        # )
         # flag to know if this is the first step/level of the Integration procedure and if it is everything okay
         dd(self)._okay = depend_value(
             name="_okay",
@@ -730,19 +731,21 @@ class EDAIntegrator(NVEIntegrator):
 
         This method should always return True, but perhaps future code changes could "break" this.
         Better to be sure that everythin is fine :) """
-        if self.cptime != self.ensemble.time:
+        if abs(self.cptime - self.ensemble.time) > self.thr_time_comparison:
             raise ValueError("Error in EDAIntegrator._check_time: the 'continous' time of EDAIntegrator does not match"+\
-                "Ensemble.time.\nThis seems to be a coding error, not due to wrong input parameters."+\
+                "Ensemble.time (up to a threshold).\nThis seems to be a coding error, not due to wrong input parameters."+\
                 "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
-                "And then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
+                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
         return True
 
     def get_Efield(self):
         """Get the value of the external electric field"""
-        return self.Eamp * np.sin( self.Efreq * self.cptime )
+        return self.Eamp * np.cos( self.Efreq * self.cptime)
 
-    def get_Eenthalpy(self,bead=None):
-        pass
+    
+
+    # def get_Eenthalpy(self,bead=None):
+    #     pass
 
     # def get_pol(self,what,bead=None):
     #     """Return the polarization vector"""
@@ -769,8 +772,8 @@ class EDAIntegrator(NVEIntegrator):
     #     else:
     #         raise ValueError("Error in EDAIntegrator.get_polarization: '"+what+"' is not a 'polarization' key") 
 
-    def get_EDAenergy(self):
-        return self.ensemble.cell.V * self.Efield @ self.polarization
+    # def get_EDAenergy(self):
+    #     return self.ensemble.cell.V * self.Efield @ self.polarization
 
     def _ions_forces(self,level=0):
         """Compute the contribution to the forces due to the ionic polarization"""

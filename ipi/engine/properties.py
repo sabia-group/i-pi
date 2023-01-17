@@ -254,6 +254,35 @@ class Properties(dobject):
                 "size": 3,
                 "func": (lambda: np.asarray(self.motion.integrator.Efield) ),
             },
+            "ionspol": {
+                "dimension": "atomic_unit",
+                "help": "The (ensemble averaged) ionic polarization (cartesian coordinates).",
+                "size": 3,
+                "func": (lambda: self.ensemble.EnsIonsPol ),
+            },
+            "elecpol": {
+                "dimension": "atomic_unit",
+                "help": "The (ensemble averaged) electronic polarization (cartesian coordinates).",
+                "size": 3,
+                "func": (lambda: self.ensemble.EnsElecPol ),
+            },
+            "totalpol": {
+                "dimension": "atomic_unit",
+                "help": "The (ensemble averaged) total polarization (cartesian coordinates).",
+                "size": 3,
+                "func": (lambda: self.ensemble.EnsTotalPol ),
+            },
+            "Eenthalpy": {
+                "dimension": "atomic_unit",
+                "help": "The electric enthalpy.",
+                "func": (lambda: self.ensemble.Eenthalpy ),
+            },
+            "EDAenergy": {
+                "dimension": "atomic_unit",
+                "help": "The EDA energy contribution.",
+                "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
+                "func": (lambda: self.ensemble.EDAenergy ),
+            },
             "conserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved energy quantity per bead.",
