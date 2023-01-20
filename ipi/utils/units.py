@@ -364,13 +364,15 @@ UnitMap = {
         "kelvin": 3.1668152e-06,
     },
     "time": {"": 1.00, "automatic": 1.00, "atomic_unit": 1.00, "second": 4.1341373e16},
-    "frequency": {  # NB Internally, ANGULAR frequencies are used.
+    "frequency": {  # NB Internally, ANGULAR frequencies are used (units of har / Hartree energy)
         "": 1.00,
         "automatic": 1.00,
         "atomic_unit": 1.00,
         "inversecm": 4.5563353e-06,
         "hertz*rad": 2.4188843e-17,
         "hertz": 1.5198298e-16,
+        "hz": 1.5198298e-16,
+        "thz": 1.5198298e-4,
     },
     "electric-field": {  # Hartree/Bohr radius
         # 1Hartree = 27.2113862459 eV 
@@ -378,13 +380,13 @@ UnitMap = {
         "": 1.00,
         "automatic": 1.00,
         "atomic_unit": 1.00,
-        "eV/A": 0.019446903811441516 #0.5291772109/27.2113862459
+        "ev/a": 0.019446903811441516 #0.5291772109/27.2113862459
     },
     "polarization": {  # electron charge/Bohr radius^2
         "": 1.00,
         "automatic": 1.00,
         "atomic_unit": 1.00,
-        "C/m^2": 57.214766
+        "c/m^2": 57.214766
     },
     "ms-momentum": {  # TODO fill up units here (mass-scaled momentum)
         "": 1.00,
