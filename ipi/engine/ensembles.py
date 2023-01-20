@@ -13,14 +13,14 @@ appropriate conserved energy quantity for the ensemble of choice.
 
 import numpy as np
 
-from ipi.utils.messages import warning
+from ipi.utils.messages import warning,verbosity
 from ipi.utils.depend import dd
 from ipi.utils.units import Constants
 from ipi.engine.thermostats import *
 from ipi.engine.barostats import *
 from ipi.engine.motion.alchemy import *
 from ipi.engine.forces import Forces, ScaledForceComponent
-from ipi.engine.motion.polarization import *
+#from ipi.engine.motion.polarization import *
 
 __all__ = ["Ensemble", "ensemble_swap"]
 
@@ -83,6 +83,9 @@ class Ensemble(dobject):
         bweights=None,
         hweights=None,
         time=0.0,
+        Eamp=None,
+        Efreq=None,
+        BEC=None
     ):
         """Initialises Ensemble.
 
@@ -104,8 +107,6 @@ class Ensemble(dobject):
             self.stressext = np.reshape(np.asarray(stressext), (3, 3))
         else:
             self.stressext = -1.0
-
-        # ES: devo aggiungere Efield qui
 
         dself.pext = depend_value(name="pext")
         if pext is not None:
@@ -142,6 +143,11 @@ class Ensemble(dobject):
 
         # Internal time counter
         dself.time = depend_value(name="time",value=time)
+
+        # ES: we do I need to specify default values here too?
+        dself.Eamp  = depend_array(name="Eamp" ,value=Eamp  if Eamp  is not None else np.zeros(3))
+        dself.Efreq = depend_value(name="Efreq",value=Efreq if Efreq is not None else 0 )
+        dself.BEC   = depend_array(name="BEC"  ,value=BEC   if BEC   is not None else np.zeros(0))
         
 
     def copy(self):
@@ -238,19 +244,22 @@ class Ensemble(dobject):
         self._xlkin = []
         for k in xlkin:
             self.add_xlkin(k)
+
+        dself.cptime = depend_value(name="cptime",value=0)
+        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.Eamp,dself.Efreq,dself.cptime])
         
         # ES: polarization(s) for each beads
-        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self.get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
-        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self.get_pol(what="elec") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
-        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self.get_pol(what="total"),value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self._get_pol(what="elec") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self._get_pol(what="total"),value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
 
         # ES: Ensemble polarization(s): the average over the bead of the previous quantities
-        dself.EnsIonsPol  = depend_array(name="EnsIonsPol" , func=lambda:self.get_enspol(what="ions") ,value=np.zeros(3,dtype=float),dependencies=[dself.IonsPol ,dself.time])
-        dself.EnsElecPol  = depend_array(name="EnsElecPol" , func=lambda:self.get_enspol(what="elec") ,value=np.zeros(3,dtype=float),dependencies=[dself.ElecPol ,dself.time])
-        dself.EnsTotalPol = depend_array(name="EnsTotalPol", func=lambda:self.get_enspol(what="total"),value=np.zeros(3,dtype=float),dependencies=[dself.TotalPol,dself.time])
+        dself.EnsIonsPol  = depend_array(name="EnsIonsPol" , func=lambda:self._get_enspol(what="ions") ,value=np.zeros(3,dtype=float),dependencies=[dself.IonsPol ,dself.time])
+        dself.EnsElecPol  = depend_array(name="EnsElecPol" , func=lambda:self._get_enspol(what="elec") ,value=np.zeros(3,dtype=float),dependencies=[dself.ElecPol ,dself.time])
+        dself.EnsTotalPol = depend_array(name="EnsTotalPol", func=lambda:self._get_enspol(what="total"),value=np.zeros(3,dtype=float),dependencies=[dself.TotalPol,dself.time])
 
-        # dself.EDAenergy = depend_array(name="EDAenergy", func=self.get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
-        # dself.Eenthalpy = depend_array(name="Eenthalpy", func=self.get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
+        dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
         
     def add_econs(self, e):
         self._elist.append(e)
@@ -263,13 +272,6 @@ class Ensemble(dobject):
     def add_xlkin(self, k):
         self._xlkin.append(k)
         dd(self).lpens.add_dependency(k)
-
-    def get_EDAenergy(self):
-        VEP = self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
-        return VEP
-
-    def get_Eenthalpy(self):
-        return self.econs - self.EDAenergy
 
     def get_econs(self):
         """Calculates the conserved energy quantity for constant energy
@@ -302,14 +304,109 @@ class Ensemble(dobject):
         lpens *= -1.0 / (Constants.kb * self.temp * self.beads.nbeads)
         return lpens
 
-    # ES
-    get_pol    = get_pol
-    _check_pol = _check_pol
+    def _get_EDAenergy(self):
+        VEP = self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
+        return VEP
 
-    def get_enspol(self,what=None):
+    def _get_Eenthalpy(self):
+        return self.econs - self.EDAenergy
+
+    def _get_enspol(self,what=None):
         """Return the ensemble average of the polarization(s)"""
-        pol = self.get_pol(what)
+        pol = self._get_pol(what)
         enspol = np.asarray(pol).mean(axis=0)
         return enspol
+
+    def _get_Efield(self):
+        """Get the value of the external electric field"""
+        E = self.Eamp * np.cos( self.Efreq * self.cptime)
+        return E
+
+    def _get_BEC(self):
+        """Return the BEC tensors.
+        The BEC tensor are stored in a compact form.
+        This method trasform the BEC tensors into another data structure, suitable for computation.
+        A lambda function is also returned to peform fast matrix multiplication.
+        """
+        # one day this method will be (re)coded again from scratch, and perhaps the 'level' will be used
+
+        N = len(self.BEC)      # lenght of the BEC array
+        Na = self.beads.natoms # number of atoms
+
+        if N == Na:     # scalar BEC
+            Z = np.zeros((Na,3))
+            for i in range(Na):
+                Z[i].fill(self.BEC[i])
+            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+
+        elif N == 3*Na: # diagonal BEC
+            Z = np.zeros((Na,3))
+            temp = self.BEC.reshape((Na,3))
+            for i in range(Na):
+                Z[i,:] = temp[i]
+            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+        
+        elif N == 9*Na: # all-components BEC
+            Z = np.zeros((Na,3,3))
+            temp = self.BEC.reshape((Na,3,3))
+            for i in range(Na):
+                Z[i,:,:] = temp[i,:,:]
+            return Z, lambda a,b : a@b # rows-by-columns (matrix) multplication (all the elements have been allocated)
+
+        else :
+            raise ValueError("BEC tensor with wrong size!")
+
+    def _get_pol(self,what,bead=None):
+        """Return the polarization vector of all the beads as a list of np.array"""
+        self._check_pol()
+
+        # check that bead is a correct value
+        N = self.beads.nbeads
+        if bead is not None:
+            if bead < 0:
+                raise ValueError("Error in get_pol: 'beads' is negative") 
+            if bead >= N :
+                raise ValueError("Error in get_pol: 'beads' is greater than the number of beads") 
+
+        # return the polarization
+        if what in ["total","elec","ions"]:
+            pol = [self.forces.extras["polarization"][i][what] for i in range(N)]
+            return pol if bead is None else pol[bead] 
+        elif what == "all":
+            # ES: pay attention, these following have to be in the same order to line 530 in /ipi/engine/outputs.py
+            pol = [ np.asarray(list(self.forces.extras["polarization"][i]["ions"])+\
+                                list(self.forces.extras["polarization"][i]["elec"])+\
+                                list(self.forces.extras["polarization"][i]["total"])) for i in range(N)]
+            return pol if bead is None else pol[bead] 
+        else:
+            raise ValueError("Error in get_pol: '"+what+"' is not a 'polarization' key") 
+        
+
+    def _check_pol(self):
+        """Check that the polarization is correctly formatted."""
+        # check whether the driver returned to i-pi the polarization values
+
+        msg = "Error in _check_pol"
+
+        if "polarization" not in self.forces.extras:
+            raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)")
+
+        N = self.beads.nbeads
+        # check whether the number of polarization values is correct, i.e. equal to the number of beads 
+        # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
+        if len(self.forces.extras["polarization"]) != N:
+            raise ValueError(msg+": number of polarization values (accessed in _check_pol) should be equal to number of beads")
+
+        # check whether the total, electronic, and ionic polarizations are all available
+        for word in ["total","ions","elec"]:
+            if not np.all([word in self.forces.extras["polarization"][i] for i in range(N)]):
+                raise ValueError(msg+": "+word+" polarization not present for all the beads")
+
+        # check whether the polarizations (total, electronic, and ionic) are identically vanishing
+        from numpy import linalg as LA
+        for word in ["total","ions","elec"]:
+            if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
+                warning(word+" polarization is vanishing for all the beads",verbosity.high)
+        return True
 
 

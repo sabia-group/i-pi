@@ -3,7 +3,7 @@
   <total_steps>10</total_steps>
 
   <ffsocket mode='unix' name='FHI-aims' pbc='True'>
-    <address>exercise</address>
+    <address>MgO</address>
     <latency>1e-3</latency>
   </ffsocket>
 
@@ -11,6 +11,7 @@
     <trajectory filename='polarization'>polarization</trajectory>
     <trajectory filename='position'>positions</trajectory>
     <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, Efield, ionspol, elecpol, totalpol, EDAenergy, Eenthalpy ] </properties>
+    <!--properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties-->
   </output>
 
   <prng>
@@ -28,15 +29,15 @@
 
     <ensemble>
       <temperature units='kelvin'>20</temperature>
+      <BEC mode='file'> BEC.scalar.csv </BEC>  <!-- how to compute/read the BEC tensors -->
+      <Eamp units='eV/A'> [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+      <!-- phase units="rad" > 0.0 </phase-->  <!-- units: rad, deg -->
+      <Efreq units='THz'> 1.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
     </ensemble>
 
     <motion mode='dynamics'>
-      <dynamics mode='eda'>
+      <dynamics mode='eda-nve'>
         <timestep units='femtosecond'>0.1</timestep>
-        <BEC mode='file'> BEC.scalar.csv </BEC>  <!-- how to compute/read the BEC tensors -->
-        <Eamp units='atomic_unit'> [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
-        <!-- phase units="rad" > 0.0 </phase-->  <!-- units: rad, deg -->
-        <Efreq units='hertz'> 0.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
       </dynamics>
     </motion>
 

@@ -252,19 +252,19 @@ class Properties(dobject):
                 "dimension": "atomic_unit",
                 "help": "The external applied electric field (cartesian coordinates).",
                 "size": 3,
-                "func": (lambda: np.asarray(self.motion.integrator.Efield) ),
+                "func": (lambda: self.ensemble.Efield),
             },
             "ionspol": {
                 "dimension": "atomic_unit",
                 "help": "The (ensemble averaged) ionic polarization (cartesian coordinates).",
                 "size": 3,
-                "func": (lambda: self.ensemble.EnsIonsPol ),
+                "func": (lambda: self.ensemble.EnsIonsPol),
             },
             "elecpol": {
                 "dimension": "atomic_unit",
                 "help": "The (ensemble averaged) electronic polarization (cartesian coordinates).",
                 "size": 3,
-                "func": (lambda: self.ensemble.EnsElecPol ),
+                "func": (lambda: self.ensemble.EnsElecPol),
             },
             "totalpol": {
                 "dimension": "atomic_unit",
@@ -275,7 +275,7 @@ class Properties(dobject):
             "Eenthalpy": {
                 "dimension": "atomic_unit",
                 "help": "The electric enthalpy.",
-                "func": (lambda: self.ensemble.Eenthalpy ),
+                "func": (lambda: self.ensemble.Eenthalpy),
             },
             "EDAenergy": {
                 "dimension": "atomic_unit",
@@ -2651,7 +2651,7 @@ class Trajectories(dobject):
                 "dimension": "polarization",
                 "help": "The polarization expressed in cartesian coordinates.",
                 "size": 9,
-                "func": (lambda: self.system.motion.integrator.get_pol(what="all")),
+                "func": (lambda: self.system.motion.integrator.get_pol(what="all") if hasattr(self.system.motion.integrator,"get_pol") else np.zeros(9)),
             },
             "forces": {
                 "dimension": "force",

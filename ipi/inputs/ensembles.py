@@ -105,11 +105,42 @@ class InputEnsemble(Input):
                 "help": "The internal time for this system",
             },
         ),
+    #}
+    #attributes = {
+        "Eamp": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": np.zeros(3),
+                "help": "The amplitude of the external electric field (in cartesian coordinates)",
+                "dimension": "electric-field",
+            },
+        ),
+        "Efreq": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "The frequency of the external electric field (in hertz)",
+                "dimension": "frequency",
+            },
+        ),
+        "BEC": (
+            InputArray,
+            {   
+                "dtype": float, 
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The Born Effective Charges tensor(s)",
+            },
+        ),
     }
     dynamic = {}
 
     default_help = "Holds all the information that is ensemble specific, such as the temperature and the external pressure."
     default_label = "ENSEMBLE"
+
+    def __init__(self,help=None, default=None):
+        super(InputEnsemble,self).__init__(help,default)
 
     def store(self, ens):
         """Takes an ensemble instance and stores a minimal representation of it.
@@ -127,6 +158,11 @@ class InputEnsemble(Input):
         self.bias_weights.store(ens.bweights)
         self.hamiltonian_weights.store(ens.hweights)
         self.time.store(ens.time)
+        # ES
+        self.Eamp.store(ens.Eamp)
+        self.Efreq.store(ens.Efreq)
+        self.BEC.store(ens.BEC)
+
 
     def fetch(self):
         """Creates an ensemble object.
@@ -147,6 +183,9 @@ class InputEnsemble(Input):
             bweights=self.bias_weights.fetch(),
             hweights=self.hamiltonian_weights.fetch(),
             time=self.time.fetch(),
+            Eamp=self.Eamp.fetch(),
+            Efreq=self.Efreq.fetch(),
+            BEC=self.BEC.fetch()
         )
 
         return ens

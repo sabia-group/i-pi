@@ -51,7 +51,7 @@ class InputDynamics(InputDictionary):
                 "dtype": str,
                 "default": "nve",
                 "help": "The ensemble that will be sampled during the simulation. ",
-                "options": ["nve", "nvt", "npt", "nst", "sc", "scnpt", "eda"], #ES
+                "options": ["nve", "nvt", "npt", "nst", "sc", "scnpt", "eda-nve","eda-nvt"], #ES
             },
         ),
         "splitting": (
@@ -97,38 +97,41 @@ class InputDynamics(InputDictionary):
                 "help": "Number of iterations for each MTS level (including the outer loop, that should in most cases have just one iteration).",
             },
         ),
-        "Eamp": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": np.asarray([0,0,1]),
-                "help": "The amplitude of the external electric field (in cartesian coordinates)",
-                "dimension": "electric-field",
-            },
-        ),
-        "Efreq": (
-            InputValue,
-            {
-                "dtype": float,
-                "default": 0.0,
-                "help": "The frequency of the external electric field (in hertz)",
-                "dimension": "frequency",
-            },
-        ),
-        "BEC": (
-            InputArray,
-            {   
-                "dtype": float, 
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The Born Effective Charges tensor(s)",
-            },
-        ),
+        # "Eamp": (
+        #     InputArray,
+        #     {
+        #         "dtype": float,
+        #         "default": np.asarray([0,0,1]),
+        #         "help": "The amplitude of the external electric field (in cartesian coordinates)",
+        #         "dimension": "electric-field",
+        #     },
+        # ),
+        # "Efreq": (
+        #     InputValue,
+        #     {
+        #         "dtype": float,
+        #         "default": 0.0,
+        #         "help": "The frequency of the external electric field (in hertz)",
+        #         "dimension": "frequency",
+        #     },
+        # ),
+        # "BEC": (
+        #     InputArray,
+        #     {   
+        #         "dtype": float, 
+        #         "default": input_default(factory=np.zeros, args=(0,)),
+        #         "help": "The Born Effective Charges tensor(s)",
+        #     },
+        # ),
     }
 
     dynamic = {}
 
     default_help = "Holds all the information for the MD integrator, such as timestep, the thermostats and barostats that control it."
     default_label = "DYNAMICS"
+
+    def __init__(self,help=None, default=None):
+        super(InputDynamics,self).__init__(help,default)
 
     def store(self, dyn):
         """Takes an ensemble instance and stores a minimal representation of it.
@@ -147,9 +150,9 @@ class InputDynamics(InputDictionary):
         self.nmts.store(dyn.nmts)
         self.splitting.store(dyn.splitting)
         # ES
-        self.Eamp.store(dyn.Eamp)
-        self.Efreq.store(dyn.Efreq)
-        self.BEC.store(dyn.BEC)
+        # self.Eamp.store(dyn.Eamp)
+        # self.Efreq.store(dyn.Efreq)
+        # self.BEC.store(dyn.BEC)
 
     def fetch(self):
         """Creates an ensemble object.

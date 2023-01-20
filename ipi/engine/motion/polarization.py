@@ -11,9 +11,9 @@ def get_pol(self,what,bead=None):
     N = self.beads.nbeads
     if bead is not None:
         if bead < 0:
-            raise ValueError("Error in EDAIntegrator.get_polarization: 'beads' is negative") 
+            raise ValueError("Error in get_pol: 'beads' is negative") 
         if bead >= N :
-            raise ValueError("Error in EDAIntegrator.get_polarization: 'beads' is greater than the number of beads") 
+            raise ValueError("Error in get_pol: 'beads' is greater than the number of beads") 
 
     # return the polarization
     if what in ["total","elec","ions"]:
@@ -26,23 +26,23 @@ def get_pol(self,what,bead=None):
                             list(self.forces.extras["polarization"][i]["total"])) for i in range(N)]
         return pol if bead is None else pol[bead] 
     else:
-        raise ValueError("Error in EDAIntegrator.get_polarization: '"+what+"' is not a 'polarization' key") 
+        raise ValueError("Error in get_pol: '"+what+"' is not a 'polarization' key") 
      
 
 def _check_pol(self):
     """Check that the polarization is correctly formatted."""
     # check whether the driver returned to i-pi the polarization values
 
-    msg = "Error in EDAIntegrator"
+    msg = "Error in _check_pol"
 
     if "polarization" not in self.forces.extras:
-        raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in EDAIntegrator)")
+        raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)")
 
     N = self.beads.nbeads
     # check whether the number of polarization values is correct, i.e. equal to the number of beads 
     # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
     if len(self.forces.extras["polarization"]) != N:
-        raise ValueError(msg+": number of polarization values (accessed in EDAIntegrator) should be equal to number of beads")
+        raise ValueError(msg+": number of polarization values (accessed in _check_pol) should be equal to number of beads")
 
     # check whether the total, electronic, and ionic polarizations are all available
     for word in ["total","ions","elec"]:

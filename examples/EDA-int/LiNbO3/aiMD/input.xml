@@ -29,15 +29,15 @@
 
     <ensemble>
       <temperature units='kelvin'>20</temperature>
+      <BEC mode='file'> BEC.tensor.csv </BEC>                <!-- how to compute/read the BEC tensors -->
+      <Eamp units='eV/A'> [ 8.410495864572935520e-01,4.459876491701972867e-01,3.061545523222816145e-01 ] </Eamp>         <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+      <!-- phase units="rad" > 0.0 </phase-->                <!-- units: rad, deg -->
+      <Efreq units='Hz'> 0 </Efreq>                        <!-- frequency of the oscillating E-field -->
     </ensemble>
 
     <motion mode='dynamics'>
-      <dynamics mode='eda'>
+      <dynamics mode='eda-nve'>
         <timestep units='femtosecond'>0.1</timestep>
-        <BEC mode='file'> BEC.tensor.csv </BEC>                <!-- how to compute/read the BEC tensors -->
-        <Eamp units='eV/A'> [ 8.410495864572935520e-01,4.459876491701972867e-01,3.061545523222816145e-01 ] </Eamp>         <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
-        <!-- phase units="rad" > 0.0 </phase-->                <!-- units: rad, deg -->
-        <Efreq units='THz'> 16 </Efreq>                        <!-- frequency of the oscillating E-field -->
       </dynamics>
     </motion>
 

@@ -2,14 +2,15 @@ xc               pw-lda
 k_grid           2 2 2
 spin             none
 relativistic     atomic_zora scalar
-restart          FHI-aims.restart
-#sc_accuracy_etot   1.0E-3
-#sc_accuracy_forces 1.0
-#sc_accuracy_rho    1.0
-KS_method serial
-output polarization 1 4 2 2
-output polarization 2 2 4 2
-output polarization 3 2 2 4
+#restart          FHI-aims.restart
+sc_accuracy_etot   1.0
+sc_accuracy_forces 1.0
+sc_accuracy_rho    1.0
+sc_accuracy_eev    100
+#KS_method serial
+# output polarization 1 4 2 2
+# output polarization 2 2 4 2
+# output polarization 3 2 2 4
 use_pimd_wrapper UNIX:LiNbO3 0000
 
 ################################################################################
