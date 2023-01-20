@@ -1,0 +1,45 @@
+<simulation verbosity='medium'>
+
+  <total_steps>1</total_steps>
+
+  <ffsocket mode='unix' name='FHI-aims' pbc='True'>
+    <address>LiNbO3</address>
+    <latency>1e-3</latency>
+  </ffsocket>
+
+  <output prefix='LiNbO3'>
+    <trajectory filename='polarization'>polarization</trajectory>
+    <trajectory filename='position'>positions</trajectory>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}, Efield, ionspol, elecpol, totalpol, EDAenergy, Eenthalpy ] </properties>
+  </output>
+
+  <prng>
+    <seed>10545</seed>
+  </prng>
+
+  <system>
+    <forces> <force forcefield='FHI-aims'/> </forces>
+
+    <initialize nbeads='1'>
+      <file mode='aims' units='angstrom' cell_units='angstrom' > geometry.in </file>
+      <!--file mode='xyz' units='atomic_unit' > LiNbO3.xyz </file-->
+      <velocities mode='thermal' units='kelvin'>20</velocities>
+      <!--cell mode="abcABC" units="angstrom">[ 25.494325163293, 5.494325163293, 5.494325163293, 55.871788264798, 55.871788264798, 55.871788264798 ]</cell-->
+    </initialize>
+
+    <ensemble>
+      <temperature units='kelvin'>20</temperature>
+    </ensemble>
+
+    <motion mode='dynamics'>
+      <dynamics mode='eda'>
+        <timestep units='femtosecond'>0.1</timestep>
+        <BEC mode='file'> BEC.tensor.csv </BEC>                <!-- how to compute/read the BEC tensors -->
+        <Eamp units='eV/A'> [ 0.0 , 0.0 , 1.0] </Eamp>         <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+        <!-- phase units="rad" > 0.0 </phase-->                <!-- units: rad, deg -->
+        <Efreq units='THz'> 16 </Efreq>                        <!-- frequency of the oscillating E-field -->
+      </dynamics>
+    </motion>
+
+  </system>
+</simulation>

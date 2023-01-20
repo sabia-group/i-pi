@@ -9,11 +9,11 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/aiMD",
+            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/",
             //"cwd":"/home/elia/Google-Drive/google-personal/i-pi/examples/ffdmd/Si-drive",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"input.xml",
+            "args":"",
         }
     ]
-} 
+}

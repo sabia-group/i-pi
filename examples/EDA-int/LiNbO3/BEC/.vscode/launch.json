@@ -9,11 +9,10 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/aiMD",
-            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi/examples/ffdmd/Si-drive",
+            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/BEC",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"input.xml",
+            "args":"-pp true -r false -x '/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.scalapack.mpi.x' ",
         }
     ]
-} 
+}
