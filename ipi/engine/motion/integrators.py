@@ -191,19 +191,16 @@ class NVEIntegrator(DummyIntegrator):
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
 
-        print(" # NVEIntegrator.pstep")
+        # print(" # NVEIntegrator.pstep")
         # halfdt/alpha
         self.beads.p += self.forces.forces_mts(level) * self.pdt[level]
-        # ES: should we keep it, in the end?
         if level == 0:  # adds bias in the outer loop
             self.beads.p += dstrip(self.bias.f) * self.pdt[level]
 
     def qcstep(self):
         """Velocity Verlet centroid position propagator."""
         # dt/inmts
-        self.nm.qnm[0, :] += (
-            dstrip(self.nm.pnm)[0, :] / dstrip(self.beads.m3)[0] * self.qdt
-        )
+        self.nm.qnm[0, :] += (dstrip(self.nm.pnm)[0, :] / dstrip(self.beads.m3)[0] * self.qdt)
 
     # now the idea is that for BAOAB the MTS should work as follows:
     # take the BAB MTS, and insert the O in the very middle. This might imply breaking a A step in two, e.g. one could have
@@ -273,12 +270,12 @@ class NVEIntegrator(DummyIntegrator):
 
     def mtsprop(self, index):
         # just calls the two pieces together
-        self.mtsprop_ba(index)
-        self.mtsprop_ab(index)
+        self.mtsprop_ba(index) # pstep, qcstep
+        self.mtsprop_ab(index) # qcstep, pstep
 
     def step(self, step=None):
         """Does one simulation time step."""
-        print(" # NVEIntegrator.step")
+        # print(" # NVEIntegrator.step")
         self.mtsprop(0)
 
 
@@ -471,7 +468,7 @@ class EDAIntegrator(TimeDependentIntegrator):
         """Velocity Verlet momentum propagator."""
         # check that everything is okay (but just once for each step)
         # and if it is so, go on!
-        print(" # EDAIntegrator.pstep")
+        # print(" # EDAIntegrator.pstep")
         okay = self._okay
         if okay:       
             self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
@@ -555,18 +552,20 @@ class EDAIntegrator(TimeDependentIntegrator):
 
 class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
 
+    # order = True
+
     def pstep(self,level):
-        print(" # EDANVEIntegrator.pstep")
-        NVEIntegrator.pstep(self,level)
+        # print(" # EDANVEIntegrator.pstep")
         EDAIntegrator.pstep(self,level)
+        NVEIntegrator.pstep(self,level)
         self.ensemble.cptime += self.pdt[level]
         pass
 
 class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
 
     def pstep(self,level):
-        NVTIntegrator.pstep(self,level)
         EDAIntegrator.pstep(self,level)
+        NVTIntegrator.pstep(self,level)        
         self.ensemble.cptime += self.pdt[level]
         pass
 

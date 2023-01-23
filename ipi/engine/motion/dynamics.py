@@ -284,10 +284,10 @@ class Dynamics(Motion):
         if hasattr(self.ensemble, 'cptime'): 
             self.ensemble.cptime = self.ensemble.time
 
-        print(" # call self.integrator.step(step)")
+        # print(" # call self.integrator.step(step)")
         self.integrator.step(step)
         self.ensemble.time += self.dt  # increments internal time
-        print("\n")
+        # print("\n")
         
         # ES: check that the times are identical 
         # this check should never go wrong ... if it does, read the description of _check_time
