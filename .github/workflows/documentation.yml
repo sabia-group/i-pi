@@ -1,9 +1,6 @@
 name: Documentation
 
 on:
-  push:
-    branches: [master]
-    tags: ["*"]
   pull_request:
     # Check all PR
 
@@ -20,6 +17,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r doc/requirements.txt
+
           sudo apt-get update
           sudo apt-get install -y texlive-latex-extra texlive-lang-greek latexmk
       - name: build documentation
@@ -27,6 +25,7 @@ jobs:
           cd doc
           make html
           make latexpdf
+
           cp _build/latex/i-pi.pdf _build/html/ipi-manual.pdf
       - name: deploy to gh-pages
         if: github.event_name == 'push'
