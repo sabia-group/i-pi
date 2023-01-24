@@ -85,6 +85,7 @@ class Ensemble(dobject):
         time=0.0,
         Eamp=None,
         Efreq=None,
+        Ephase=0.0,
         BEC=None
     ):
         """Initialises Ensemble.
@@ -145,9 +146,10 @@ class Ensemble(dobject):
         dself.time = depend_value(name="time",value=time)
 
         # ES: we do I need to specify default values here too?
-        dself.Eamp  = depend_array(name="Eamp" ,value=Eamp  if Eamp  is not None else np.zeros(3))
-        dself.Efreq = depend_value(name="Efreq",value=Efreq if Efreq is not None else 0 )
-        dself.BEC   = depend_array(name="BEC"  ,value=BEC   if BEC   is not None else np.zeros(0))
+        dself.Eamp   = depend_array(name="Eamp"  ,value=Eamp   if Eamp   is not None else np.zeros(3))
+        dself.Efreq  = depend_value(name="Efreq" ,value=Efreq  if Efreq  is not None else 0.0 )
+        dself.Ephase = depend_value(name="Ephase",value=Ephase if Ephase is not None else 0.0 )
+        dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))
         
 
     def copy(self):
@@ -247,7 +249,7 @@ class Ensemble(dobject):
 
         # I need cptime to be defined here, and not in TimeDependentIntegrator
         dself.cptime = depend_value(name="cptime",value=0)
-        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.Eamp,dself.Efreq,dself.cptime])
+        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.Eamp,dself.Efreq,dself.cptime,dself.Ephase])
         
         # ES: polarization(s) for each beads
         dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
@@ -319,7 +321,7 @@ class Ensemble(dobject):
 
     def _get_Efield(self):
         """Get the value of the external electric field"""
-        return self.Eamp * np.cos( self.Efreq * self.cptime)
+        return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
 
     def _get_BEC(self):
         """Return the BEC tensors.

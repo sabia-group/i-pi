@@ -62,10 +62,6 @@ class DummyIntegrator(dobject):
         self.fixcom     = motion.fixcom
         self.fixatoms   = motion.fixatoms
         self.enstype    = motion.enstype
-        # ES: this is not the best place for these variables
-        # self.Eamp       = motion.Eamp
-        # self.Efreq      = motion.Efreq
-        # self.BEC        = motion.BEC
 
         dself = dd(self)
         dmotion = dd(motion)

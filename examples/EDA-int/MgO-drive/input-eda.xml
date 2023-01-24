@@ -1,6 +1,6 @@
 <simulation verbosity='medium'>
 
-  <total_steps>10</total_steps>
+  <total_steps>2</total_steps>
 
   <ffsocket mode='unix' name='FHI-aims' pbc='True'>
     <address>MgO</address>
@@ -29,10 +29,10 @@
 
     <ensemble>
       <temperature units='kelvin'>20</temperature>
-      <BEC mode='file'> BEC.scalar.csv </BEC>  <!-- how to compute/read the BEC tensors -->
-      <Eamp units='eV/A'> [ 1.0 , 0.0 , 0.0] </Eamp>       <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
-      <!-- phase units="rad" > 0.0 </phase-->  <!-- units: rad, deg -->
-      <Efreq units='THz'> 1.0 </Efreq>                    <!-- frequency of the oscillating E-field -->
+      <BEC mode='file'> BEC.scalar.csv </BEC>         <!-- how to compute/read the BEC tensors -->
+      <Eamp units='eV/A'> [ 1.0 , 0.0 , 0.0] </Eamp>  <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+      <Ephase > 0.1 </Ephase>                         <!-- units: rad, deg -->
+      <Efreq units='THz'> 1.0 </Efreq>                <!-- frequency of the oscillating E-field -->
     </ensemble>
 
     <motion mode='dynamics'>

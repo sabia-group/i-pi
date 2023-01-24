@@ -1,0 +1,12 @@
+2
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           0  Bead:       0 positions{atomic_unit}  cell{atomic_unit}
+      Mg  0.00000e+00  0.00000e+00  0.00000e+00
+       O  5.64721e+00  3.26042e+00  2.30546e+00
+2
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           1  Bead:       0 positions{atomic_unit}  cell{atomic_unit}
+      Mg  1.50266e-06 -6.59712e-05 -1.57842e-05
+       O  5.64721e+00  3.26052e+00  2.30549e+00
+2
+# CELL(abcABC):    5.64721     5.64721     5.64721    60.00000    60.00000    60.00000  Step:           2  Bead:       0 positions{atomic_unit}  cell{atomic_unit}
+      Mg  1.00080e-05 -1.31948e-04 -3.15698e-05
+       O  5.64719e+00  3.26062e+00  2.30551e+00

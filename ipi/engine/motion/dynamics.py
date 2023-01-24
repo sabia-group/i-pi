@@ -58,10 +58,7 @@ class Dynamics(Motion):
         barostat=None,
         fixcom=False,
         fixatoms=None,
-        nmts=None#,
-        # Eamp=np.asarray([0,0,1]),
-        # Efreq=0.0,
-        # BEC=None
+        nmts=None
     ):
         """Initialises a "dynamics" motion object.
 
@@ -131,26 +128,6 @@ class Dynamics(Motion):
             self.fixatoms = np.zeros(0, int)
         else:
             self.fixatoms = fixatoms
-
-        # # ES: EDA parameters
-        # eda_type_none = False
-        # if not self.enstype == "eda" and Efreq is not  None :
-        #     warning("Efreq is used only for EDA dynamics: Efreq will be ignored",verbosity.low); eda_type_none = True
-
-        # if not self.enstype == "eda" and Eamp is not  None :
-        #     warning("Eamp is used only for EDA dynamics: Eamp will be ignored",verbosity.low); eda_type_none = True
-
-        # if not self.enstype == "eda" and BEC is not  None :
-        #     warning("BEC is used only for EDA dynamics: BEC will be ignored",verbosity.low); eda_type_none = True
-
-        # # if eda_type_none == False :
-        # self.Efreq = Efreq
-        # self.Eamp = Eamp
-        # self.BEC = BEC
-        # else :
-        #     self.Efreq = None
-        #     self.Eamp = None
-        #     self.BEC = None                        
 
         pass
 

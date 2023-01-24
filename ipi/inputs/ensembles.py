@@ -125,6 +125,14 @@ class InputEnsemble(Input):
                 "dimension": "frequency",
             },
         ),
+        "Ephase": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "The phase of the external electric field (in rad)",
+            },
+        ),
         "BEC": (
             InputArray,
             {   
@@ -161,6 +169,7 @@ class InputEnsemble(Input):
         # ES
         self.Eamp.store(ens.Eamp)
         self.Efreq.store(ens.Efreq)
+        self.Ephase.store(ens.Ephase)
         self.BEC.store(ens.BEC)
 
 
@@ -185,6 +194,7 @@ class InputEnsemble(Input):
             time=self.time.fetch(),
             Eamp=self.Eamp.fetch(),
             Efreq=self.Efreq.fetch(),
+            Ephase=self.Ephase.fetch(),
             BEC=self.BEC.fetch()
         )
 
