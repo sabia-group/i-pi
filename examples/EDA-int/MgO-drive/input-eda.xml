@@ -36,7 +36,7 @@
     </ensemble>
 
     <motion mode='dynamics'>
-      <dynamics mode='eda-nve'>
+      <dynamics mode='eda-nvt'>
         <timestep units='femtosecond'>0.1</timestep>
       </dynamics>
     </motion>
