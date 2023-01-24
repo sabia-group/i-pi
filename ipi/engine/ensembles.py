@@ -245,6 +245,7 @@ class Ensemble(dobject):
         for k in xlkin:
             self.add_xlkin(k)
 
+        # I need cptime to be defined here, and not in TimeDependentIntegrator
         dself.cptime = depend_value(name="cptime",value=0)
         dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.Eamp,dself.Efreq,dself.cptime])
         
@@ -305,8 +306,7 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
-        VEP = self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
-        return VEP
+        return self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
 
     def _get_Eenthalpy(self):
         return self.econs - self.EDAenergy
@@ -319,8 +319,7 @@ class Ensemble(dobject):
 
     def _get_Efield(self):
         """Get the value of the external electric field"""
-        E = self.Eamp * np.cos( self.Efreq * self.cptime)
-        return E
+        return self.Eamp * np.cos( self.Efreq * self.cptime)
 
     def _get_BEC(self):
         """Return the BEC tensors.
@@ -409,4 +408,22 @@ class Ensemble(dobject):
                 warning(word+" polarization is vanishing for all the beads",verbosity.high)
         return True
 
+    # I moved this method from TimeDependentIntegrator (no longer available) to Ensemble
+    def _check_time(self):
+        """Check that self.cptime is equal to self.ensemble.time.
+        Pay attention that this is not always true all over the simulation!
+        These variable have to be equal only before and after the Integration procedure.
+        In fact, this method is called only in Dynamics.step, after self.integrator.step(step).
+        The two variable are also forces to be equal before the INtegration procedure at each step.
+
+        This method should always return True, but perhaps future code changes could "break" this.
+        Better to be sure that everythin is fine :) """
+
+        thr_time_comparison = 0.1
+        if abs(self.cptime - self.time) > thr_time_comparison:
+            raise ValueError("Error in EDAIntegrator._check_time: the 'continous' time of EDAIntegrator does not match"+\
+                "Ensemble.time (up to a threshold).\nThis seems to be a coding error, not due to wrong input parameters."+\
+                "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
+                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
+        return True
 

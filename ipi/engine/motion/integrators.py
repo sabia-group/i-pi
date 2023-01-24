@@ -193,7 +193,8 @@ class NVEIntegrator(DummyIntegrator):
 
         # print(" # NVEIntegrator.pstep")
         # halfdt/alpha
-        self.beads.p += self.forces.forces_mts(level) * self.pdt[level]
+        a = self.forces.forces_mts(level) * self.pdt[level] 
+        self.beads.p += a
         if level == 0:  # adds bias in the outer loop
             self.beads.p += dstrip(self.bias.f) * self.pdt[level]
 
@@ -355,73 +356,22 @@ class NPTIntegrator(NVTIntegrator):
         self.barostat.thermostat.step()
         # self.pconstraints()
 
-# ES
-# not included in __all__
-class TimeDependentIntegrator(DummyIntegrator):
+class EDAIntegrator(DummyIntegrator):
+    """Integrator object for simulations using the electric dipole approximation when an external electric field is applied.
 
-    thr_time_comparison = 0.1
-
-    def __init__(self):
-        super(TimeDependentIntegrator,self).__init__()
-        # dd(self).cptime = depend_value(name="cptime",value=0) # continous time of the momenta p (along the MTS for loops)
-
-    # def __new__(cls, *args, **kwargs):
-    #     if cls is EDAIntegrator:
-    #         raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
-    #     return DummyIntegrator.__new__(cls, *args, **kwargs)
-
-    def _check_time(self):
-        """Check that self.cptime is equal to self.ensemble.time.
-        Pay attention that this is not always true all over the simulation!
-        These variable have to be equal only before and after the Integration procedure.
-        In fact, this method is called only in Dynamics.step, after self.integrator.step(step).
-        The two variable are also forces to be equal before the INtegration procedure at each step.
-
-        This method should always return True, but perhaps future code changes could "break" this.
-        Better to be sure that everythin is fine :) """
-        if abs(self.cptime - self.ensemble.time) > self.thr_time_comparison:
-            raise ValueError("Error in EDAIntegrator._check_time: the 'continous' time of EDAIntegrator does not match"+\
-                "Ensemble.time (up to a threshold).\nThis seems to be a coding error, not due to wrong input parameters."+\
-                "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
-                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
-        return True
-
-    # @staticmethod
-    # def pstepdec(method):
-    #     """Time Dependent Velocity Verlet momentum propagator"""
-    #     # this is a decorator for 'pstep' of each Time Dependent external potential based Integrator 
-    #     def function(self,level):
-    #         # The following line should call NVEIntegrator.pstep
-    #         # because EDAIntegrator should always be inherite by another class
-    #         # Pay attention to this point, for furher code developement it could get tricky
-    #         super(type(self),self).pstep(level) # update momenta using the NVEIntegrator (i.e. add the forces)
-    #         # self.beads  += self.pstep(level)   # call self.pstep(level), it returns the forces
-    #         method(level)
-    #         self.cptime += self.pdt[level]      # update cptime -> Efield will update automatically, ready for the next step/level
-    #         return
-        
-    #     return function
-
-# ES
-# not included in __all__
-class EDAIntegrator(TimeDependentIntegrator):
-
-    """Integrator object for simulations with constant energy, volume, and particle number
-    using the electric dipole approximation when an external electric field is applied.
-
-    The electric field has to be assumed homogeneous all over the system, and slowly varying.
-    The first assumption need to be done in orderfor the Electric Dipole Approximation to be valid,
-    the second one in stead is neeed in order to DFT calculations to be reliable, 
+    The electric field has to be assumed:
+        1) homogeneous all over the system
+        2) slowly varying.
+    The first assumption need to be done in order for the Electric Dipole Approximation to be valid.
+    The second one in stead is neeed in order to DFT calculations to be reliable, 
     since they are performed without any external electric field applied 
-    to keep the KS equations simple(r) and computationally affordable.
-
-    Attributes:
-        ? ptime: The time taken in updating the velocities.
-        ? qtime: The time taken in updating the positions.
-        ? ttime: The time taken in applying the thermostat steps.
-        TODO: add the EDA attributes
+    (to keep the KS equations simple(r) and computationally affordable).
 
     """
+
+    # author: Elia Stocco
+    # motivation: deal with time-dependent external potential, in particular the EDA potential (have a look at EDAIntegrator)
+    # information: not included in __all__
 
     # the conversion factor for the polarization from C/m^2 to atomic unit
     # 1e    = 1.602176634×10−19 C
@@ -434,27 +384,15 @@ class EDAIntegrator(TimeDependentIntegrator):
     # pay attention that they could be numerically different but anyway equivalent due to a different branch mapping
     thr_pol_comparison  = 1.0
 
-    #get_pol    = get_pol
-    #_check_pol = _check_pol
+    # if true, _check = _check_pol, otherwise a check of the polarizations values is performed too
+    _check_flag = False
 
-    # def __init__(self):
-    #     #super(EDAIntegrator,self).__init__()    # it does nothing
-    #     dd(self).cptime = depend_value(name="cptime",value=0) # continous time of the momenta p (along the MTS for loops)
-
-    # def __new__(cls, *args, **kwargs):
-    #     if cls is EDAIntegrator:
-    #         raise TypeError(f"only children of '{cls.__name__}' may be instantiated")
-    #     return object.__new__(cls, *args, **kwargs)
+    def __init__(self):
+        super(EDAIntegrator,self).__init__()
 
     def bind(self,motion):
+        """bind the flag '_okay' to 'self.ensemble.time'"""
         super(EDAIntegrator,self).bind(motion) 
-        # external electric field
-        # dd(self).Efield = depend_array(
-        #     name="Efield",
-        #     value=np.zeros(3, float),
-        #     func=self.get_Efield,
-        #     dependencies=[dd(self).cptime],
-        # )
         dd(self)._okay = depend_value(
             name="_okay",
             value=False,
@@ -462,13 +400,10 @@ class EDAIntegrator(TimeDependentIntegrator):
             dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         )
         pass
-    
-    #@TimeDependentIntegrator.pstepdec
+
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
-        # check that everything is okay (but just once for each step)
-        # and if it is so, go on!
-        # print(" # EDAIntegrator.pstep")
+        # check that everything is okay (but just once for each step), and if it is so, go on!
         okay = self._okay
         if okay:       
             self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
@@ -480,22 +415,24 @@ class EDAIntegrator(TimeDependentIntegrator):
     def _check(self):
         """Check that everything is okay before computing the external electric field contribution to the forces."""
 
+        # if some problems occur, this method raise and Exception
         self.ensemble._check_pol()
 
         # the ionic polarization is straighforward
         # check if its value is correct
-        N = self.beads.nbeads
-        volume = self.ensemble.cell.V # Bohr^3
-        Z = self.beads.ZtoZ3().reshape((-1,3))
-        for i in range(N):
-            q = self.beads[i].q.reshape((-1,3))
-            ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
-            driver_pol = self.forces.extras["polarization"][i]["ions"]
-            if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
-                warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
-                        "\n driver (atomic units):"+str(driver_pol)+\
-                        "\n   i-pi (atomic units):"+str(ions_pol)+\
-                        "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
+        if self._check_flag :
+            N = self.beads.nbeads
+            volume = self.ensemble.cell.V # Bohr^3
+            Z = self.beads.ZtoZ3().reshape((-1,3))
+            for i in range(N):
+                q = self.beads[i].q.reshape((-1,3))
+                ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
+                driver_pol = self.forces.extras["polarization"][i]["ions"]
+                if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
+                    warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
+                            "\n driver (atomic units):"+str(driver_pol)+\
+                            "\n   i-pi (atomic units):"+str(ions_pol)+\
+                            "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
         return True
 
     def _ions_forces(self,level=0):
@@ -513,8 +450,7 @@ class EDAIntegrator(TimeDependentIntegrator):
 # ES
 # Pay attentions: using Method Resolution Order (MRO)
 # https://www.programiz.com/python-programming/multiple-inheritance
-# the 'pstep' method is inherited by EDAIntegrator
-# (while the 'step' method is inherited by NVEIntegrator or NVTIntegrator)
+# The 'step' method is inherited by NVEIntegrator or NVTIntegrator
 
 # def decorator(Cls,N=None):
 #     def n_decorator(cls,N):
@@ -551,22 +487,63 @@ class EDAIntegrator(TimeDependentIntegrator):
      
 
 class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
+    """Integrator object for simulations with constant number of particles, energy, and volume, using the electric dipole approximation when an external electric field is applied.
 
-    # order = True
+    The electric field has to be assumed:
+        1) homogeneous all over the system
+        2) slowly varying.
+    The first assumption need to be done in order for the Electric Dipole Approximation to be valid.
+    The second one in stead is neeed in order to DFT calculations to be reliable, 
+    since they are performed without any external electric field applied 
+    (to keep the KS equations simple(r) and computationally affordable).
+
+    """
+
+    # author: Elia Stocco
+    # motivation: deal with time-dependent external potential, in particular the EDA potential (have a look at EDAIntegrator)
+
+    order = True
 
     def pstep(self,level):
-        # print(" # EDANVEIntegrator.pstep")
-        EDAIntegrator.pstep(self,level)
-        NVEIntegrator.pstep(self,level)
-        self.ensemble.cptime += self.pdt[level]
+        if self.order :
+            EDAIntegrator.pstep(self,level)
+            NVEIntegrator.pstep(self,level)
+            self.order = False
+        else :
+            NVEIntegrator.pstep(self,level)
+            EDAIntegrator.pstep(self,level)
+            self.order = True
+        self.ensemble.cptime += self.pdt[level] # update cptime
         pass
 
 class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
+    """Integrator object for simulations with constant number of particles, temperature, and volume, using the electric dipole approximation when an external electric field is applied.
+
+    The electric field has to be assumed:
+        1) homogeneous all over the system
+        2) slowly varying.
+    The first assumption need to be done in order for the Electric Dipole Approximation to be valid.
+    The second one in stead is neeed in order to DFT calculations to be reliable, 
+    since they are performed without any external electric field applied 
+    (to keep the KS equations simple(r) and computationally affordable).
+
+    """
+
+    # author: Elia Stocco
+    # motivation: deal with time-dependent external potential, in particular the EDA potential (have a look at EDAIntegrator)
+
+    order = True
 
     def pstep(self,level):
-        EDAIntegrator.pstep(self,level)
-        NVTIntegrator.pstep(self,level)        
-        self.ensemble.cptime += self.pdt[level]
+        if self.order :
+            EDAIntegrator.pstep(self,level)
+            NVTIntegrator.pstep(self,level)
+            self.order = False
+        else :
+            NVTIntegrator.pstep(self,level)
+            EDAIntegrator.pstep(self,level)
+            self.order = True
+        self.ensemble.cptime += self.pdt[level] # update cptime
         pass
 
 class NVTCCIntegrator(NVTIntegrator):

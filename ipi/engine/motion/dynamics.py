@@ -229,12 +229,7 @@ class Dynamics(Motion):
         )
 
         # now that the timesteps are decided, we proceed to bind the integrator.
-        # ES: self.integrator.__dict__.keys() = ['_direct']
         self.integrator.bind(self)
-        # ES: ['_direct', 'beads', 'bias', 'ensemble', 'forces', 'prng', 
-        #      'nm', 'thermostat', 'barostat', 'fixcom', 'fixatoms', 
-        #      'enstype', 'Eamp', 'Efreq', 'BEC', 'splitting', 'dt', 
-        #      'nmts', 'inmts', 'nmtslevels', 'qdt', 'pdt', 'tdt' ]
 
         self.ensemble.add_econs(dthrm.ethermo)
         self.ensemble.add_econs(dbaro.ebaro)
@@ -277,19 +272,15 @@ class Dynamics(Motion):
     def step(self, step=None):
         """Advances the dynamics by one time step"""
 
-        # ES: I need that these two variable are the same
-        # Pay attention that I can not bind these variable!
-        # I need them to be equal only here and after self.integrator.step(step)
-        # In the meanwhile they could be different!
-        if hasattr(self.ensemble, 'cptime'): 
-            self.ensemble.cptime = self.ensemble.time
+        # ES: I need these two variable to be the same right now,
+        # but I can not bind these variable!
+        # I need them to be equal only here, and after self.integrator.step(step)
+        # In the meanwhile they could (or have to) be different!
+        self.ensemble.cptime = self.ensemble.time
 
-        # print(" # call self.integrator.step(step)")
         self.integrator.step(step)
         self.ensemble.time += self.dt  # increments internal time
-        # print("\n")
         
-        # ES: check that the times are identical 
-        # this check should never go wrong ... if it does, read the description of _check_time
-        if hasattr(self.ensemble, '_check_time'):
-            self.ensemble._check_time() 
+        # ES: check that the times are the same 
+        # this check should never go wrong ... if it does, read the description of self.integrator._check_time
+        self.ensemble._check_time() 
