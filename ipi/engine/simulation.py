@@ -70,7 +70,7 @@ class Simulation(dobject):
             request_banner (bool): Whether to print the i-PI banner,
                 if verbosity is higher than 'quiet'.
         """
-
+        
         # parse the file
         xmlrestart = xml_parse_file(open(fn_input))
 

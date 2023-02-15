@@ -389,12 +389,15 @@ class EDAIntegrator(DummyIntegrator):
     def bind(self,motion):
         """bind the flag '_okay' to 'self.ensemble.time'"""
         super(EDAIntegrator,self).bind(motion) 
-        dd(self)._okay = depend_value(
+        dself = dd(self)
+        dself.cptime = depend_value(name="cptime",value=0)
+        dself._okay = depend_value(
             name="_okay",
             value=False,
             func=self._check,
             dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         )
+        dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
         pass
 
     def pstep(self, level=0):
@@ -506,11 +509,12 @@ class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
             NVEIntegrator.pstep(self,level)
             self.order = False
         else :
-            NVEIntegrator.pstep(self,level)
+            NVEIntegrator.pstep(self,level) # the drive is called here
             EDAIntegrator.pstep(self,level)
             self.order = True
-        self.ensemble.cptime += self.pdt[level] # update cptime
+        self.cptime += self.pdt[level] # update cptime
         pass
+
 
 class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
     """Integrator object for simulations with constant number of particles, temperature, and volume, using the electric dipole approximation when an external electric field is applied.
@@ -536,11 +540,12 @@ class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
             NVTIntegrator.pstep(self,level)
             self.order = False
         else :
-            NVTIntegrator.pstep(self,level)
+            NVTIntegrator.pstep(self,level) # the drive is called here
             EDAIntegrator.pstep(self,level)
             self.order = True
-        self.ensemble.cptime += self.pdt[level] # update cptime
+        self.cptime += self.pdt[level] # update cptime
         pass
+
 
 class NVTCCIntegrator(NVTIntegrator):
     """Integrator object for constant temperature simulations with constrained centroid.

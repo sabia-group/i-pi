@@ -124,14 +124,14 @@ class System(dobject):
             simul.output_maker,
         )
 
-        # ES: this badly coded, but it works
-        if hasattr(self.motion.integrator,"Efield"):
-            dd(self.ensemble).Efield = depend_array(name="Efield",value=np.zeros(3, float))
-            dpipe(dfrom=dd(self.motion.integrator).Efield,dto=dd(self.ensemble).Efield)
+        # # ES: this badly coded, but it works
+        # if hasattr(self.motion.integrator,"Efield"):
+        #     dd(self.ensemble).Efield = depend_array(name="Efield",value=np.zeros(3, float))
+        #     dpipe(dfrom=dd(self.motion.integrator).Efield,dto=dd(self.ensemble).Efield)
 
-            dself = dd(self.ensemble)
-            dself.EDAenergy = depend_value(name="EDAenergy", func=self.ensemble.get_EDAenergy,value=0.0,dependencies=[dd(self.ensemble.cell).V,dself.EnsTotalPol,dself.Efield])
-            dself.Eenthalpy = depend_value(name="Eenthalpy", func=self.ensemble.get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        #     dself = dd(self.ensemble)
+        #     dself.EDAenergy = depend_value(name="EDAenergy", func=self.ensemble.get_EDAenergy,value=0.0,dependencies=[dd(self.ensemble.cell).V,dself.EnsTotalPol,dself.Efield])
+        #     dself.Eenthalpy = depend_value(name="Eenthalpy", func=self.ensemble.get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
 
 
         dpipe(dd(self.nm).omegan2, dd(self.forces).omegan2)
