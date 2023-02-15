@@ -7,8 +7,8 @@
 .PHONY: all clean dia-npt-classical dia_big-npt-classical dia-npt-pimd.4 dia_big-npt-pimd.4 h2o li4
 all: dia-npt-classical dia_big-npt-classical dia-npt-pimd.4 dia_big-npt-pimd.4 h2o li4
 
-DRIVER:=pw.x
-IPI:=i-pi
+DRIVER:=/home/elia/Google-Drive/google-personal/q-e/bin/pw.x
+IPI:=/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi
 
 -include make.in
 
@@ -45,7 +45,7 @@ dia_big-npt-classical:
 	$(call run_driver,1,pw.in, localhost:3144) \
 	wait
 
-dia_big-npt-pimd.4: 
+dia_big-npt-pimd.4:
 	cd dia_big-npt-pimd.4; $(IPI) input.xml & sleep 5; \
 	$(call run_driver,4,pw.in, localhost:3145) \
 

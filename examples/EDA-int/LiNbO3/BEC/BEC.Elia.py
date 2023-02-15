@@ -27,158 +27,21 @@ def shift(xyz,delta):
     else :
         raise ValueError("Wrong direction")
 
-# ------------------------PreProcessing-------------------------------#
-
-# def preprocess(geofile, controlfile):
-#     """Checking that inputs are found"""
-#     if os.path.exists(geofile):
-#         print("geometry.in was found")
-#         with open(geofile) as geo:
-#             for line in geo:
-#                 if line.startswith("atom_frac"):
-#                     frac2atom(geofile)
-#                     break
-#                     # call transform
-#     else:
-#         print("Error: Cannot find geometry.in.\n")
-#         sys.exit(1)
-#     if os.path.exists(controlfile):
-#         print("control.in was found")
-#     else:
-#         print("Error: Cannot find control.in.\n")
-#         sys.exit(1)
-
-# def shiftgeo(filename, c, delta, options):
-#     """Function to shift geometries + save in corresponding directories"""
-
-#     print(
-#         "Shifting the geometry in direction  "
-#         + str(c)
-#         + " for delta  "
-#         + str(delta)
-#         + "\n"
-#     )
-#     lattice = []
-#     fdata = []
-#     element = []
-#     lattice = []
-#     folder = options.name + "_disp_" + str(delta)
-#     if not os.path.exists(folder):
-#         os.mkdir(folder)
-#     with open(filename) as f:
-#         ii = 0
-#         i = 0
-#         for line in f:
-#             t = line.split()
-#             if len(t) == 0:
-#                 continue
-#             if t[0] == "#":
-#                 continue
-#             if t[0] == "constrain_relaxation":
-#                 continue
-#             if t[0] == "lattice_vector":
-#                 lattice += [(float(t[1]), float(t[2]), float(t[3]))]
-#             elif t[0] == "atom":
-#                 if line.rfind(options.name) != -1:
-#                     i = i + 1
-#                     if options.position:
-#                         if i == options.position:
-#                             t[c] = float(t[c]) + delta
-#                             fdata += [(float(t[1]), float(t[2]), float(t[3]))]
-#                             element += [(str(t[4]))]
-#                             ii = ii + 1
-#                         else:
-#                             fdata += [(float(t[1]), float(t[2]), float(t[3]))]
-#                             element += [(str(t[4]))]
-#                     else:
-#                         t[c] = float(t[c]) + delta
-#                         fdata += [(float(t[1]), float(t[2]), float(t[3]))]
-#                         element += [(str(t[4]))]
-#                         ii = ii + 1
-
-#                 else:
-#                     fdata += [(float(t[1]), float(t[2]), float(t[3]))]
-#                     element += [(str(t[4]))]
-#             else:
-#                 continue
-#     fdata = np.array(fdata)
-#     lattice = np.array(lattice)
-#     element = np.array(element)
-
-#     new_geo = open(folder + "/geometry.in", "w")
-#     new_geo.write(
-#         """#
-#     lattice_vector """
-#         + ((" %.8f" * 3) % tuple(lattice[0, :]))
-#         + """
-#     lattice_vector """
-#         + ((" %.8f" * 3) % tuple(lattice[1, :]))
-#         + """
-#     lattice_vector """
-#         + ((" %.8f" * 3) % tuple(lattice[2, :]))
-#         + """
-#     #
-#     """
-#     )
-#     for i in range(0, len(fdata)):
-#         new_geo.write(
-#             "atom" + ((" %.8f" * 3) % tuple(fdata[i, :])) + " " +
-#             element[i] + "\n"
-#         )
-
-#     new_geo.close()
-#     return ii
-
-# def precontrol(filename, delta, options):
-#     """Function to copy and edit control.in"""
-#     aimsout = "aims.out"
-#     folder = options.name + "_disp_" + str(delta)
-#     f = open(filename, "r")  # read control.in template
-#     template_control = f.read()
-#     f.close
-#     if not os.path.exists(folder):
-#         os.mkdir(folder)
-#     new_control = open(folder + "/control.in", "w")
-#     new_control.write(
-#         template_control
-#         + "KS_method serial \n"
-#         + "output polarization    "
-#         + str(1)
-#         + " {} {} {}\n".format(options.nx[0], options.nx[1], options.nx[2])
-#         + "output polarization    "
-#         + str(2)
-#         + " {} {} {}\n".format(options.ny[0], options.ny[1], options.ny[2])
-#         + "output polarization    "
-#         + str(3)
-#         + " {} {} {}\n".format(options.nz[0], options.nz[1], options.nz[2])
-#     )
-#     new_control.close()
-#     os.chdir(folder)
-#     # Change directoy
-#     if options.run_aims:
-#         os.system(
-#             options.run_aims + " > " + aimsout
-#         )  # Run aims and pipe the output into a file named 'filename'
-#     os.chdir("..")
-#     time.sleep(2.4)
-
-# ------------------------Post Processing-------------------------------#
-
 def is_complete(file,show):
     if os.path.exists(file):
         with open(file) as f:
             lines = f.readlines()
             if np.any([ "Have a nice day." in lines[-i] for i in range(5) ]):
-                if show: 
+                if show:
                     print("\t\tFHI-aims calculation is complete")
                 return True
             else:
-                if show: 
+                if show:
                     print("\t\tFHI-aims calculation is not complete")
                 #sys.exit(1)
                 return False
     else :
-        if show: 
+        if show:
             print("\t\tfile '%s' does not exist"%(file))
             return False
 
@@ -194,11 +57,10 @@ def postpro(file,show=True):
                 if line.rfind("| Cartesian Polarization ") != -1:
                     p = float64(split_line(line)[-3:])  #
                 if line.rfind("| Unit cell volume ") != -1:
-                    volume = float(split_line(line)[-2])  
+                    volume = float(split_line(line)[-2])
             return p, volume
     else :
         return None,None
-    
 
 def split_line(lines):
     """Split input line"""
@@ -226,7 +88,7 @@ def main():
     parser = ArgumentParser(description="BEC calculation with FHI-aims")
     parser.add_argument(
         "-x", "--executable", action="store",
-        help="path to FHI-aims binary", default=""
+        help="path to FHI-aims binary", default="/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.scalapack.mpi.x"
     )
     parser.add_argument(
         "-s",
@@ -240,10 +102,10 @@ def main():
         "--delta",
         action="store",
         type=float,
-        nargs=2,
+        nargs="+",
         dest="delta",
         help="finite difference poles, defualt is [0.01]",
-        default=[0.01],
+        default=[0.5,-0.5,0.1,-0.1],
     )
     parser.add_argument(
         "-r", "--run", action="store", type=str2bool,
@@ -251,7 +113,7 @@ def main():
     )
     parser.add_argument(
         "-pp", "--postprocessing", action="store", type=str2bool,
-        help="perform post-processing", default=True
+        help="perform post-processing", default=False
     )
     parser.add_argument(
         "-g", "--geofile", action="store", type=str,
@@ -281,10 +143,14 @@ def main():
         "-o", "--original", action="store", type=str,
         help="original output file with no displacement", default="FHI-aims.out"
     )
+    parser.add_argument(
+        "-w", "--overwrite", action="store", type=bool,
+        help="overwrite previous calculations", default=False
+    )
 
     options = parser.parse_args()
 
-    options.aims_run = options.suffix + " " + options.executable 
+    options.aims_run = options.suffix + " " + options.executable
     options.aimsout = "FHI-aims.out"
 
     if options.run : # perform DFT calculations
@@ -298,7 +164,7 @@ def main():
                     if options.pertspecies :
                         raise ValueError("Not yet implemented")
                         # S2Imap  = data.symbols.indices() # Species to Index map
-                        # Species = data.get_chemical_symbols()                    
+                        # Species = data.get_chemical_symbols()
                     else :
                         newdata = deepcopy(data)
                         newdata.positions[atom,:] += shift(xyz,delta)
@@ -308,18 +174,31 @@ def main():
                     if not os.path.exists(folder):
                         print("\t\tcreating folder '%s'"%(folder))
                         os.mkdir(folder)
-                    
-                    
+
+                    if not options.overwrite :
+                        file = folder + "/" + options.aimsout
+                        print("\t\treading output file '%s'"%(file))
+                        if is_complete(file,show=False):
+                            print("\t\tcomputation completed")
+                            print("\t\t'overwrite' flag set to 'false': skipping computation")
+                            continue
+                    else:
+                        if os.path.exists(file):
+                            print("\t\tcomputation not completed")
+                            print("\t\t'overwrite' flag set to 'true': computing again")
+                            continue
+
+
                     newcpfile = folder + "/control.in"
                     print("\t\tcopying '%s' to '%s'"%(options.controlfile,newcpfile))
-                    os.popen('cp %s %s'%(options.controlfile,newcpfile)) 
+                    os.popen('cp %s %s'%(options.controlfile,newcpfile))
 
                     newgeofile = folder + "/geometry.in"
                     print("\t\twriting new geometry file to '%s'"%(newgeofile))
                     write(newgeofile,newdata)
 
                     print("\t\tcopying restart files to folder '%s'"%(folder))
-                    os.popen('cp %s* %s/.'%(options.restartsuffix,folder)) 
+                    os.popen('cp %s* %s/.'%(options.restartsuffix,folder))
 
                     print("\t\trunning calculation, output printed to '%s'"%(options.aimsout))
                     os.chdir(folder)
@@ -332,7 +211,7 @@ def main():
                         print("\t\tcomputation not completed")
 
                     print("\t\tremoving restart files from folder '%s'"%(folder))
-                    os.popen('rm %s/%s*'%(folder,options.restartsuffix)) 
+                    os.popen('rm %s/%s*'%(folder,options.restartsuffix))
 
     if options.postprocessing : # Post-Processing
         print("\n\tPost-Processing")
@@ -367,32 +246,32 @@ def main():
         P.to_csv(options.polout,index=False)
 
         print("\tComputing BEC tensors")
-        P0,V = postpro(options.original,show=False) 
+        P0,V = postpro(options.original,show=False)
         born_factor = (V * 1e-20) / C
 
         columns =  ["atom","name","delta",\
                     "Zxx","Zxy","Zxz",\
                     "Zyx","Zyy","Zyz",\
                     "Zzx","Zzy","Zzz"]
-        BEC = pd.DataFrame(columns=columns)        
+        BEC = pd.DataFrame(columns=columns)
         for atom in range(N):
 
             for delta in options.delta:
                 row = dict(zip(columns, [None]*len(columns)))
-                row["atom"] = atom 
-                row["name"] = data.get_chemical_symbols()[atom]   
+                row["atom"] = atom
+                row["name"] = data.get_chemical_symbols()[atom]
                 row["delta"] = delta
 
                 for dir_xyz in [ "x","y","z" ]:
                     P1 = P.where( P["atom"] == atom).where(P["delta"] == delta ).where(P["xyz"] == dir_xyz).dropna()
                     if len(P1) != 1 :
                         raise ValueError("Found more than one row for atom=%d, delta=%f, xyz=%s"%(atom,delta,dir_xyz))
-                    i = P1.index[0]                    
+                    i = P1.index[0]
 
-                    for n,pol_xyz in enumerate([ "x","y","z" ]):                        
+                    for n,pol_xyz in enumerate([ "x","y","z" ]):
                         BECcol = "Z%s%s"%(pol_xyz,dir_xyz)
                         Pcol = "p%s"%pol_xyz
-                        
+
                         p1 = P1.at[i,Pcol]
                         p0 = P0[n]
                         if p1 is None or p0 is None:
@@ -405,7 +284,7 @@ def main():
 
                 if np.any( [ j is None for j in row.values() ]):
                     raise ValueError("Found None value")
-                BEC = BEC.append(row,ignore_index=True) 
+                BEC = BEC.append(row,ignore_index=True)
 
         print("\tSaving BEC tensors to file '%s'"%(options.becout))
         BEC.to_csv(options.becout,index=False)
@@ -414,4 +293,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

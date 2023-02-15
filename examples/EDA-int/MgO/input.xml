@@ -36,8 +36,11 @@
     </ensemble>
 
     <motion mode='dynamics'>
-      <dynamics mode='eda-nvt'>
+      <dynamics mode='nvt'>
         <timestep units='femtosecond'>0.1</timestep>
+        <thermostat mode="svr">
+            <tau units="femtosecond"> 0.1 </tau>
+        </thermostat>
       </dynamics>
     </motion>
 

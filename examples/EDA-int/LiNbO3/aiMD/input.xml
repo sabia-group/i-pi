@@ -1,6 +1,6 @@
 <simulation verbosity='medium'>
 
-  <total_steps>10</total_steps>
+  <total_steps>100</total_steps>
 
   <ffsocket mode='unix' name='FHI-aims' pbc='True'>
     <address>LiNbO3</address>
@@ -23,21 +23,24 @@
     <initialize nbeads='1'>
       <!--file mode='aims' units='angstrom' cell_units='angstrom' > geometry.in </file-->
       <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
-      <velocities mode='thermal' units='kelvin'>20</velocities>
+      <velocities mode='thermal' units='kelvin'>30</velocities>
       <cell mode="manual" units="angstrom">[ 5.4247849157365637, 0.0000000000000000, 0.0000000000000000, 3.0435575239874382, 4.4905510877210464, 0.0000000000000000, 3.0432317169843839, 1.6137499892515090, 4.1900534849191997  ]</cell>
     </initialize>
 
     <ensemble>
-      <temperature units='kelvin'>20</temperature>
-      <BEC mode='file'> BEC.tensor.csv </BEC>                <!-- how to compute/read the BEC tensors -->
-      <Eamp units='eV/A'> [ 8.410495864572935520e-01,4.459876491701972867e-01,3.061545523222816145e-01 ] </Eamp>         <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
+      <temperature units='kelvin'>30</temperature>
+      <!--BEC mode='file'> BEC.tensor.csv </BEC-->                <!-- how to compute/read the BEC tensors -->
+      <!--Eamp units='eV/A'> [ 8.410495864572935520e-01,4.459876491701972867e-01,3.061545523222816145e-01 ] </Eamp-->         <!-- amplitude of the E-field. basis: cart, dir (direct lattice vectors), rep (reciprocal lattice vectors)-->
       <!-- phase units="rad" > 0.0 </phase-->                <!-- units: rad, deg -->
-      <Efreq units='Hz'> 0 </Efreq>                        <!-- frequency of the oscillating E-field -->
+      <!--Efreq units='Hz'> 0 </Efreq-->                        <!-- frequency of the oscillating E-field -->
     </ensemble>
 
     <motion mode='dynamics'>
-      <dynamics mode='eda-nve'>
+      <dynamics mode='nvt'>
         <timestep units='femtosecond'>0.1</timestep>
+        <thermostat mode="svr">
+            <tau units="femtosecond"> 0.1 </tau>
+        </thermostat>
       </dynamics>
     </motion>
 

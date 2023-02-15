@@ -9,11 +9,11 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO-drive",
-            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi/examples/ffdmd/Si-drive",
+            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/nvt",
+            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO-drive",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"input-eda.xml",
+            "args":"input.xml",
         }
     ]
 } 

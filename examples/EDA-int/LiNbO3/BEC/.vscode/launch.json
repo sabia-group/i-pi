@@ -12,7 +12,7 @@
             "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/BEC",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"-pp true -r false -x '/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.scalapack.mpi.x' ",
+            "args":"-pp true -r true -x '/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.scalapack.mpi.x' ",
         }
     ]
 }
