@@ -1,0 +1,47 @@
+<simulation verbosity='medium'>
+
+  <total_steps>10</total_steps>
+
+  <ffsocket mode='unix' name='pw' pbc='False'>
+    <address>localhost</address>
+    <!--port>0000</port-->
+    <!--timeout>100</timeout-->
+    <!--latency> 0.01</latency-->
+  </ffsocket>
+
+  <output prefix='LiNbO3'>
+    <!--trajectory filename='polarization'>polarization</trajectory-->
+    <trajectory filename='position'>positions</trajectory>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}] </properties>
+  </output>
+
+  <prng>
+    <seed>10545</seed>
+  </prng>
+
+  <system>
+    <forces> <force forcefield='pw'/> </forces>
+
+    <initialize nbeads='1'>
+      <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
+      <velocities mode='thermal' units='kelvin'>30</velocities>
+      <cell mode="manual" units="angstrom">[ 4.190053, 1.613750, 3.043232, 0.000000, 4.490551, 3.043558, 0.000000, 0.000000, 5.424785  ]</cell>
+    </initialize>
+
+    <ensemble>
+      <temperature units='kelvin'>30</temperature>
+    </ensemble>
+
+    <motion mode='dynamics'>
+      <dynamics mode='nvt'>
+        <timestep units='femtosecond'>0.1</timestep>
+        <thermostat mode="svr">
+            <tau units="picosecond"> 0.1 </tau>
+        </thermostat>
+      </dynamics>
+      <!--optimizer mode='bfgs'>
+    </optimizer-->
+    </motion>
+
+  </system>
+</simulation>
