@@ -35,10 +35,11 @@
 source ~/.bashrc
 source ~/.elia
 
-run_ipi='true'
+relax='false'
+run_ipi='false'
 run_ipi_somewhereelse='false'
 write_qe='true'
-run_qe='true'
+run_qe='false'
 run_aims='false'
 sleep_sec="4"
 
@@ -52,7 +53,7 @@ ipi_input='input.xml'
 
 RESULTS_DIR="./results"
 
-PARA_PREFIX="mpirun -n 4"
+PARA_PREFIX="mpirun -n 8"
 
 HOST=$(hostname)
 NTIME=21300
@@ -106,7 +107,11 @@ fi
 
 # Quantum ESPRESSO
 if [[ ${write_qe} == 'true' ]] ; then
-	source scf.sh
+	if [[ ${relax} == 'true' ]] ; then
+		source relax.sh
+	else
+		source scf.sh
+	fi
 	if [ ! -z ${VAR_SOURCED+x} ]; then
 	  source var.sh
 	fi

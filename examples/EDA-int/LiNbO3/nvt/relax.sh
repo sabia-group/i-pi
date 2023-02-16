@@ -3,7 +3,7 @@
 source ~/.bashrc
 source ~/.elia
 
-CALC="scf"
+CALC="vc-relax"
 
 if [ -z ${VAR_SOURCED+x} ]; then
   echo  "souring var.sh"
@@ -62,10 +62,13 @@ ratio="4"
 ecutwfc="80"
 ecutrho=$((ecutwfc*ratio))
 electron_maxstep="100"
-conv_thr="1.0D-5"
+conv_thr="1.0D-6"
 max_seconds=$((4*3600-400))
-nk="3"
+nk="4"
 U_Ni="1.6"
+
+e_thr="1.0D-4"
+f_thr="1.0D-3"
 
 
 short_name="$PREFIX.nk=${nk}"
@@ -98,10 +101,12 @@ cat > ${INPUT_FILE} << EOF
   prefix      = '${PREFIX}'
   pseudo_dir  = '${PSEUDO_DIR}'
   outdir      = '${OUT_DIR_CYCLE}'
-  tprnfor     = .true.
-  tstress     = .false.
+  !tprnfor     = .true.
+  !tstress     = .false.
   verbosity   = 'high'
   max_seconds = ${max_seconds}
+  etot_conv_thr = ${e_thr}
+  forc_conv_thr = ${f_thr}
 /
 &SYSTEM
   ecutwfc = ${ecutwfc}
@@ -127,30 +132,36 @@ cat > ${INPUT_FILE} << EOF
   startingpot = '$startingpot'
   startingwfc = '$startingwfc'
 /
+&IONS
+  upscale = 10
+/
+&CELL
+  cell_dofree = 'all'
+/
 ATOMIC_SPECIES
   Nb  92.90638 ${Nb_PSEUDO}
   Li  6.941    ${Li_PSEUDO}
   O   15.9994  ${O_PSEUDO}
 
 ATOMIC_POSITIONS angstrom
-  Nb 4.2298305249 6.1625038592 11.6257081907
-  Nb 2.1093164478 3.0730881001 5.7974466747
-  Li 1.1891975655 1.7325908180 3.2685524330
-  Li 3.3097489344 4.8220441236 9.0968872665
-  O 3.0462237209 2.8225284608 3.9268775609
-  O 1.5386925881 1.0847905761 5.3964858534
-  O 0.4590824818 3.4413320635 4.5400960889
-  O 2.5796095508 4.9152298070 5.7331053280
-  O 0.9257086964 3.1211034601 7.2858904276
-  O 3.6591977211 2.4018176340 6.6726553421
+Nb            4.2327299624        6.1651612807       11.6263575091
+Nb            2.1107942565        3.0744650799        5.7978651387
+Li            1.1903288875        1.7338307738        3.2696226140
+Li            3.3123206203        4.8245653075        9.0982136375
+O             3.0467711983        2.8229072845        3.9266076868
+O             1.5396380143        1.0861394780        5.3962733177
+O             0.4605211572        3.4419666711        4.5398983179
+O             2.5814664707        4.9164327494        5.7324570392
+O             0.9268120544        3.1229192912        7.2860004855
+O             3.6605496637        2.4024733733        6.6727187175
 
 K_POINTS automatic
   ${nk} ${nk} ${nk} 0 0 0
 
 CELL_PARAMETERS angstrom
-  4.24102999660546 1.63392996111767 3.08247152070467
-  0.00000000000000 4.54490544781247 3.08244612716667
-  0.00000000000000 0.00000000000000 5.49157234881015
+  4.241867807   1.634421791   3.082210455
+  0.000991274   4.545783321   3.082409196
+  0.000990844   0.001175729   5.492295302
 
 HUBBARD ortho-atomic
   U Nb-4d ${U_Ni}
