@@ -48,15 +48,7 @@ class InputBeads(Input):
         "nbeads": (
             InputAttribute,
             {"dtype": int, "default": 0, "help": "The number of beads."},
-        ),
-    "Z": (
-            InputArray,
-            {
-                "dtype": int,
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
-            },
-        ),
+        )
     }
     fields = {
         "q": (
@@ -120,6 +112,14 @@ class InputBeads(Input):
                 "help": "The total polarization expressed in cartesian coordinates",
             },
         ),
+        "Z": (
+                InputArray,
+                {
+                    "dtype": int,
+                    "default": input_default(factory=np.zeros, args=(0,)),
+                    "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
+                },
+            ),
     }
 
     default_help = "Describes the bead configurations in a path integral simulation."

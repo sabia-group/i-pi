@@ -85,7 +85,9 @@ class Ensemble(dobject):
         time=0.0,
         Eamp=None,
         Efreq=None,
-        Ephase=0.0,
+        Ephase=None,
+        Epeak=None,
+        Esigma=None,
         BEC=None
     ):
         """Initialises Ensemble.
@@ -142,6 +144,13 @@ class Ensemble(dobject):
             hweights = np.ones(0)
         self.hweights = np.asarray(hweights)
 
+        # ES
+
+        if Epeak is not None and Epeak < 0 :
+            raise ValueError("Epeak < 0: the peak of the external electric field can only be positive")    
+        if Esigma is not None and Esigma < 0 :
+            raise ValueError("Esigma < 0: the standard deviation of the gaussian envelope function of the external electric field has to be positive") 
+
         # Internal time counter
         dself.time = depend_value(name="time",value=time)
 
@@ -149,8 +158,9 @@ class Ensemble(dobject):
         dself.Eamp   = depend_array(name="Eamp"  ,value=Eamp   if Eamp   is not None else np.zeros(3))
         dself.Efreq  = depend_value(name="Efreq" ,value=Efreq  if Efreq  is not None else 0.0 )
         dself.Ephase = depend_value(name="Ephase",value=Ephase if Ephase is not None else 0.0 )
-        dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))
-        
+        dself.Epeak  = depend_value(name="Epeak" ,value=Epeak  if Epeak  is not None else 0.0)
+        dself.Esigma = depend_value(name="Esigma",value=Esigma if Esigma is not None else np.inf)
+        dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))  
 
     def copy(self):
         return Ensemble(
@@ -249,8 +259,10 @@ class Ensemble(dobject):
 
         # I need cptime to be defined here, and not in TimeDependentIntegrator
         dself.cptime = depend_value(name="cptime",value=0)
-        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.Eamp,dself.Efreq,dself.cptime,dself.Ephase])
+        dself.Eenvelope  = depend_value(name="Eenvelope" ,value=0.0,func=self._get_Eenvelope,dependencies=[dself.cptime,dself.Epeak,dself.Esigma])
+        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.cptime,dself.Eamp,dself.Efreq,dself.Ephase,dself.Eenvelope])
         
+    
         # ES: polarization(s) for each beads
         dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
         dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self._get_pol(what="elec") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
@@ -319,9 +331,23 @@ class Ensemble(dobject):
         enspol = np.asarray(pol).mean(axis=0)
         return enspol
 
+    def _get_Eenvelope(self):
+        """Gte the gaussian envelope function of the external electric field"""
+        # https://en.wikipedia.org/wiki/Normal_distribution
+        if self.Epeak > 0.0 and self.Esigma != np.inf :
+            x = self.cptime # indipendent variable
+            u = self.Epeak  # mean value
+            s = self.Esigma # standard deviation
+            return np.exp( - 0.5 * ((x-u)/s)**2 ) # the returned maximum value is 1, when x = u
+        else :
+            return None
+
     def _get_Efield(self):
         """Get the value of the external electric field"""
-        return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
+        if self.Eenvelope is not None :
+            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase) * self.Eenvelope(self.cptime)
+        else :
+            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
 
     def _get_BEC(self):
         """Return the BEC tensors.

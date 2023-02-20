@@ -254,6 +254,12 @@ class Properties(dobject):
                 "size": 3,
                 "func": (lambda: self.ensemble.Efield),
             },
+            "Eenvelope": {
+                "dimension": "atomic_unit",
+                "help": "The (gaussian) enevelope function of the external applied electric field).",
+                "size": 1,
+                "func": (lambda: self.ensemble.Eenvelope),
+            },
             "ionspol": {
                 "dimension": "atomic_unit",
                 "help": "The (ensemble averaged) ionic polarization (cartesian coordinates).",

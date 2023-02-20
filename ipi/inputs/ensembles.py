@@ -133,6 +133,24 @@ class InputEnsemble(Input):
                 "help": "The phase of the external electric field (in rad)",
             },
         ),
+        "Epeak": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "The time when the external electric field gets its maximum value",
+                "dimension": "time",
+            },
+        ),
+        "Esigma": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": np.inf,
+                "help": "The standard deviations (time) of the gaussian envelope function of the external electric field",
+                "dimension": "time",
+            },
+        ),
         "BEC": (
             InputArray,
             {   
@@ -170,6 +188,8 @@ class InputEnsemble(Input):
         self.Eamp.store(ens.Eamp)
         self.Efreq.store(ens.Efreq)
         self.Ephase.store(ens.Ephase)
+        self.Epeak.store(ens.Epeak)
+        self.Esigma.store(ens.Esigma)
         self.BEC.store(ens.BEC)
 
 
@@ -195,6 +215,8 @@ class InputEnsemble(Input):
             Eamp=self.Eamp.fetch(),
             Efreq=self.Efreq.fetch(),
             Ephase=self.Ephase.fetch(),
+            Epeak=self.Epeak.fetch(),
+            Esigma=self.Esigma.fetch(),
             BEC=self.BEC.fetch()
         )
 
