@@ -1,15 +1,18 @@
-<simulation verbosity='medium'>
+<simulation verbosity='high'>
 
-  <total_steps>100</total_steps>
+  <total_steps>1000</total_steps>
 
-  <ffsocket mode='unix' name='FHI-aims' pbc='True'>
-    <address>LiNbO3</address>
-    <latency>1e-3</latency>
+  <ffsocket mode='unix' name='FHI-aims' pbc='False'>
+    <address>vibrations</address>
+    <!--port>0000</port-->
+    <!--timeout>100</timeout-->
+    <!--latency> 0.01</latency-->
   </ffsocket>
 
   <output prefix='LiNbO3'>
-    <trajectory filename='position'>positions</trajectory>
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties>
+    <!--trajectory filename='polarization'>polarization</trajectory-->
+    <!--trajectory filename='position'>positions</trajectory-->
+    <!--properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}] </properties-->
   </output>
 
   <prng>
@@ -20,15 +23,12 @@
     <forces> <force forcefield='FHI-aims'/> </forces>
 
     <initialize nbeads='1'>
-      <!--file mode='aims' units='angstrom' cell_units='angstrom' > geometry.in </file-->
       <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
       <velocities mode='thermal' units='kelvin'>30</velocities>
-      <cell mode="manual" units="angstrom">[ 5.4247849157365637, 0.0000000000000000, 0.0000000000000000, 3.0435575239874382, 4.4905510877210464, 0.0000000000000000, 3.0432317169843839, 1.6137499892515090, 4.1900534849191997  ]</cell>
+      <cell mode="manual" units="angstrom">[  4.24102999660546, 1.63392996111767, 3.08247152070467,
+        0.00000000000000, 4.54490544781247, 3.08244612716667,
+        0.00000000000000, 0.00000000000000, 5.49157234881015  ]</cell>
     </initialize>
-
-    <!--ensemble>
-      <temperature units='kelvin'>30</temperature>
-    </ensemble-->
 
     <motion mode='vibrations'>
       <vibrations>
