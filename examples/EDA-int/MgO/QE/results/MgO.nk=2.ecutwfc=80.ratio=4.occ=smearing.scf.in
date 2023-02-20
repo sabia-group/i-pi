@@ -8,9 +8,9 @@
   tstress     = .false.
   verbosity   = 'high'
   max_seconds = 14000
-  lberry        = .true.
-  gdir          = 1
-  nppstr        = 2
+  !lberry        = .true.
+  !gdir          = 1
+  !nppstr        = 5
 /
 &SYSTEM
   ecutwfc = 80
@@ -19,7 +19,7 @@
   nat = 2
   ntyp = 2
   !nspin=2
-  occupations = 'fixed'
+  occupations = 'smearing'
   smearing='gauss'
   degauss=0.005
 /
@@ -29,8 +29,8 @@
   mixing_beta = 0.9
   mixing_ndim=25
   electron_maxstep=100
-  startingpot = 'atomic'
-  startingwfc = 'atomic+random'
+  startingpot = 'file'
+  startingwfc = 'file'
 /
 ATOMIC_SPECIES
   Mg  24.305   Mg.pbesol-spnl-rrkjus_psl.1.0.0.UPF

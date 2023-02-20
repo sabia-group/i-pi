@@ -4,13 +4,24 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        // {
+        //     "name": "Python: Current File",
+        //     "type": "python",
+        //     "request": "launch",
+        //     "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/rotate.py",
+        //     "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/nvt",
+        //     //"cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO-drive",
+        //     "console": "integratedTerminal",
+        //     "justMyCode": true,
+        //     "args":["-in","LiNbO3.scf.in","-vs", "' '","-v","LiNbO3.scf.in"],
+        // },
         {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/nvt",
-            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO-drive",
+            "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
+            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/vibrations",
+            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO/QE",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args":"input.xml",

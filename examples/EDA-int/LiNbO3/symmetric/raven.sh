@@ -36,7 +36,7 @@ source ~/.bashrc
 source ~/.elia
 
 relax='false'
-run_ipi='false'
+run_ipi='true'
 run_ipi_somewhereelse='false'
 write_qe='true'
 run_qe='true'
@@ -108,19 +108,21 @@ fi
 # Quantum ESPRESSO
 if [[ ${write_qe} == 'true' ]] ; then
 	if [[ ${relax} == 'true' ]] ; then
+		echo "sourcing var.sh from relax.sh"
 		source relax.sh
 	else
+		echo "sourcing var.sh from scf.sh"
 		source scf.sh
 	fi
 	if [ ! -z ${VAR_SOURCED+x} ]; then
+		echo "sourcing var.sh from raven.sh"
 	  source var.sh
 	fi
-	echo
 
 	if [[ $run_qe == "true" ]]; then
 		#QE_COMMAND="mpirun -np 32 ${QE_PATH}/pw.x < $INPUT_FILE > $OUTPUT_FILE"
 		if [ ${run_ipi} == 'true' ] || [ ${run_ipi_somewhereelse} == 'true' ] ; then
-			PARA_IPI="--ipi nvt:UNIX"
+			PARA_IPI="--ipi localhost:UNIX"
 		else
 			PARA_IPI=""
 		fi

@@ -36,7 +36,7 @@ source ~/.bashrc
 source ~/.elia
 
 relax='false'
-run_ipi='false'
+run_ipi='true'
 run_ipi_somewhereelse='false'
 write_qe='true'
 run_qe='true'
@@ -120,7 +120,7 @@ if [[ ${write_qe} == 'true' ]] ; then
 	if [[ $run_qe == "true" ]]; then
 		#QE_COMMAND="mpirun -np 32 ${QE_PATH}/pw.x < $INPUT_FILE > $OUTPUT_FILE"
 		if [ ${run_ipi} == 'true' ] || [ ${run_ipi_somewhereelse} == 'true' ] ; then
-			PARA_IPI="--ipi nvt:UNIX"
+			PARA_IPI="--ipi localhost:UNIX"
 		else
 			PARA_IPI=""
 		fi

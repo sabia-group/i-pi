@@ -1,6 +1,6 @@
 <simulation verbosity='medium'>
 
-  <total_steps>200</total_steps>
+  <total_steps>10</total_steps>
 
   <ffsocket mode='unix' name='pw' pbc='True'>
     <address>localhost</address>
@@ -10,8 +10,8 @@
   </ffsocket>
 
   <output prefix='MgO'>
-    <trajectory filename='position'>positions</trajectory>
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties>
+    <!--trajectory filename='position'>positions</trajectory-->
+    <!--properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties-->
     <!--properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties-->
   </output>
 
@@ -23,9 +23,11 @@
     <forces> <force forcefield='pw'/> </forces>
 
     <initialize nbeads='1'>
-      <file mode='xyz' units='atomic_unit' > MgO.xyz </file>
+      <file mode='xyz' units='angstrom' > MgO.xyz </file>
       <velocities mode='thermal' units='kelvin'>20</velocities>
-      <cell mode="abcABC" units="angstrom">[ 2.988374678651, 2.988374678651, 2.988374678651, 60, 60, 60 ]</cell>
+      <cell mode="manual" units="angstrom">[    2.4399938875,       0.8626681120,       1.4941850000,
+                                                0.0000000000,       2.5880043359,       1.4941850000,
+                                                0.0000000000,       0.0000000000,       2.9883700000 ]</cell>
     </initialize>
 
     <ensemble>
@@ -41,12 +43,12 @@
         <pos_shift> 0.001 </pos_shift>
       </vibrations>
     </motion-->
-    
+
     <motion mode='dynamics'>
       <dynamics mode='nvt'>
-        <timestep units='femtosecond'>0.1</timestep>
+        <timestep units='picosecond'>0.1</timestep>
         <thermostat mode="svr">
-            <tau units="femtosecond"> 0.1 </tau>
+            <tau units="picosecond"> 0.1 </tau>
         </thermostat>
       </dynamics>
     </motion>

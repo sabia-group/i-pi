@@ -2,14 +2,14 @@
 
   <total_steps>1000</total_steps>
 
-  <ffsocket mode='unix' name='FHI-aims' pbc='False'>
+  <ffsocket mode='unix' name='pw' pbc='False'>
     <address>vibrations</address>
     <!--port>0000</port-->
     <!--timeout>100</timeout-->
     <!--latency> 0.01</latency-->
   </ffsocket>
 
-  <output prefix='LiNbO3'>
+  <output prefix='LiNbO3.qe'>
     <!--trajectory filename='polarization'>polarization</trajectory-->
     <!--trajectory filename='position'>positions</trajectory-->
     <!--properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}] </properties-->
@@ -20,7 +20,7 @@
   </prng>
 
   <system>
-    <forces> <force forcefield='FHI-aims'/> </forces>
+    <forces> <force forcefield='pw'/> </forces>
 
     <initialize nbeads='1'>
       <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>

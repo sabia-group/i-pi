@@ -3,7 +3,7 @@
   <total_steps>10</total_steps>
 
   <ffsocket mode='unix' name='pw' pbc='False'>
-    <address>nvt</address>
+    <address>localhost</address>
     <!--port>0000</port-->
     <!--timeout>100</timeout-->
     <!--latency> 0.01</latency-->

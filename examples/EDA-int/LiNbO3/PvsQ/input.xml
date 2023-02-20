@@ -3,7 +3,7 @@
   <total_steps>10</total_steps>
 
   <ffsocket mode='unix' name='pw' pbc='False'>
-    <address>nvt</address>
+    <address>localhost</address>
     <!--port>0000</port-->
     <!--timeout>100</timeout-->
     <!--latency> 0.01</latency-->
@@ -23,7 +23,7 @@
     <forces> <force forcefield='pw'/> </forces>
 
     <initialize nbeads='1'>
-      <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
+      <file mode='xyz' units='angstrom' > shifted.xyz </file>
       <velocities mode='thermal' units='kelvin'>30</velocities>
       <cell mode="manual" units="angstrom">[   4.24102999660546, 1.63392996111767, 3.08247152070467,
         0.00000000000000, 4.54490544781247, 3.08244612716667,

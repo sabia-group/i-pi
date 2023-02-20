@@ -38,9 +38,9 @@ source ~/.elia
 relax='false'
 run_ipi='true'
 run_ipi_somewhereelse='false'
-write_qe='false'
-run_qe='false'
-run_aims='true'
+write_qe='true'
+run_qe='true'
+run_aims='false'
 sleep_sec="1"
 
 if [[ ${run_ipi} == 'false' ]]; then

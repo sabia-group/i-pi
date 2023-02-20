@@ -1,4 +1,4 @@
-##!/bin/bash -l
+#!/bin/bash -l
 # Standard output and error:
 #SBATCH -o slurm/output.txt
 #SBATCH -e slurm/error.txt
@@ -41,7 +41,7 @@ run_ipi_somewhereelse='false'
 write_qe='true'
 run_qe='true'
 run_aims='false'
-sleep_sec="4"
+sleep_sec="2"
 
 if [[ ${run_ipi} == 'false' ]]; then
 	sleep_sec="0"
@@ -53,7 +53,7 @@ ipi_input='input.xml'
 
 RESULTS_DIR="./results"
 
-PARA_PREFIX="mpirun -n 8"
+PARA_PREFIX="" #"mpirun -n 8"
 
 HOST=$(hostname)
 NTIME=21300
@@ -120,7 +120,7 @@ if [[ ${write_qe} == 'true' ]] ; then
 	if [[ $run_qe == "true" ]]; then
 		#QE_COMMAND="mpirun -np 32 ${QE_PATH}/pw.x < $INPUT_FILE > $OUTPUT_FILE"
 		if [ ${run_ipi} == 'true' ] || [ ${run_ipi_somewhereelse} == 'true' ] ; then
-			PARA_IPI="--ipi nvt:UNIX"
+			PARA_IPI="--ipi localhost:UNIX"
 		else
 			PARA_IPI=""
 		fi
@@ -137,8 +137,20 @@ if [[ ${write_qe} == 'true' ]] ; then
 		echo "$COPY_OUTPUT_FILE"
 		eval "$COPY_OUTPUT_FILE"
 
+cat > info.json << EOF
+{
+	"input" : "$RESULTS_DIR/$full_name.$CALC.in",
+	"output" : "$RESULTS_DIR/$full_name.$CALC.out",
+	"gdir" : ${1},
+	"shift" : ${2}
+}
+
+EOF
+
 	fi
 fi
+
+
 
 # sleep_cmd="sleep ${sleep_sec}"
 # echo "command: ${sleep_cmd}"

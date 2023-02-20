@@ -1,0 +1,62 @@
+&CONTROL
+  calculation = 'nscf'
+  restart_mode= 'from_scratch'
+  prefix      = 'LiNbO3'
+  pseudo_dir  = '/home/elia/Google-Drive/google-personal/pseudos'
+  outdir      = './outdir/LiNbO3.nk=3'
+  !tprnfor     = .true.
+  tstress     = .true.
+  verbosity   = 'high'
+  max_seconds = 14000
+  lberry      = .true.
+  gdir        = 1
+  nppstr      = 3
+/
+&SYSTEM
+  ecutwfc = 80
+  ecutrho = 320
+  ibrav = 5
+  celldm(1) = 10.38277894
+  celldm(4) = 0.5610464837357743
+  nat = 3
+  ntyp = 3
+  !nspin=2
+  occupations = 'fixed'
+  smearing='gauss'
+  degauss=0.005
+  !starting_magnetization(1)=0.0
+  !starting_magnetization(2)=0.0
+  !tot_magnetization=0.0
+  !vdw_corr = 'grimme-d3'
+  space_group = 161
+/
+&ELECTRONS
+  mixing_mode = 'local-TF'
+  conv_thr = 1.0D-5
+  mixing_beta = 0.9
+  mixing_ndim=25
+  electron_maxstep=100
+  startingpot = 'atomic'
+  startingwfc = 'atomic+random'
+/
+ATOMIC_SPECIES
+  Nb  92.90638 Nb.pbesol-spn-rrkjus_psl.1.0.0.UPF
+  Li  6.941    Li.pbesol-sl-rrkjus_psl.1.0.0.UPF
+  O   15.9994  O.pbesol-n-rrkjus_psl.1.0.0.UPF
+
+ATOMIC_POSITIONS crystal_sg
+  Nb  0.0000000000000000000 0.0000000000000000000 0.0000000000000000000
+  Li  0.2184001343871483647 0.2184000447459397976 0.2183998146073517499
+  O   0.7795101996407776124 0.3889998985407385201 0.1409999082858564012
+
+K_POINTS automatic
+  3 3 3 0 0 0
+
+!CELL_PARAMETERS angstrom
+!  4.24421916085847 1.63461149740447 3.08257297931127
+!  0.00000000000000 4.54811479709897 3.08257329936587
+!  0.00000000000000 0.00000000000000 5.49432503687523
+
+HUBBARD ortho-atomic
+  U Nb-4d 1.6
+

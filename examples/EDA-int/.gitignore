@@ -1,0 +1,6 @@
+*/**/\#*
+*/**/outdir/
+*.hub
+*.save
+*.zip
+*/**/RESTART
