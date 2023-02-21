@@ -281,7 +281,7 @@ class Properties(dobject):
             "Eenthalpy": {
                 "dimension": "atomic_unit",
                 "help": "The electric enthalpy.",
-                "func": (lambda: self.ensemble.Eenthalpy),
+                "func": (lambda: self.get_potential() - self.ensemble.EDAenergy ),
             },
             "EDAenergy": {
                 "dimension": "atomic_unit",
@@ -289,6 +289,11 @@ class Properties(dobject):
                 "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
                 "func": (lambda: self.ensemble.EDAenergy ),
             },
+            "energy": {
+                "dimension": "energy",
+                "help": "The energy of the system",
+                "func": (lambda: self.get_potential() + self.get_kinmd() ),
+            },          
             "conserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved energy quantity per bead.",
@@ -336,11 +341,7 @@ class Properties(dobject):
                 "help": "The physical system potential energy.",
                 "longhelp": """The physical system potential energy. With the optional argument 'bead'
                          will print the potential associated with the specified bead.""",
-                "func": (
-                    lambda bead="-1": self.forces.pot / self.beads.nbeads
-                    if int(bead) < 0
-                    else self.forces.pots[int(bead)]
-                ),
+                "func": self.get_potential,
             },
             "bead_potentials": {
                 "dimension": "energy",
@@ -1345,6 +1346,12 @@ class Properties(dobject):
         v = v / self.beads.nbeads
 
         return PkT32 - spring + v
+
+    def get_potential(self,bead="-1"):
+        if int(bead) < 0:
+            return self.forces.pot / self.beads.nbeads
+        else :
+            return self.forces.pots[int(bead)]
 
     def get_kinmd(self, atom="", bead="", nm="", return_count=False):
         """Calculates the classical kinetic energy of the simulation (p^2/2m)

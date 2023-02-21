@@ -274,7 +274,7 @@ class Ensemble(dobject):
         dself.EnsTotalPol = depend_array(name="EnsTotalPol", func=lambda:self._get_enspol(what="total"),value=np.zeros(3,dtype=float),dependencies=[dself.TotalPol,dself.time])
 
         dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
-        dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        #dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
         
     def add_econs(self, e):
         self._elist.append(e)
@@ -294,11 +294,10 @@ class Ensemble(dobject):
         """
 
         eham = self.nm.vspring + self.nm.kin + self.forces.pot
-        #Ipol = self.IonsPol #ES: it woooorks!
-
+        
         eham += self.bias.pot  # bias
 
-        for e in self._elist:
+        for e in self._elist: # add thermostat and barostat
             eham += e.get()
 
         return eham + self.eens
@@ -322,8 +321,8 @@ class Ensemble(dobject):
     def _get_EDAenergy(self):
         return self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
 
-    def _get_Eenthalpy(self):
-        return self.econs - self.EDAenergy
+    # def _get_Eenthalpy(self):
+    #     return self.econs - self.EDAenergy
 
     def _get_enspol(self,what=None):
         """Return the ensemble average of the polarization(s)"""
