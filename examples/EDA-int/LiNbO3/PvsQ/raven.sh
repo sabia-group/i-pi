@@ -1,4 +1,4 @@
-#!/bin/bash -l
+##!/bin/bash -l
 # Standard output and error:
 #SBATCH -o slurm/output.txt
 #SBATCH -e slurm/error.txt
@@ -53,7 +53,7 @@ ipi_input='input.xml'
 
 RESULTS_DIR="./results"
 
-PARA_PREFIX="" #"mpirun -n 8"
+PARA_PREFIX="mpirun -n 8"
 
 HOST=$(hostname)
 NTIME=21300
@@ -100,7 +100,7 @@ eval "${sleep_cmd}"
 #srun --exclusive -N 1 -n 96 --cpu_bind=rank --hint=nomultithread ${AIMSPATH}/${EXE} > ${aims_radix}.out
 #srun --exclusive -N 2 -n 192 --cpu_bind=rank --hint=nomultithread ${AIMSPATH}/${EXE} > ${aims_radix}.out
 if [[ ${run_aims} == 'true' ]] ; then
-	AIMS_COMMAND="srun ${AIM_SPATH}/${EXE} > ${aims_radix}.out"
+	AIMS_COMMAND="${PARA_PREFIX} ${AIMS_PATH}/${EXE} > ${aims_radix}.out"
 	echo "command: ${AIMS_COMMAND}"
 	eval "${AIMS_COMMAND}"
 fi
@@ -108,19 +108,21 @@ fi
 # Quantum ESPRESSO
 if [[ ${write_qe} == 'true' ]] ; then
 	if [[ ${relax} == 'true' ]] ; then
+		echo "sourcing var.sh from relax.sh"
 		source relax.sh
 	else
+		echo "sourcing var.sh from scf.sh"
 		source scf.sh
 	fi
 	if [ ! -z ${VAR_SOURCED+x} ]; then
+		echo "sourcing var.sh from raven.sh"
 	  source var.sh
 	fi
-	echo
 
 	if [[ $run_qe == "true" ]]; then
 		#QE_COMMAND="mpirun -np 32 ${QE_PATH}/pw.x < $INPUT_FILE > $OUTPUT_FILE"
 		if [ ${run_ipi} == 'true' ] || [ ${run_ipi_somewhereelse} == 'true' ] ; then
-			PARA_IPI="--ipi localhost:UNIX"
+			PARA_IPI="--ipi symmetric:UNIX"
 		else
 			PARA_IPI=""
 		fi
@@ -137,20 +139,8 @@ if [[ ${write_qe} == 'true' ]] ; then
 		echo "$COPY_OUTPUT_FILE"
 		eval "$COPY_OUTPUT_FILE"
 
-cat > info.json << EOF
-{
-	"input" : "$RESULTS_DIR/$full_name.$CALC.in",
-	"output" : "$RESULTS_DIR/$full_name.$CALC.out",
-	"gdir" : ${1},
-	"shift" : ${2}
-}
-
-EOF
-
 	fi
 fi
-
-
 
 # sleep_cmd="sleep ${sleep_sec}"
 # echo "command: ${sleep_cmd}"

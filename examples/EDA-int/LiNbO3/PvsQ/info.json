@@ -1,7 +1,0 @@
-{
-	"input" : "./results/LiNbO3.nk=2.ecutwfc=80.ratio=4.occ=fixed.gdir=1.nppstr=3.shift=0.0900.scf.in",
-	"output" : "./results/LiNbO3.nk=2.ecutwfc=80.ratio=4.occ=fixed.gdir=1.nppstr=3.shift=0.0900.scf.out",
-	"gdir" : 1,
-	"shift" : 0.0900
-}
-

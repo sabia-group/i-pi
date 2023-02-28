@@ -1,18 +1,17 @@
 <simulation verbosity='medium'>
 
-  <total_steps>10</total_steps>
+  <total_steps>1000</total_steps>
 
-  <ffsocket mode='unix' name='pw' pbc='False'>
-    <address>localhost</address>
+  <ffsocket mode='unix' name='FHI-aims' pbc='False'>
+    <address>symmetric</address>
     <!--port>0000</port-->
     <!--timeout>100</timeout-->
     <!--latency> 0.01</latency-->
   </ffsocket>
 
   <output prefix='LiNbO3'>
-    <!--trajectory filename='polarization'>polarization</trajectory-->
-    <trajectory filename='position'>positions</trajectory>
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin}] </properties>
+    <!--trajectory filename='position'>positions</trajectory-->
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, temperature{kelvin} ] </properties>
   </output>
 
   <prng>
@@ -20,29 +19,25 @@
   </prng>
 
   <system>
-    <forces> <force forcefield='pw'/> </forces>
+    <forces> <force forcefield='FHI-aims'/> </forces>
 
     <initialize nbeads='1'>
-      <file mode='xyz' units='angstrom' > shifted.xyz </file>
+      <!--file mode='aims' units='angstrom' cell_units='angstrom' > geometry.in </file-->
+      <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
       <velocities mode='thermal' units='kelvin'>30</velocities>
-      <cell mode="manual" units="angstrom">[   4.24102999660546, 1.63392996111767, 3.08247152070467,
-        0.00000000000000, 4.54490544781247, 3.08244612716667,
-        0.00000000000000, 0.00000000000000, 5.49157234881015  ]</cell>
+      <cell mode="manual" units="angstrom">[  4.2442209319436959, 1.6346114044445832, 3.0825805539430258,
+       0.0000000000000000, 4.5481196540733295, 3.0825782703885887,
+       0.0000000000000000, 0.0000000000000000, 5.4943305901844859  ]</cell>
     </initialize>
 
-    <ensemble>
+    <!--ensemble>
       <temperature units='kelvin'>30</temperature>
-    </ensemble>
+    </ensemble-->
 
-    <motion mode='dynamics'>
-      <dynamics mode='nvt'>
-        <timestep units='femtosecond'>0.1</timestep>
-        <thermostat mode="svr">
-            <tau units="picosecond"> 0.1 </tau>
-        </thermostat>
-      </dynamics>
-      <!--optimizer mode='bfgs'>
-    </optimizer-->
+    <motion mode='vibrations'>
+      <vibrations>
+        <pos_shift>  0.01 </pos_shift>
+      </vibrations>
     </motion>
 
   </system>

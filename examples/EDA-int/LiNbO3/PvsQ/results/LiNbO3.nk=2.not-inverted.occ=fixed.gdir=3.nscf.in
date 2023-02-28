@@ -1,5 +1,5 @@
 &CONTROL
-  calculation = 'scf'
+  calculation = 'nscf'
   restart_mode= 'from_scratch'
   prefix      = 'LiNbO3'
   pseudo_dir  = '/home/elia/Google-Drive/google-personal/pseudos'
