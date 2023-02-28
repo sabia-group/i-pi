@@ -9,9 +9,9 @@
   verbosity   = 'high'
   !lelfield    = .true.
   !max_seconds = 14000
-  !lberry = .false.
-  !gdir = 
-  !nppstr = 2
+  lberry = .true.
+  gdir = 
+  nppstr = 2
 
 /
 &SYSTEM
@@ -31,8 +31,8 @@
   mixing_beta = 0.9
   mixing_ndim=25
   electron_maxstep=100
-  startingpot = 'atomic'
-  startingwfc = 'atomic+random'
+  startingpot = 'file'
+  startingwfc = 'file'
 /
 ATOMIC_SPECIES
   Nb  92.90638 Nb.pbesol-spn-rrkjus_psl.1.0.0.UPF
@@ -50,7 +50,6 @@ CELL_PARAMETERS angstrom
 HUBBARD ortho-atomic
   U Nb-4d 1.6
 
-ATOMIC_POSITIONS angstrom
 Nb      0.000000000000000      0.000000000000000      0.000000000000000
 Nb      2.122126000000000      3.092350000000000      5.824322000000000
 Li      0.926838000000000      1.348442000000000      2.530476000000000
