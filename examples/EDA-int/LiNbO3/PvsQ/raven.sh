@@ -130,16 +130,17 @@ if [[ ${write_qe} == 'true' ]] ; then
 		echo "command: ${QE_COMMAND}"
 		eval "${QE_COMMAND}"
 
-		echo
-		COPY_INPUT_FILE="cp $INPUT_FILE $RESULTS_DIR/$full_name.$CALC.in"
-		echo "$COPY_INPUT_FILE"
-		eval "$COPY_INPUT_FILE"
-
 		COPY_OUTPUT_FILE="cp $OUTPUT_FILE $RESULTS_DIR/$full_name.$CALC.out"
 		echo "$COPY_OUTPUT_FILE"
 		eval "$COPY_OUTPUT_FILE"
 
 	fi
+
+	echo
+	COPY_INPUT_FILE="cp $INPUT_FILE $RESULTS_DIR/$full_name.$CALC.in"
+	echo "$COPY_INPUT_FILE"
+	eval "$COPY_INPUT_FILE"
+
 fi
 
 # sleep_cmd="sleep ${sleep_sec}"

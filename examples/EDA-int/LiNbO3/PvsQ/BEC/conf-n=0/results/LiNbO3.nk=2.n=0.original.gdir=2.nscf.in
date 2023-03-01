@@ -1,17 +1,17 @@
 &CONTROL
-  calculation = 'scf'
+  calculation = 'nscf'
   restart_mode= 'from_scratch'
   prefix      = 'LiNbO3'
   pseudo_dir  = '/home/elia/Google-Drive/google-personal/pseudos'
-  outdir      = './outdir/LiNbO3.nk=2.displaced'
+  outdir      = './outdir/LiNbO3.nk=2'
   !tprnfor     = .true.
   !tstress     = .true.
   verbosity   = 'high'
   !lelfield    = .true.
   !max_seconds = 14000
-  !lberry = .false.
-  !gdir = 
-  !nppstr = 2
+  lberry = .true.
+  gdir = 2
+  nppstr = 2
 
 /
 &SYSTEM
@@ -49,7 +49,7 @@ CELL_PARAMETERS angstrom
 
 HUBBARD ortho-atomic
   U Nb-4d 1.6
-  
+
 ATOMIC_POSITIONS angstrom
 Nb      0.000000000000000      0.000000000000000      0.000000000000000
 Nb      2.122126000000000      3.092350000000000      5.824322000000000
