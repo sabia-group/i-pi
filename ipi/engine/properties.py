@@ -258,7 +258,7 @@ class Properties(dobject):
                 "dimension": "atomic_unit",
                 "help": "The (gaussian) enevelope function of the external applied electric field).",
                 "size": 1,
-                "func": (lambda: self.ensemble.Eenvelope),
+                "func": (lambda: self.ensemble.Eenvelope if self.ensemble.Eenvelope is not None else 0.0 ),
             },
             "ionspol": {
                 "dimension": "atomic_unit",
@@ -288,6 +288,12 @@ class Properties(dobject):
                 "help": "The EDA energy contribution.",
                 "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
                 "func": (lambda: self.ensemble.EDAenergy ),
+            },
+            "BEC": {
+                "dimension": "number",
+                "help": "The BEC tensors in cartesian components",
+                "size": 9,
+                "func": (lambda: self.ensemble._get_BEC()[1] ),
             },
             "energy": {
                 "dimension": "energy",

@@ -58,16 +58,16 @@ def main():
     ) 
     parser.add_argument(
         "-oc", "--outcell", action="store", type=str,
-        help="output file for the cell", default="cell.csv"
+        help="output file for the cell", default="cell.txt"
     ) 
     parser.add_argument(
         "-cs", "--cellsep", action="store", type=str,
         help="separator for the cell (output) file", default="\t"
     )   
-    parser.add_argument(
-        "-or", "--outrot", action="store", type=str,
-        help="output file for the rotation matrix", default="rotation.csv"
-    ) 
+    # parser.add_argument(
+    #     "-or", "--outrot", action="store", type=str,
+    #     help="output file for the rotation matrix", default="rotation.csv"
+    # ) 
     parser.add_argument(
         "-rs", "--rotsep", action="store", type=str,
         help="separator for the rotation matrix file", default="\t"
@@ -100,33 +100,33 @@ def main():
     print("\n\trotated lattice vectors in lower triangular form computed using ase (matrix 'L'):")
     print(print_cell(L))
 
-    transformation = """
-    \t\t     | A 0 0 |           | F E D |
-    \t\t L = | B C 0 |  -->  R = | 0 C B |
-    \t\t     | D E F |           | 0 0 A |"""
+    # transformation = """
+    # \t\t     | A 0 0 |           | F E D |
+    # \t\t L = | B C 0 |  -->  R = | 0 C B |
+    # \t\t     | D E F |           | 0 0 A |"""
 
-    print("\n\ttransforming LOWER triangular cell parameters (matrix 'L') to UPPER triangular cell parameters (matrix 'U'):\n"+transformation)
+    # print("\n\ttransforming LOWER triangular cell parameters (matrix 'L') to UPPER triangular cell parameters (matrix 'U'):\n"+transformation)
 
-    U = np.zeros((3,3))
-    U[0,0] = L[2,2] # F
-    U[1,1] = L[1,1] # C
-    U[2,2] = L[0,0] # A
+    # U = np.zeros((3,3))
+    # U[0,0] = L[2,2] # F
+    # U[1,1] = L[1,1] # C
+    # U[2,2] = L[0,0] # A
 
-    U[0,1] = L[2,1] # E
-    U[0,2] = L[2,0] # D
-    U[1,2] = L[1,0] # B
+    # U[0,1] = L[2,1] # E
+    # U[0,2] = L[2,0] # D
+    # U[1,2] = L[1,0] # B
 
-    del L # I do not need it any mode
+    #del L # I do not need it any mode
 
-    print("\n\trotated lattice vectors in upper triangular form (matrix 'U'):")
-    print(print_cell(U))
+    # print("\n\trotated lattice vectors in upper triangular form (matrix 'U'):")
+    # print(print_cell(U))
 
-    print("\n\tcomputing the rotation matrix 'R' transforming the original lattice vectors (matrix 'O') to the upper triangular form (matrix 'U')")
-    print("\n\t\tU^t = R @ O^t  -->  R = U^t @ O^-1t")
-    print("\n\t\tPay attention that the lattice vectors are stored as row vectors!")
-    print("\n\t\tWe need to transpose the matrices shown above")
-    
-    R = np.asarray(U).T @ inv(np.asarray(data.cell).T)
+    # print("\n\tcomputing the rotation matrix 'R' transforming the original lattice vectors (matrix 'O') to the upper triangular form (matrix 'U')")
+    # print("\n\t\tU^t = R @ O^t  -->  R = U^t @ O^-1t")
+    # print("\n\t\tPay attention that the lattice vectors are stored as row vectors!")
+    # print("\n\t\tWe need to transpose the matrices shown above")
+
+    R = np.asarray(L).T @ inv(np.asarray(data.cell).T)
 
     print("\n\trotation matrix 'R':")
     print(print_cell(R))
@@ -140,11 +140,20 @@ def main():
 
     outfile = options.folder+"/"+options.outcell
     print("\n\tsaving rotated cell to '%s'"%(outfile))
-    np.savetxt(outfile,np.asarray(U),delimiter=options.cellsep)
+    with open(outfile,'w') as f:
+        # f.write("# unit cell (Upper triangular)\n")
+        # np.savetxt(f,np.asarray(U),delimiter=options.cellsep)
+        # f.write("\n# transposed unit cell (Upper triangular)\n")
+        # np.savetxt(f,np.asarray(U).T,delimiter=options.cellsep)
 
-    outfile = options.folder+"/"+options.outrot
-    print("\n\tsaving roation matrix to '%s'"%(outfile))
-    np.savetxt(outfile,np.asarray(R),delimiter=options.rotsep)
+        f.write("\n# transposed unit cell (row vectors) -> driver\n")
+        np.savetxt(f,np.asarray(L),delimiter=options.cellsep)
+        f.write("\n# unit cell (column vectors) -> i-pi\n")
+        np.savetxt(f,np.asarray(L).T,delimiter=options.cellsep)
+
+    # outfile = options.folder+"/"+options.outrot
+    # print("\n\tsaving rotation matrix to '%s'"%(outfile))
+    # np.savetxt(outfile,np.asarray(R),delimiter=options.rotsep)
 
     #in_format = None
     if options.vector is not None:
@@ -172,7 +181,7 @@ def main():
         if options.vector == options.input:
             #options.outcell = None
             newdata = copy(data)
-            newdata.cell = Cell(U)
+            newdata.cell = Cell(L)
             newdata.set_positions(positions,apply_constraint=False)
             write(outfile,newdata,format=options.format)
 

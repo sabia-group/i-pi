@@ -38,7 +38,7 @@ def prepare_parser():
     parser = ArgumentParser(description="Prepare the xyz files for a vibrational mode animation.")
     parser.add_argument(
         "-i", "--input", action="store", type=str,
-        help="input file with the relaxed position, around which the virbational modes have been computed", default=None
+        help="input file with the relaxed position, around which the vibrational modes have been computed", default=None
     )
     parser.add_argument(
         "-e", "--eigenvec", action="store", type=str,
@@ -50,11 +50,11 @@ def prepare_parser():
     )
     parser.add_argument(
         "-m", "--mode", action="store", type=int,
-        help="index of the mode to consider (-1 mean all)", default=0
+        help="index of the mode to consider (-1 means all)", default=-1
     )
     parser.add_argument(
         "-d", "--displacement", action="store", type=float,
-        help="maximum dispacement to consider", default=0.1
+        help="maximum dispacement to consider", default=0.5
     )
     # parser.add_argument(
     #     "-u", "--unit", action="store", type=str,
@@ -70,7 +70,7 @@ def prepare_parser():
     ) 
     parser.add_argument(
         "-od", "--outdir", action="store", type=str,
-        help="output directory where a file (xyz) for each configuration will be saved", default=None
+        help="output directory where a file (xyz) for each configuration will be saved", default='animation'
     )    
        
     options = parser.parse_args()
@@ -118,7 +118,7 @@ def main():
     if options.displacement <= 0 :
         raise ValueError("'displacement' (-d, --displacement) has to be greater than 0.0")
     if options.mode < 0 and options.mode != -1 :
-        raise ValueError("'mode' (-m, --mode) has to be greater than or equal to 0 (-1 mean all modes)")
+        raise ValueError("'mode' (-m, --mode) has to be greater than or equal to 0 (-1 means all modes)")
     if options.mode > len(eigenvec) :
         raise ValueError("'mode' (-m, --mode) has to be smaller than the number of vibratinal modes")
     if options.outdir is None and options.output is None:
@@ -153,12 +153,12 @@ def main():
             print("\n\tcreating folder '%s'\n"%(options.outdir))
             os.mkdir(options.outdir)
         print("\n\tcopying files from the temporary folder to '%s'\n"%(options.outdir))
-        os.system("cp %s/* %s/."%(folder,options.outdir))
+        #os.system("cp %s/* %s/."%(folder,options.outdir))
     
     if options.output is not None :
 
         for nm,mode in enumerate(modes):
-            file = "{:s}.m={:d}.xyz".format(options.output,mode)
+            file = "{:s}/{:s}.m={:d}.xyz".format(options.outdir,options.output,mode)
             print("\tconcatenating all files to '%s'"%(file))
 
             filenames = list(mode_files.iloc[nm,:])

@@ -156,7 +156,7 @@ class InputEnsemble(Input):
             {   
                 "dtype": float, 
                 "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The Born Effective Charges tensor(s)",
+                "help": "The Born Effective Charges tensors (w.r.t. the lattice vectors)",
             },
         ),
     }

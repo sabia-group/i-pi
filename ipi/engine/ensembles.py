@@ -12,6 +12,7 @@ appropriate conserved energy quantity for the ensemble of choice.
 
 
 import numpy as np
+from numpy import linalg
 
 from ipi.utils.messages import warning,verbosity
 from ipi.utils.depend import dd
@@ -348,11 +349,18 @@ class Ensemble(dobject):
         else :
             return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
 
+    def _lv2cart(self,BEC):
+        """Get the BEC tensors expressed w.r.t. the lattice vectors and returns the same tensor expressed in cartesian coordinates"""
+        R = self.cell.h.copy()
+        for i in range(3):
+            R[:,i] = R[:,i] / linalg.norm(R[:,i])
+        return linalg.inv(R) @ BEC @ R
+
     def _get_BEC(self):
-        """Return the BEC tensors.
+        """Return the BEC tensors in cartesian coordinates.
         The BEC tensor are stored in a compact form.
         This method trasform the BEC tensors into another data structure, suitable for computation.
-        A lambda function is also returned to peform fast matrix multiplication.
+        A lambda function is also returned to perform fast matrix multiplication.
         """
         # one day this method will be (re)coded again from scratch, and perhaps the 'level' will be used
 
@@ -360,24 +368,28 @@ class Ensemble(dobject):
         Na = self.beads.natoms # number of atoms
 
         if N == Na:     # scalar BEC
-            Z = np.zeros((Na,3))
+            Z = np.zeros((Na,3,3))
             for i in range(Na):
-                Z[i].fill(self.BEC[i])
-            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+                for j in range(3):
+                    Z[i,j,j] = self.BEC[i]
+            return self._lv2cart(Z), lambda a,b : a@b
+            #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
 
         elif N == 3*Na: # diagonal BEC
-            Z = np.zeros((Na,3))
+            Z = np.zeros((Na,3,3))
             temp = self.BEC.reshape((Na,3))
             for i in range(Na):
-                Z[i,:] = temp[i]
-            return Z, lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
+                for j in range(3):
+                    Z[i,j,j] = temp[i,j]
+            return self._lv2cart(Z), 
+            #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
         
         elif N == 9*Na: # all-components BEC
             Z = np.zeros((Na,3,3))
             temp = self.BEC.reshape((Na,3,3))
             for i in range(Na):
                 Z[i,:,:] = temp[i,:,:]
-            return Z, lambda a,b : a@b # rows-by-columns (matrix) multplication (all the elements have been allocated)
+            return self._lv2cart(Z), lambda a,b : a@b # rows-by-columns (matrix) multplication (all the elements have been allocated)
 
         else :
             raise ValueError("BEC tensor with wrong size!")
@@ -415,7 +427,7 @@ class Ensemble(dobject):
         msg = "Error in _check_pol"
 
         if "polarization" not in self.forces.extras:
-            raise ValueError(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)")
+            raise warning(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)") 
 
         N = self.beads.nbeads
         # check whether the number of polarization values is correct, i.e. equal to the number of beads 

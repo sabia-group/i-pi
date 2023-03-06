@@ -442,6 +442,7 @@ class EDAIntegrator(DummyIntegrator):
 
     def _elec_forces(self,level=0):
         """Compute the contribution to the forces due to the electronic polarization"""
+        # the electric field and the BEC tensors are expressed in cartesian coordinates
         BEC,mult = self.ensemble._get_BEC()
         forces = Constants.e * mult(BEC,self.ensemble.Efield) # the electric field has to be updated!
         return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
