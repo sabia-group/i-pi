@@ -9,12 +9,19 @@ Used for implementing the minimum image convention.
 
 
 import numpy as np
+from numpy.linalg import norm
 
 from ipi.utils.depend import *
 from ipi.utils.mathtools import *
 
 
 __all__ = ["Cell"]
+
+def norm_cols(M):
+    """normalize the columns of a matrix"""
+    for i in range(M.shape[1]):
+        M[:,i] = M[:,i] / norm(M[:,i])
+    return M
 
 
 class Cell(dobject):
@@ -130,3 +137,19 @@ class Cell(dobject):
         for i in range(3):
             s[i] -= round(s[i])
         return np.dot(self.h, s)
+       
+    def rlv2cart(self,v):
+        """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
+        # self.h contains the lattice vectors (each column is a vector)
+        # compute the reciprocal lattice vectors (each column is a vector)
+        B = invert_ut3x3(self.h.T)
+        # normalize per column
+        B = norm_cols(B)
+        # get the cartesian components
+        return B @ v
+    
+    def lv2cart(self,v):
+        """Return the cartesian component of a vector given its components w.r.t. the lattice vectors"""
+        A = norm_cols(self.h)
+        return A @ v
+    

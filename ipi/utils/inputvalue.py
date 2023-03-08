@@ -34,6 +34,7 @@ __all__ = [
     "InputAttribute",
     "InputArray",
     "input_default",
+    "InputArrayGeneric"
 ]
 
 
@@ -1210,3 +1211,44 @@ class InputArray(InputValue):
         # if the shape is not specified, assume the array is linear.
         if self.shape.fetch() == (0,):
             self.shape.store((len(self.value),))
+
+class InputArrayGeneric(InputArray):
+
+    """Class for handling array input.
+
+    Has the methods for dealing with simple data tags of the form:
+    <tag_name shape="(shape)"> data </tag_name>, where data is an array
+    of the form [data[0], data[1], ... , data[length]].
+
+    Takes the data and converts it to the required data type,
+    so that it can be used in the simulation. Also holds the shape of the array,
+    so that we can use a simple 1D list of data to specify a multi-dimensional
+    array.
+
+    Attributes:
+       shape: The shape of the array.
+    """
+
+    attribs = copy(InputArray.attribs)
+    attribs["basis"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "default": "lv",
+            "options": ["lv", "rlv","cart"],
+            "help": "The basis of w.r.t. the vector components are referred: (normalized) lattice vectors [lv], (normalized) reciprocal lattice vectors [rlv], or cartesian [cart].",
+        },
+    )
+
+    def __init__(self, help=None, default=None, dtype=None, dimension=None):
+        """Initialises InputArray.
+
+        Args:
+           help: A help string.
+           dimension: The dimensionality of the value.
+           default: A default value.
+           dtype: An optional data type. Defaults to None.
+        """
+
+        super(InputArray, self).__init__(help, default, dtype, dimension=dimension)
+        #self.basis = self.attribs["basis"]

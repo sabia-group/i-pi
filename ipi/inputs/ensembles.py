@@ -151,6 +151,14 @@ class InputEnsemble(Input):
                 "dimension": "time",
             },
         ),
+        "cpol": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": False,
+                "help": "Wheter the polarization is returned by the driver",
+            },
+        ),
         "BEC": (
             InputArray,
             {   
@@ -191,6 +199,7 @@ class InputEnsemble(Input):
         self.Epeak.store(ens.Epeak)
         self.Esigma.store(ens.Esigma)
         self.BEC.store(ens.BEC)
+        self.cpol.store(ens.cpol)
 
 
     def fetch(self):
@@ -217,7 +226,8 @@ class InputEnsemble(Input):
             Ephase=self.Ephase.fetch(),
             Epeak=self.Epeak.fetch(),
             Esigma=self.Esigma.fetch(),
-            BEC=self.BEC.fetch()
+            BEC=self.BEC.fetch(),
+            cpol=self.cpol.fetch()
         )
 
         return ens

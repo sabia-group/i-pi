@@ -89,6 +89,14 @@ class InputDynamics(InputDictionary):
                 "dimension": "time",
             },
         ),
+        # "polarization": (
+        #     InputValue,
+        #     {
+        #         "dtype": bool,
+        #         "default": False,
+        #         "help": "Wheter the polarization is returned by the driver",
+        #     },
+        # ),
         "nmts": (
             InputArray,
             {

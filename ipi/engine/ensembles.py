@@ -89,7 +89,8 @@ class Ensemble(dobject):
         Ephase=None,
         Epeak=None,
         Esigma=None,
-        BEC=None
+        BEC=None,
+        cpol=False
     ):
         """Initialises Ensemble.
 
@@ -161,7 +162,9 @@ class Ensemble(dobject):
         dself.Ephase = depend_value(name="Ephase",value=Ephase if Ephase is not None else 0.0 )
         dself.Epeak  = depend_value(name="Epeak" ,value=Epeak  if Epeak  is not None else 0.0)
         dself.Esigma = depend_value(name="Esigma",value=Esigma if Esigma is not None else np.inf)
-        dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))  
+        dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))
+
+        self.cpol = cpol
 
     def copy(self):
         return Ensemble(
@@ -265,9 +268,17 @@ class Ensemble(dobject):
         
     
         # ES: polarization(s) for each beads
-        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
-        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self._get_pol(what="elec") ,value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
-        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self._get_pol(what="total"),value=[np.zeros(3,dtype=float)],dependencies=[dself.time])
+        #all_q = [dd(self.beads[i]).q for i in range(self.beads.nbeads)]
+        #print(len(self.beads.q._dependants))
+        val = np.full(self.beads.nbeads,np.zeros(3,dtype=float)) if self.beads.nbeads > 1 else np.zeros(3,dtype=float)
+        dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=val,dependencies=[dself.time,dd(self.beads).q])
+        dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self._get_pol(what="elec") ,value=val,dependencies=[dself.time,dd(self.beads).q])
+        dself.TotalPol = depend_array(name="TotalPol", func=lambda:self._get_pol(what="total"),value=val,dependencies=[dself.time,dd(self.beads).q])
+        
+        # print(dself.ElecPol)
+        # print(dself.ElecPol)
+        # dself.beads.q.taint(True)
+        # print(dself.ElecPol)
 
         # ES: Ensemble polarization(s): the average over the bead of the previous quantities
         dself.EnsIonsPol  = depend_array(name="EnsIonsPol" , func=lambda:self._get_enspol(what="ions") ,value=np.zeros(3,dtype=float),dependencies=[dself.IonsPol ,dself.time])
@@ -276,6 +287,9 @@ class Ensemble(dobject):
 
         dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
         #dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+
+        dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.lv2cart(self.Efield) ,value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
+        dself.BECcart    = depend_array(name="BECcart" , func=lambda:self._get_BEC ,value=np.zeros((3,3),dtype=float),dependencies=[dself.BEC])
         
     def add_econs(self, e):
         self._elist.append(e)
@@ -320,7 +334,8 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
-        return self.cell.V * np.asarray(self.EnsTotalPol) @ np.asarray(self.Efield)
+        polcart = self.cell.rlv2cart(np.asarray(self.EnsTotalPol)) # total polarization in cartesian coordinates
+        return float(self.cell.V * np.dot(polcart , self.Efieldcart))
 
     # def _get_Eenthalpy(self):
     #     return self.econs - self.EDAenergy
@@ -343,9 +358,9 @@ class Ensemble(dobject):
             return None
 
     def _get_Efield(self):
-        """Get the value of the external electric field"""
+        """Get the value of the external electric field (w.r.t. the lattice vectors)"""
         if self.Eenvelope is not None :
-            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase) * self.Eenvelope(self.cptime)
+            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase) * self.Eenvelope#(self.cptime)
         else :
             return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
 
@@ -362,7 +377,6 @@ class Ensemble(dobject):
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to perform fast matrix multiplication.
         """
-        # one day this method will be (re)coded again from scratch, and perhaps the 'level' will be used
 
         N = len(self.BEC)      # lenght of the BEC array
         Na = self.beads.natoms # number of atoms
@@ -372,7 +386,7 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = self.BEC[i]
-            return self._lv2cart(Z), lambda a,b : a@b
+            return self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
 
         elif N == 3*Na: # diagonal BEC
@@ -381,7 +395,7 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = temp[i,j]
-            return self._lv2cart(Z), 
+            return self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
         
         elif N == 9*Na: # all-components BEC
@@ -389,7 +403,7 @@ class Ensemble(dobject):
             temp = self.BEC.reshape((Na,3,3))
             for i in range(Na):
                 Z[i,:,:] = temp[i,:,:]
-            return self._lv2cart(Z), lambda a,b : a@b # rows-by-columns (matrix) multplication (all the elements have been allocated)
+            return self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
 
         else :
             raise ValueError("BEC tensor with wrong size!")
@@ -405,17 +419,22 @@ class Ensemble(dobject):
                 raise ValueError("Error in get_pol: 'beads' is negative") 
             if bead >= N :
                 raise ValueError("Error in get_pol: 'beads' is greater than the number of beads") 
-
+        
         # return the polarization
         if what in ["total","elec","ions"]:
-            pol = [self.forces.extras["polarization"][i][what] for i in range(N)]
-            return pol if bead is None else pol[bead] 
+            if not self.cpol:
+                return np.asarray([0,0,0])
+            else :
+                pol = [self.forces.extras["polarization"][i][what] for i in range(N)]
+                return pol[0] if bead is None else pol[bead] 
+            
         elif what == "all":
             # ES: pay attention, these following have to be in the same order to line 530 in /ipi/engine/outputs.py
             pol = [ np.asarray(list(self.forces.extras["polarization"][i]["ions"])+\
                                 list(self.forces.extras["polarization"][i]["elec"])+\
                                 list(self.forces.extras["polarization"][i]["total"])) for i in range(N)]
             return pol if bead is None else pol[bead] 
+        
         else:
             raise ValueError("Error in get_pol: '"+what+"' is not a 'polarization' key") 
         
@@ -426,8 +445,11 @@ class Ensemble(dobject):
 
         msg = "Error in _check_pol"
 
-        if "polarization" not in self.forces.extras:
-            raise warning(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)") 
+        if self.cpol :
+            if "polarization" not in self.forces.extras :
+                raise warning(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)") 
+        else :
+            return True
 
         N = self.beads.nbeads
         # check whether the number of polarization values is correct, i.e. equal to the number of beads 

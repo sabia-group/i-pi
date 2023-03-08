@@ -45,6 +45,7 @@ from ipi.engine.motion import (
     AlKMC,
     SCPhononsMover,
     NormalModeMover,
+    BECTensorsCalculator,
 )
 from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
@@ -63,6 +64,7 @@ from .atomswap import InputAtomSwap
 from .planetary import InputPlanetary
 from .ramp import InputTemperatureRamp, InputPressureRamp
 from .al6xxx_kmc import InputAlKMC
+from .BEC import InputBECTensorsCalculator
 from ipi.utils.units import *
 
 __all__ = ["InputMotion"]
@@ -108,6 +110,7 @@ class InputMotionBase(Input):
                     "dummy",
                     "scp",
                     "normalmodes",
+                    "BEC",
                 ],
             },
         )
@@ -174,6 +177,10 @@ class InputMotionBase(Input):
         ),
         "vibrations": (
             InputDynMatrix,
+            {"default": {}, "help": "Option for phonon computation"},
+        ),
+        "BEC": (
+            InputBECTensorsCalculator,
             {"default": {}, "help": "Option for phonon computation"},
         ),
         "normalmodes": (
@@ -255,6 +262,10 @@ class InputMotionBase(Input):
         elif type(sc) is DynMatrixMover:
             self.mode.store("vibrations")
             self.vibrations.store(sc)
+            tsc = 1
+        elif type(sc) is BECTensorsCalculator:
+            self.mode.store("BEC")
+            self.BEC.store(sc)
             tsc = 1
         elif type(sc) is SCPhononsMover:
             self.mode.store("scp")
@@ -371,6 +382,12 @@ class InputMotionBase(Input):
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.vibrations.fetch()
+            )
+        elif mode == "BEC":
+            sc = BECTensorsCalculator(
+                fixcom=self.fixcom.fetch(),
+                fixatoms=self.fixatoms.fetch(),
+                **self.BEC.fetch()
             )
         elif mode == "normalmodes":
             sc = NormalModeMover(
