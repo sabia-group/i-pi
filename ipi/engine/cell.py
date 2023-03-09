@@ -9,7 +9,7 @@ Used for implementing the minimum image convention.
 
 
 import numpy as np
-from numpy.linalg import norm
+from numpy.linalg import norm, inv
 
 from ipi.utils.depend import *
 from ipi.utils.mathtools import *
@@ -142,7 +142,8 @@ class Cell(dobject):
         """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
         # self.h contains the lattice vectors (each column is a vector)
         # compute the reciprocal lattice vectors (each column is a vector)
-        B = invert_ut3x3(self.h.T)
+        h = np.asarray(self.h.copy())
+        B = inv(h.T)
         # normalize per column
         B = norm_cols(B)
         # get the cartesian components
@@ -150,6 +151,7 @@ class Cell(dobject):
     
     def lv2cart(self,v):
         """Return the cartesian component of a vector given its components w.r.t. the lattice vectors"""
-        A = norm_cols(self.h)
+        h = np.asarray(self.h.copy())
+        A = norm_cols(h)
         return A @ v
     

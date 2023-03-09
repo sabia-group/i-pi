@@ -90,7 +90,7 @@ class Ensemble(dobject):
         Epeak=None,
         Esigma=None,
         BEC=None,
-        cpol=False
+        cpol=True
     ):
         """Initialises Ensemble.
 
@@ -366,7 +366,7 @@ class Ensemble(dobject):
 
     def _lv2cart(self,BEC):
         """Get the BEC tensors expressed w.r.t. the lattice vectors and returns the same tensor expressed in cartesian coordinates"""
-        R = self.cell.h.copy()
+        R = np.asarray(self.cell.h)#.copy()
         for i in range(3):
             R[:,i] = R[:,i] / linalg.norm(R[:,i])
         return linalg.inv(R) @ BEC @ R
@@ -423,7 +423,7 @@ class Ensemble(dobject):
         # return the polarization
         if what in ["total","elec","ions"]:
             if not self.cpol:
-                return np.asarray([0,0,0])
+                return np.asarray([0,0,0]) # the polarization is not computed by the driver, then return [0,0,0]
             else :
                 pol = [self.forces.extras["polarization"][i][what] for i in range(N)]
                 return pol[0] if bead is None else pol[bead] 
@@ -448,7 +448,7 @@ class Ensemble(dobject):
         if self.cpol :
             if "polarization" not in self.forces.extras :
                 raise warning(msg+": polarization is not returned to i-pi (or at least not accessible in _check_pol)") 
-        else :
+        else : # the polarization is not computed by the driver, then skip this check
             return True
 
         N = self.beads.nbeads

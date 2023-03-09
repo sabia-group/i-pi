@@ -155,7 +155,7 @@ class InputEnsemble(Input):
             InputValue,
             {
                 "dtype": bool,
-                "default": False,
+                "default": True,
                 "help": "Wheter the polarization is returned by the driver",
             },
         ),
