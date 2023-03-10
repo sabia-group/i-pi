@@ -71,12 +71,28 @@ class InputBECTensorsCalculator(InputDictionary):
                 "help": "Removes the zero frequency vibrational modes depending on the symmerty of the system.",
             },
         ),
-        "polmat": (
+        "Epolmatrix": (
             InputArray,
             {
                 "dtype": float,
                 "default": np.zeros(0, float),
-                "help": "Portion of the polarization matrix known up to now.",
+                "help": "Portion of the electronic polarization matrix known up to now.",
+            },
+        ),
+        "Ipolmatrix": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": np.zeros(0, float),
+                "help": "Portion of the ionic polarization matrix known up to now.",
+            },
+        ),
+        "Tpolmatrix": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": np.zeros(0, float),
+                "help": "Portion of the total polarization matrix known up to now.",
             },
         ),
         # "refdynmat": (
@@ -103,7 +119,9 @@ class InputBECTensorsCalculator(InputDictionary):
         #self.output_shift.store(phonons.deltaw)
         self.prefix.store(phonons.prefix)
         self.asr.store(phonons.asr)
-        self.polmat.store(phonons.polmatrix)
+        self.Epolmatrix.store(phonons.Epolmatrix)
+        self.Ipolmatrix.store(phonons.Ipolmatrix)
+        self.Tpolmatrix.store(phonons.Tpolmatrix)
         #self.refdynmat.store(phonons.refdynmatrix)
 
     def fetch(self):

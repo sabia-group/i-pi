@@ -18,13 +18,15 @@ class BECTensorsCalculator(Motion):
 
     def __init__(
         self,
-        fixcom=True,
-        fixatoms=None,
+        #fixcom=True,
+        #fixatoms=None,
         mode="fd",
         #energy_shift=0.0,
         pos_shift=0.001,
         #output_shift=0.000,
-        polmat=np.zeros(0, float),
+        Epolmatrix=np.zeros(0, float),
+        Ipolmatrix=np.zeros(0, float),
+        Tpolmatrix=np.zeros(0, float),
         #refdynmat=np.zeros(0, float),
         prefix="",
         asr="none",
@@ -37,10 +39,10 @@ class BECTensorsCalculator(Motion):
         refdynmatrix : A 3Nx3N array that stores the refined dynamic matrix.
         """
 
-        if fixcom is False :
-            raise ValueError("fixcom=False is not implemented in BEC calculator")        
-        if len(fixatoms) > 0 :
-            raise ValueError("fixatoms is not implemented in BEC calculator")
+        # if fixcom is False :
+        #     raise ValueError("fixcom=False is not implemented in BEC calculator")        
+        # if len(fixatoms) > 0 :
+        #     raise ValueError("fixatoms is not implemented in BEC calculator")
         if mode != "fd" :
             raise ValueError(mode, "mode is not implemented in BEC calculator (the only allowed one is 'fd')")
         
@@ -58,8 +60,12 @@ class BECTensorsCalculator(Motion):
         #self.deltaw = output_shift
         self.deltax = pos_shift
         #self.deltae = energy_shift
-        self.polmatrix = polmat
-        self.correction = np.zeros(0, float)
+        self.Epolmatrix = Epolmatrix.copy()
+        self.Ipolmatrix = Ipolmatrix.copy()
+        self.Tpolmatrix = Tpolmatrix.copy()
+        self.Ecorrection = np.zeros(0, float)
+        self.Icorrection = np.zeros(0, float)
+        self.Tcorrection = np.zeros(0, float)
 
         # self.frefine = False
         # self.U = None
@@ -102,8 +108,7 @@ class BECTensorsCalculator(Motion):
         if step < 3 * self.beads.natoms:
             self.phcalc.step(step)
         else:
-            #self.phcalc.transform()
-            self.polmatrix = self.polmatrix.reshape((self.beads.natoms,3,3))
+            self.phcalc.transform()
             self.apply_asr()
             self.printall()
             softexit.trigger(
@@ -112,10 +117,20 @@ class BECTensorsCalculator(Motion):
             )
 
     def printall(self):
-        """Prints out diagnostics for a given dynamical matrix."""
+        """Prints matrices to file"""
 
-        np.savetxt("correction.txt",self.correction)
-        np.savetxt("BEC.txt",self.polmatrix)
+        for contr,M in zip(["electrons","ions","total"],[self.dm.Epolmatrix,self.dm.Ipolmatrix,self.dm.Tpolmatrix]):
+            file = "{:s}.BEC.{:s}.txt".format(self.prefix,contr)
+            header = "BEC for {:s} polarization.\n".format(contr)+\
+                "The polarization (columns indices of the BEC tensors) are expressed w.r.t. the (normalized) reciprocal lattice vectors.\n"+\
+                "The displacements (row indices of the BEC tensors) are expressed (and have been performed) along the (normalized) lattice vectors.\n"+\
+                "The BEC tensors of each ions are printed consecutively."
+            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
+
+        for contr,M in zip(["electrons","ions","total"],[self.dm.Ecorrection,self.dm.Icorrection,self.dm.Tcorrection]):
+            file = "{:s}.BEC.correction.{:s}.txt".format(self.prefix,contr)
+            header = "correction to the BEC tensors for {:s} computed imposing the Translational Sum Rule".format(contr)
+            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
 
         return 
 
@@ -192,99 +207,30 @@ class BECTensorsCalculator(Motion):
         """
         Removes the translations and/or rotations depending on the asr mode.
         """
-        self.correction = self.polmatrix.sum(axis=0)/self.beads.natoms
-        self.polmatrix -= self.correction
-        # if self.asr == "none":
-        #     return dm
 
-        # if self.asr == "crystal":
-        #     # Computes the centre of mass.
-        #     com = (
-        #         np.dot(
-        #             np.transpose(self.beads.q.reshape((self.beads.natoms, 3))), self.m
-        #         )
-        #         / self.m.sum()
-        #     )
-        #     qminuscom = self.beads.q.reshape((self.beads.natoms, 3)) - com
-        #     # Computes the moment of inertia tensor.
-        #     moi = np.zeros((3, 3), float)
-        #     for k in range(self.beads.natoms):
-        #         moi -= (
-        #             np.dot(
-        #                 np.cross(qminuscom[k], np.identity(3)),
-        #                 np.cross(qminuscom[k], np.identity(3)),
-        #             )
-        #             * self.m[k]
-        #         )
+        #
+        # Translational Sum Rule :
+        # \sum_I Z^I_ij = 0 
+        #
+        # This means that the translation of all the ions does not lead to any change in the polarization.
+        #
+        # So we compute this sum, which should be zero, but it is not due to "numerical noise",
+        # and then we subtract this amount (divided by the number of atoms) to each BEC.
+        #
+        # Pay attention that in this case self.polmatrix has already the shape (natoms,3,3)
+        # and self.correction has the shape (3,3) 
+        #
 
-        #     U = (np.linalg.eig(moi))[1]
-        #     R = np.dot(qminuscom, U)
-        #     D = np.zeros((3, 3 * self.beads.natoms), float)
+        self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
+        self.Epolmatrix -= self.Ecorrection
 
-        #     # Computes the vectors along rotations.
-        #     D[0] = np.tile([1, 0, 0], self.beads.natoms) / self.ism
-        #     D[1] = np.tile([0, 1, 0], self.beads.natoms) / self.ism
-        #     D[2] = np.tile([0, 0, 1], self.beads.natoms) / self.ism
+        self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
+        self.Ipolmatrix -= self.Icorrection
 
-        #     # Computes unit vecs.
-        #     for k in range(3):
-        #         D[k] = D[k] / np.linalg.norm(D[k])
+        self.Tcorrection = self.Tpolmatrix.sum(axis=0)/self.beads.natoms
+        self.Tpolmatrix -= self.Tcorrection
 
-        #     # Computes the transformation matrix.
-        #     transfmatrix = np.eye(3 * self.beads.natoms) - np.dot(D.T, D)
-        #     r = np.dot(transfmatrix.T, np.dot(dm, transfmatrix))
-        #     return r
-
-        # elif self.asr == "poly":
-        #     # Computes the centre of mass.
-        #     com = (
-        #         np.dot(
-        #             np.transpose(self.beads.q.reshape((self.beads.natoms, 3))), self.m
-        #         )
-        #         / self.m.sum()
-        #     )
-        #     qminuscom = self.beads.q.reshape((self.beads.natoms, 3)) - com
-        #     # Computes the moment of inertia tensor.
-        #     moi = np.zeros((3, 3), float)
-        #     for k in range(self.beads.natoms):
-        #         moi -= (
-        #             np.dot(
-        #                 np.cross(qminuscom[k], np.identity(3)),
-        #                 np.cross(qminuscom[k], np.identity(3)),
-        #             )
-        #             * self.m[k]
-        #         )
-
-        #     U = (np.linalg.eig(moi))[1]
-        #     R = np.dot(qminuscom, U)
-        #     D = np.zeros((6, 3 * self.beads.natoms), float)
-
-        #     # Computes the vectors along translations and rotations.
-        #     D[0] = np.tile([1, 0, 0], self.beads.natoms) / self.ism
-        #     D[1] = np.tile([0, 1, 0], self.beads.natoms) / self.ism
-        #     D[2] = np.tile([0, 0, 1], self.beads.natoms) / self.ism
-        #     for i in range(3 * self.beads.natoms):
-        #         iatom = i // 3
-        #         idof = np.mod(i, 3)
-        #         D[3, i] = (
-        #             R[iatom, 1] * U[idof, 2] - R[iatom, 2] * U[idof, 1]
-        #         ) / self.ism[i]
-        #         D[4, i] = (
-        #             R[iatom, 2] * U[idof, 0] - R[iatom, 0] * U[idof, 2]
-        #         ) / self.ism[i]
-        #         D[5, i] = (
-        #             R[iatom, 0] * U[idof, 1] - R[iatom, 1] * U[idof, 0]
-        #         ) / self.ism[i]
-
-        #     # Computes unit vecs.
-        #     for k in range(6):
-        #         D[k] = D[k] / np.linalg.norm(D[k])
-
-        #     # Computes the transformation matrix.
-        #     transfmatrix = np.eye(3 * self.beads.natoms) - np.dot(D.T, D)
-        #     r = np.dot(transfmatrix.T, np.dot(dm, transfmatrix))
-        #     return r
-
+        # We should add the Rotational Sum Rule
 
 class DummyBECTensorsCalculator(dobject):
 
@@ -296,7 +242,9 @@ class DummyBECTensorsCalculator(dobject):
     def bind(self, dm):
         """Reference all the variables for simpler access."""
         self.dm = dm
-        self.original = np.asarray(dstrip(self.dm.beads.q[0]).copy())
+        # the original coordinates w.r.t. which the displacement are performed
+        # the index 0 indicate that only nbeads=0 is allowed
+        self.original = np.asarray(dstrip(self.dm.beads.q[0]).copy()) 
 
     def step(self, step=None):
         """Dummy simulation time step which does nothing."""
@@ -322,20 +270,22 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
         #print(type(self.dm.ensemble.ElecPol))
         #dd(self.dm.ensemble).ElecPol.add_dependency(dd(self.dm.dbeads).q)
 
-        # Initialises a 3*number of atoms X 3*number of atoms dynamic matrix.
-        if self.dm.polmatrix.size != ( 3 * self.dm.beads.q.size ):
-            if self.dm.polmatrix.size == 0:
-                self.dm.polmatrix = np.zeros(
-                    (self.dm.beads.q.size, 3 ), float
-                )
+        def check_dimension(M,name):
+            if M.size != ( 3 * self.dm.beads.q.size ):
+                if M.size == 0:
+                    M = np.zeros((self.dm.beads.q.size, 3 ),float)
+                else:
+                    raise ValueError("{:s} polarization matrix constant matrix size does not match system size".format(name))
             else:
-                raise ValueError(
-                    "Polarization matrix constant matrix size does not match system size"
-                )
-        else:
-            self.dm.polmatrix = self.dm.polmatrix.reshape(
-                ((self.dm.beads.q.size, 3 ))
-            )
+                M = M.reshape(((self.dm.beads.q.size, 3 )))
+            return M
+
+        # Initialises a 3*number of atoms X 3*number of atoms dynamic matrix.
+        self.dm.Epolmatrix = check_dimension(self.dm.Epolmatrix,"Electronic")
+        self.dm.Ipolmatrix = check_dimension(self.dm.Ipolmatrix,"Ionic")
+        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix,"Total")
+
+        return
 
     def step(self, step=None):
         """Computes one row of the BEC tensors"""
@@ -358,11 +308,15 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
 
         # displaces kth d.o.f by delta.
         self.dm.beads.q.set(self.original + dev)
-        plus = np.asarray(self.dm.ensemble.ElecPol)#.copy()
+        Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
+        Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
+        Tplus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
 
         # displaces kth d.o.f by -delta.
         self.dm.beads.q.set(self.original - dev)
-        minus = np.asarray(self.dm.ensemble.ElecPol)#.copy()
+        Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
+        Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
+        Tminus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
 
         #
         # the following line computes a component of a BEC tensor
@@ -390,14 +344,17 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
         # Have a nice day :)
         #
 
-        self.dm.polmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( plus - minus) / ( 2 * self.dm.deltax )
+        self.dm.Epolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Eplus - Eminus ) / ( 2 * self.dm.deltax )
+        self.dm.Ipolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Iplus - Iminus ) / ( 2 * self.dm.deltax )
+        self.dm.Tpolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
 
         # else:
         #     info(" We have skipped the dof # {}.".format(step), verbosity.low)
 
-    # def transform(self):
-    #     dm = self.dm.polmatrix.copy()
-    #     rdm = self.dm.polmatrix.copy()
-    #     self.dm.polmatrix = 0.50 * (dm + dm.T)
-    #     # self.dm.refdynmatrix = 0.50 * (rdm + rdm.T)
+    def transform(self):
+        self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
+        self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
+        self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
+        return
+        
 

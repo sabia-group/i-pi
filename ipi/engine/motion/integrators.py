@@ -405,6 +405,10 @@ class EDAIntegrator(DummyIntegrator):
         # check that everything is okay (but just once for each step), and if it is so, go on!
         okay = self._okay
         if okay:       
+            #
+            # ES: this has to be changed
+            # The BEC tensors already contain the whole contribution to the forces, both electronic and ionic!
+            #
             self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
             self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
         else : 

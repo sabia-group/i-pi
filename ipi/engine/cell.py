@@ -13,6 +13,7 @@ from numpy.linalg import norm, inv
 
 from ipi.utils.depend import *
 from ipi.utils.mathtools import *
+from ipi.utils.messages import warning,verbosity
 
 
 __all__ = ["Cell"]
@@ -137,7 +138,29 @@ class Cell(dobject):
         for i in range(3):
             s[i] -= round(s[i])
         return np.dot(self.h, s)
-       
+    
+    ###
+    def _rlv2cart_M(self):
+        """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
+        # self.h contains the lattice vectors (each column is a vector)
+        # compute the reciprocal lattice vectors (each column is a vector)
+        h = np.asarray(self.h.copy())
+        B = inv(h.T)
+        # normalize per column
+        return norm_cols(B)
+    
+    def _lv2cart_M(self):
+        """Return the cartesian component of a vector given its components w.r.t. the lattice vectors"""
+        h = np.asarray(self.h.copy())
+        return norm_cols(h)
+    
+    def _cart2rlv_M(self):
+        return inv(self._rlv2cart_M())
+    
+    def _cart2lv_M(self):
+        return norm_cols(self._lv2cart_M())
+    
+      
     def rlv2cart(self,v):
         """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
         # self.h contains the lattice vectors (each column is a vector)
@@ -155,3 +178,64 @@ class Cell(dobject):
         A = norm_cols(h)
         return A @ v
     
+    def change_basis(self,orig,dest,v=None,M=None,output="v"):
+
+        # ( v is None and M is None ) or
+        if (v is not None and M is not None ) :
+            raise ValueError("You have to specify a vector 'v' or a matrix 'M' (but not both)")
+        
+        def check_value(value,valids):
+            if value not in valids:
+                raise ValueError("'{:s}' is not a valid basis choice.".format(value))
+        
+        if v is not None :
+            valids = ["lv","rlv","cart"]
+            check_value(orig,valids)
+            check_value(dest,valids)
+            if orig == dest :
+                print("!'orig' and 'dest' basis are the same: no transformation will be performed")
+                return v
+            
+            M = [None,None]
+            for n,name in enumerate([orig,dest]):
+                if name == "lv":
+                    M[n] = self._lv2cart_M()
+                elif name == "rlv":
+                    M[n] = self._rlv2cart_M()
+                elif name == "cart" :
+                    M[n] = np.eye(3)
+                else :
+                    raise ValueError("Something wrong here")
+            
+            # I use the cartesian coordinates as an intermediate step
+            R = inv(M[1]) @ M[0]
+            if output == "v":
+                return R @ v
+            elif output == "R" :
+                return R
+            elif output == "both" :
+                return R @ v, R
+            else :
+                raise ValueError("wrong output flag")
+
+        elif M is not None:
+            valids = ["lv","rlv","cart"]
+            valids = [ (i,j) for j in valids for i in valids ]
+            check_value(orig,valids)
+            check_value(dest,valids)
+
+            A = self.change_basis(orig=orig[0],dest=orig[1],output="R")
+            B = self.change_basis(orig=dest[0],dest=dest[1],output="R")
+
+            R = inv(M[1]) @ M[0]
+            if output == "v":
+                return R @ v
+            elif output == "R" :
+                return R
+            elif output == "both" :
+                return R @ v, R
+            else :
+                raise ValueError("wrong output flag")
+
+        else :
+            raise ValueError("Something wrong here")

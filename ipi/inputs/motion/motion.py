@@ -385,8 +385,8 @@ class InputMotionBase(Input):
             )
         elif mode == "BEC":
             sc = BECTensorsCalculator(
-                fixcom=self.fixcom.fetch(),
-                fixatoms=self.fixatoms.fetch(),
+                #fixcom=self.fixcom.fetch(),
+                #fixatoms=self.fixatoms.fetch(),
                 **self.BEC.fetch()
             )
         elif mode == "normalmodes":
