@@ -67,7 +67,7 @@ class InputBECTensorsCalculator(InputDictionary):
             {
                 "dtype": str,
                 "default": "none",
-                "options": ["none"],#, "poly", "lin", "crystal"],
+                "options": ["none","lin"],#, "poly", "lin", "crystal"],
                 "help": "Removes the zero frequency vibrational modes depending on the symmerty of the system.",
             },
         ),

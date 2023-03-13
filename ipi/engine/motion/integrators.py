@@ -409,8 +409,9 @@ class EDAIntegrator(DummyIntegrator):
             # ES: this has to be changed
             # The BEC tensors already contain the whole contribution to the forces, both electronic and ionic!
             #
-            self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
-            self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
+            #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
+            #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
+            self.beads.p += self._forces()
         else : 
             raise ValueError("Something not okay in EDAIntegrator.pstep")
         return
@@ -438,18 +439,25 @@ class EDAIntegrator(DummyIntegrator):
                             "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
         return True
 
-    def _ions_forces(self,level=0):
-        """Compute the contribution to the forces due to the ionic polarization"""
-        Z = self.beads.ZtoZ3().reshape((-1,3))
-        forces = Constants.e * Z * self.ensemble.Efield # the electric field has to be updated!
-        return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1   
+    # def _ions_forces(self,level=0):
+    #     """Compute the contribution to the forces due to the ionic polarization"""
+    #     Z = self.beads.ZtoZ3().reshape((-1,3))
+    #     forces = Constants.e * Z * self.ensemble.Efield # the electric field has to be updated!
+    #     return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1   
 
-    def _elec_forces(self,level=0):
-        """Compute the contribution to the forces due to the electronic polarization"""
-        # the electric field and the BEC tensors are expressed in cartesian coordinates
-        # BEC = self.ensemble.BEC
-        forces = Constants.e * self.ensemble.BECcart @ self.ensemble.Efieldcart # the electric field has to be updated!
-        return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
+    # def _elec_forces(self,level=0):
+    #     """Compute the contribution to the forces due to the electronic polarization"""
+    #     # the electric field and the BEC tensors are expressed in cartesian coordinates
+    #     # BEC = self.ensemble.BEC
+    #     forces = Constants.e * self.ensemble.BECcart @ self.ensemble.Efieldcart # the electric field has to be updated!
+    #     return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
+    
+    def _forces(self):
+        """Compute the contribution to the forces due to the polarization"""
+        # the BEC is expressed in (lv,lv), as well as the Efield
+        v=self.ensemble._get_BEC() @ self.ensemble.Efield
+        forces = Constants.e * self.ensemble.cell.change_basis(v=v.T,orig="lv",dest="cart").T
+        return forces.flatten().reshape((self.beads.nbeads,-1))
 
 # ES
 # Pay attentions: using Method Resolution Order (MRO)

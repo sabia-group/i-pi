@@ -119,89 +119,20 @@ class BECTensorsCalculator(Motion):
     def printall(self):
         """Prints matrices to file"""
 
-        for contr,M in zip(["electrons","ions","total"],[self.dm.Epolmatrix,self.dm.Ipolmatrix,self.dm.Tpolmatrix]):
+        for contr,M in zip(["electrons","ions","total"],[self.Epolmatrix,self.Ipolmatrix,self.Tpolmatrix]):
             file = "{:s}.BEC.{:s}.txt".format(self.prefix,contr)
             header = "BEC for {:s} polarization.\n".format(contr)+\
-                "The polarization (columns indices of the BEC tensors) are expressed w.r.t. the (normalized) reciprocal lattice vectors.\n"+\
-                "The displacements (row indices of the BEC tensors) are expressed (and have been performed) along the (normalized) lattice vectors.\n"+\
+                "The polarization (row indices of the BEC tensors) are expressed w.r.t. the (normalized) lattice vectors.\n"+\
+                "The displacements (column indices of the BEC tensors) are expressed (and have been performed) along the (normalized) lattice vectors.\n"+\
                 "The BEC tensors of each ions are printed consecutively."
             np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
 
-        for contr,M in zip(["electrons","ions","total"],[self.dm.Ecorrection,self.dm.Icorrection,self.dm.Tcorrection]):
+        for contr,M in zip(["electrons","ions","total"],[self.Ecorrection,self.Icorrection,self.Tcorrection]):
             file = "{:s}.BEC.correction.{:s}.txt".format(self.prefix,contr)
             header = "correction to the BEC tensors for {:s} computed imposing the Translational Sum Rule".format(contr)
             np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
 
         return 
-
-        # dmatx = dmatx + np.eye(len(dmatx)) * deltaw
-        # if deltaw != 0.0:
-        #     wstr = " !! Shifted by %e !!" % (deltaw)
-        # else:
-        #     wstr = ""
-
-        # # get active arrays:
-        # activedof = 3 * self.beads.natoms - fixdof.size
-        # if fixdof.size > 0:
-        #     mask = np.delete(np.arange(3 * self.beads.natoms), fixdof)
-        # else:
-        #     mask = np.arange(3 * self.beads.natoms)
-
-        # dmatx_full = dmatx.copy()
-        # ism_full = self.ism.copy()
-        # dmatx = dmatx[mask][:, mask]
-        # ism = self.ism[mask]
-
-        # # prints out the dynamical matrix
-        # outfile = self.output_maker.get_output(self.prefix + ".dynmat", "w")
-        # outfile.write("# Dynamical matrix (atomic units)" + wstr + "\n")
-        # for i in range(activedof):
-        #     outfile.write(" ".join(map(str, dmatx[i])) + "\n")
-        # outfile.close_stream()
-
-        # # prints out the Hessian for the activedof
-        # outfile = self.output_maker.get_output(self.prefix + ".hess", "w")
-        # outfile.write("# Hessian matrix (atomic units)" + wstr + "\n")
-        # for i in range(activedof):
-        #     outfile.write(" ".join(map(str, dmatx[i] / (ism[i] * ism))) + "\n")
-        # outfile.close_stream()
-
-        # # prints out the full Hessian (with all zeros)
-        # outfile = self.output_maker.get_output(self.prefix + "_full.hess", "w")
-        # outfile.write("# Hessian matrix (atomic units)" + wstr + "\n")
-        # for i in range(3 * self.beads.natoms):
-        #     outfile.write(
-        #         " ".join(map(str, dmatx_full[i] / (ism_full[i] * ism_full))) + "\n"
-        #     )
-        # outfile.close_stream()
-
-        # eigsys = np.linalg.eigh(dmatx)
-
-        # # prints eigenvalues
-        # outfile = self.output_maker.get_output(self.prefix + ".eigval", "w")
-        # outfile.write("# Eigenvalues (atomic units)" + wstr + "\n")
-        # outfile.write("\n".join(map(str, eigsys[0])))
-        # outfile.close_stream()
-
-        # # prints eigenvectors
-        # outfile = self.output_maker.get_output(self.prefix + ".eigvec", "w")
-        # outfile.write("# Eigenvector  matrix (normalized)" + "\n")
-        # for i in range(activedof):
-        #     outfile.write(" ".join(map(str, eigsys[1][i])) + "\n")
-        # outfile.close_stream()
-
-        # # prints eigenmodes
-        # eigmode = 1.0 * eigsys[1]
-        # for i in range(activedof):
-        #     eigmode[i] *= ism[i]
-        # for i in range(activedof):
-        #     eigmode[:, i] /= np.sqrt(np.dot(eigmode[:, i], eigmode[:, i]))
-        # outfile = self.output_maker.get_output(self.prefix + ".mode", "w")
-
-        # outfile.write("# Phonon modes (mass-scaled)" + "\n")
-        # for i in range(activedof):
-        #     outfile.write(" ".join(map(str, eigmode[i])) + "\n")
-        # outfile.close_stream()
 
     def apply_asr(self):
         """
@@ -222,51 +153,38 @@ class BECTensorsCalculator(Motion):
         #
 
         self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
-        self.Epolmatrix -= self.Ecorrection
-
         self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
-        self.Ipolmatrix -= self.Icorrection
-
         self.Tcorrection = self.Tpolmatrix.sum(axis=0)/self.beads.natoms
-        self.Tpolmatrix -= self.Tcorrection
 
-        # We should add the Rotational Sum Rule
+        if self.asr == "lin" :            
+            self.Epolmatrix -= self.Ecorrection            
+            self.Ipolmatrix -= self.Icorrection            
+            self.Tpolmatrix -= self.Tcorrection
 
-class DummyBECTensorsCalculator(dobject):
+        elif self.asr == "nonr" :
+            return 
 
-    """No-op PhononCalculator"""
+        # We should add the Rotational Sum Rule(s)
+
+class FDBECTensorsCalculator(dobject):
+
+    """Finite difference BEC tensors evaluator."""
+
+    #
+    # author: Elia Stocco
+    # e-mail: stocco@fhi-berlin.mpg.de
+    #
 
     def __init__(self):
         pass
 
     def bind(self, dm):
         """Reference all the variables for simpler access."""
+        
+        #super(FDBECTensorsCalculator, self).bind(dm)
         self.dm = dm
-        # the original coordinates w.r.t. which the displacement are performed
-        # the index 0 indicate that only nbeads=0 is allowed
         self.original = np.asarray(dstrip(self.dm.beads.q[0]).copy()) 
 
-    def step(self, step=None):
-        """Dummy simulation time step which does nothing."""
-        pass
-
-    def transform(self):
-        """Dummy transformation step which does nothing."""
-        pass
-
-
-class FDBECTensorsCalculator(DummyBECTensorsCalculator):
-
-    """Finite difference BEC tensors evaluator."""
-
-    #
-    # author: Elia Stocco
-    # email: stocco@fhi-berlin.mpg.de
-    #
-
-    def bind(self, dm):
-        """Reference all the variables for simpler access."""
-        super(FDBECTensorsCalculator, self).bind(dm)
         #print(type(self.dm.ensemble.ElecPol))
         #dd(self.dm.ensemble).ElecPol.add_dependency(dd(self.dm.dbeads).q)
 
@@ -290,9 +208,6 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
     def step(self, step=None):
         """Computes one row of the BEC tensors"""
 
-        # original coordinates
-        #original = np.asarray(dstrip(self.dm.beads.q[0]).copy())
-
         # initializes the finite deviation
         dev = np.zeros(3 * self.dm.beads.natoms, float)
         
@@ -302,7 +217,9 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
         displ = dev[step - step%3 : step - step%3 + 3]
 
         # displacement in cartesian coordinates
-        cart = self.dm.ensemble.cell.lv2cart(displ)
+        cart = self.dm.ensemble.cell.change_basis(v=displ,orig="lv",dest="cart")
+        #cart = self.dm.ensemble.cell.lv2cart(displ)
+
         #print("norm:",norm(cart))
         dev[step - step%3 : step - step%3 + 3] = cart
 
@@ -348,13 +265,27 @@ class FDBECTensorsCalculator(DummyBECTensorsCalculator):
         self.dm.Ipolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Iplus - Iminus ) / ( 2 * self.dm.deltax )
         self.dm.Tpolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
 
-        # else:
-        #     info(" We have skipped the dof # {}.".format(step), verbosity.low)
+        return
 
     def transform(self):
+
+        # reshape
         self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
         self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
         self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
+
+        # transpose
+        for i in range(self.dm.beads.natoms):
+            self.dm.Epolmatrix[i] = self.dm.Epolmatrix[i].T
+            self.dm.Ipolmatrix[i] = self.dm.Ipolmatrix[i].T
+            self.dm.Tpolmatrix[i] = self.dm.Tpolmatrix[i].T
+
+        # change of basis from (rlv,lv) to (lv,lv)
+        for i in range(self.dm.beads.natoms):
+            self.dm.Epolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Epolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
+            self.dm.Ipolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Ipolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
+            self.dm.Tpolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Tpolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
+
         return
         
 

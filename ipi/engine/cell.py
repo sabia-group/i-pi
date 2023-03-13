@@ -160,41 +160,59 @@ class Cell(dobject):
     def _cart2lv_M(self):
         return norm_cols(self._lv2cart_M())
     
-      
-    def rlv2cart(self,v):
-        """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
-        # self.h contains the lattice vectors (each column is a vector)
-        # compute the reciprocal lattice vectors (each column is a vector)
-        h = np.asarray(self.h.copy())
-        B = inv(h.T)
-        # normalize per column
-        B = norm_cols(B)
-        # get the cartesian components
-        return B @ v
+    # def rlv2cart(self,v):
+    #     """Return the cartesian component of a vector given its components w.r.t. the (normalized) reciprocal lattice vectors"""
+    #     # self.h contains the lattice vectors (each column is a vector)
+    #     # compute the reciprocal lattice vectors (each column is a vector)
+    #     h = np.asarray(self.h.copy())
+    #     B = inv(h.T)
+    #     # normalize per column
+    #     B = norm_cols(B)
+    #     # get the cartesian components
+    #     return B @ v
     
-    def lv2cart(self,v):
-        """Return the cartesian component of a vector given its components w.r.t. the lattice vectors"""
-        h = np.asarray(self.h.copy())
-        A = norm_cols(h)
-        return A @ v
+    # def lv2cart(self,v):
+    #     """Return the cartesian component of a vector given its components w.r.t. the lattice vectors"""
+    #     h = np.asarray(self.h.copy())
+    #     A = norm_cols(h)
+    #     return A @ v
     
-    def change_basis(self,orig,dest,v=None,M=None,output="v"):
+    def change_basis(self,orig,dest,v=None,M=None,output="v",verbose=False):
+
+        """
+        v != None: 
+        orig: original basis set
+        dest: final basis set
+
+        M !+ None 
+        orig: orig[0] is the original basis set for the rows, orig[1] for the columns 
+        dest: dest[0] is the final basis set for the rows, dest[1] for the columns 
+        """
 
         # ( v is None and M is None ) or
         if (v is not None and M is not None ) :
-            raise ValueError("You have to specify a vector 'v' or a matrix 'M' (but not both)")
+            raise ValueError("You have to specify a vector 'v' or a matrix 'M', but not both!")
         
         def check_value(value,valids):
             if value not in valids:
                 raise ValueError("'{:s}' is not a valid basis choice.".format(value))
         
-        if v is not None :
+        # vector
+        if v is not None or output == "R":
             valids = ["lv","rlv","cart"]
             check_value(orig,valids)
             check_value(dest,valids)
             if orig == dest :
-                print("!'orig' and 'dest' basis are the same: no transformation will be performed")
-                return v
+                if verbose : 
+                    print("!'orig' and 'dest' basis are the same: no transformation will be performed")
+                if output == "v":
+                    return v
+                elif output == "R" :
+                    return np.eye(3)
+                elif output == "both" :
+                    return v, np.eye(3)
+                else :
+                    raise ValueError("wrong output flag")
             
             M = [None,None]
             for n,name in enumerate([orig,dest]):
@@ -218,24 +236,24 @@ class Cell(dobject):
             else :
                 raise ValueError("wrong output flag")
 
+        # matrix
         elif M is not None:
             valids = ["lv","rlv","cart"]
             valids = [ (i,j) for j in valids for i in valids ]
             check_value(orig,valids)
             check_value(dest,valids)
 
-            A = self.change_basis(orig=orig[0],dest=orig[1],output="R")
-            B = self.change_basis(orig=dest[0],dest=dest[1],output="R")
+            A = self.change_basis(orig=orig[0],dest=dest[0],output="R")
+            B = self.change_basis(orig=dest[1],dest=orig[1],output="R")
 
-            R = inv(M[1]) @ M[0]
-            if output == "v":
-                return R @ v
-            elif output == "R" :
-                return R
-            elif output == "both" :
-                return R @ v, R
-            else :
-                raise ValueError("wrong output flag")
+            #if output == "v":
+            return A @ M @ B
+            # elif output == "R" :
+            #     return A, B
+            # elif output == "both" :
+            #     return A @ M @ B, A, B
+            # else :
+            #     raise ValueError("wrong output flag")
 
-        else :
-            raise ValueError("Something wrong here")
+        #else :
+        #    raise ValueError("Something wrong here")

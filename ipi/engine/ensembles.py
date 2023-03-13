@@ -288,8 +288,9 @@ class Ensemble(dobject):
         dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
         #dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
 
-        dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.lv2cart(self.Efield) ,value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
-        dself.BECcart    = depend_array(name="BECcart" , func=lambda:self._get_BEC ,value=np.zeros((3,3),dtype=float),dependencies=[dself.BEC])
+        #dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.lv2cart(self.Efield) ,value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
+        #dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.change_basis(v=self.Efield,orig="lv",dest="cart"),value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
+        #dself.BEC = depend_array(name="BEC" , func=lambda:self._get_BEC() ,value=np.zeros((3,3),dtype=float),dependencies=[dself.BEC])
         
     def add_econs(self, e):
         self._elist.append(e)
@@ -334,8 +335,8 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
-        polcart = self.cell.rlv2cart(np.asarray(self.EnsTotalPol)) # total polarization in cartesian coordinates
-        return float(self.cell.V * np.dot(polcart , self.Efieldcart))
+        pol = self.cell.change_basis(v=self.EnsTotalPol,orig="rlv",dest="lv") # total polarization in cartesian coordinates
+        return float(self.cell.V * np.dot(pol , self.Efield))
 
     # def _get_Eenthalpy(self):
     #     return self.econs - self.EDAenergy
@@ -343,8 +344,10 @@ class Ensemble(dobject):
     def _get_enspol(self,what=None):
         """Return the ensemble average of the polarization(s)"""
         pol = self._get_pol(what)
-        enspol = np.asarray(pol).mean(axis=0)
-        return enspol
+        if self.beads.nbeads > 1 :
+            return np.asarray(pol).mean(axis=0)
+        else :
+            return pol
 
     def _get_Eenvelope(self):
         """Gte the gaussian envelope function of the external electric field"""
@@ -364,15 +367,15 @@ class Ensemble(dobject):
         else :
             return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
 
-    def _lv2cart(self,BEC):
-        """Get the BEC tensors expressed w.r.t. the lattice vectors and returns the same tensor expressed in cartesian coordinates"""
-        R = np.asarray(self.cell.h)#.copy()
-        for i in range(3):
-            R[:,i] = R[:,i] / linalg.norm(R[:,i])
-        return linalg.inv(R) @ BEC @ R
+    # def _lv2cart(self,BEC):
+    #     """Get the BEC tensors expressed w.r.t. the lattice vectors and returns the same tensor expressed in cartesian coordinates"""
+    #     R = np.asarray(self.cell.h)#.copy()
+    #     for i in range(3):
+    #         R[:,i] = R[:,i] / linalg.norm(R[:,i])
+    #     return linalg.inv(R) @ BEC @ R
 
     def _get_BEC(self):
-        """Return the BEC tensors in cartesian coordinates.
+        """Return the BEC tensors (lv,lv).
         The BEC tensor are stored in a compact form.
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to perform fast matrix multiplication.
@@ -386,7 +389,7 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = self.BEC[i]
-            return self._lv2cart(Z)
+            return Z #self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
 
         elif N == 3*Na: # diagonal BEC
@@ -395,7 +398,7 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = temp[i,j]
-            return self._lv2cart(Z)
+            return Z # self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
         
         elif N == 9*Na: # all-components BEC
@@ -403,7 +406,7 @@ class Ensemble(dobject):
             temp = self.BEC.reshape((Na,3,3))
             for i in range(Na):
                 Z[i,:,:] = temp[i,:,:]
-            return self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
+            return Z # self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
 
         else :
             raise ValueError("BEC tensor with wrong size!")
