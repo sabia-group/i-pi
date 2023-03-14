@@ -258,7 +258,6 @@ class Properties(dobject):
             "Efieldmod": {
                 "dimension": "atomic_unit",
                 "help": "The modulus of the external applied electric field.",
-                "size": 3,
                 "func": (lambda: norm(self.ensemble.cell.change_basis(v=self.ensemble.Efield,orig="lv",dest="cart"))),
             },
             "Eenvelope": {

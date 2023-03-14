@@ -239,7 +239,7 @@ class Cell(dobject):
         # matrix
         elif M is not None:
             valids = ["lv","rlv","cart"]
-            valids = [ (i,j) for j in valids for i in valids ]
+            valids = [ [i,j] for j in valids for i in valids ]
             check_value(orig,valids)
             check_value(dest,valids)
 

@@ -213,15 +213,15 @@ class FDBECTensorsCalculator(dobject):
         
         # displacement along the lattice vectors
         dev[step] = self.dm.deltax
-        #print(step - step%3,":",step - step%3 + 3)
-        displ = dev[step - step%3 : step - step%3 + 3]
 
-        # displacement in cartesian coordinates
-        cart = self.dm.ensemble.cell.change_basis(v=displ,orig="lv",dest="cart")
-        #cart = self.dm.ensemble.cell.lv2cart(displ)
+        # #print(step - step%3,":",step - step%3 + 3)
+        # displ = dev[step - step%3 : step - step%3 + 3]
 
-        #print("norm:",norm(cart))
-        dev[step - step%3 : step - step%3 + 3] = cart
+        # # displacement in cartesian coordinates
+        # cart = self.dm.ensemble.cell.change_basis(v=displ,orig="lv",dest="cart")
+    
+        # #print("norm:",norm(cart))
+        # dev[step - step%3 : step - step%3 + 3] = cart
 
         # displaces kth d.o.f by delta.
         self.dm.beads.q.set(self.original + dev)

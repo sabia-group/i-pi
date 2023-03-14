@@ -375,7 +375,7 @@ class Ensemble(dobject):
     #     return linalg.inv(R) @ BEC @ R
 
     def _get_BEC(self):
-        """Return the BEC tensors (lv,lv).
+        """Return the BEC tensors (cart,cart).
         The BEC tensor are stored in a compact form.
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to perform fast matrix multiplication.
