@@ -213,8 +213,8 @@ def main():
                 raise ValueError("'%s' extension not supported"%(ext))
 
             print("\trotating tensors 'T': R^t @ T @ R")
-            # BEC = R @ BEC @ inv(R)
-            BEC = R.T @ BEC @ R
+            BEC = R @ BEC @ inv(R)
+            #BEC = R.T @ BEC @ R
             BEC = BEC.reshape((len(BEC),-1))
                         
             outfile = options.folder+"/"+options.tensor

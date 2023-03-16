@@ -389,6 +389,7 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = self.BEC[i]
+                Z[i,:,:] = Z[i,:,:].T
             return Z #self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
 
@@ -398,14 +399,15 @@ class Ensemble(dobject):
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = temp[i,j]
-            return Z # self._lv2cart(Z)
+                Z[i,:,:] = Z[i,:,:].T
+            return # self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
         
         elif N == 9*Na: # all-components BEC
             Z = np.zeros((Na,3,3))
             temp = self.BEC.reshape((Na,3,3))
             for i in range(Na):
-                Z[i,:,:] = temp[i,:,:]
+                Z[i,:,:] = temp[i,:,:].T
             return Z # self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
 
         else :

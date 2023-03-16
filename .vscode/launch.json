@@ -20,11 +20,15 @@
             "type": "python",
             "request": "launch",
             "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
-            //"cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/vibrations",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/MgO/QE",
+            //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/BEC.aims.py",
+            //"cwd":"/home/elia/eda-nvt",
+            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/eda-nve",
+            //"cwd":"/home/elia/eda-nvt",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"input.xml",
+            //"args":"input.xml",
+            "args":"RESTART",
+            //"args":["-c","../geometry.in","-t","BEC.temp.csv","-ts",",","-to","['cart','cart']","-td","['lv','lv']"]
         }
     ]
 } 

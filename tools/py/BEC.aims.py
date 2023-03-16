@@ -14,6 +14,8 @@ from ase.io import read,write
 from copy import copy,deepcopy
 import pandas as pd
 
+import subprocess
+
 # constants
 C = 1.6021766e-19  # in coulomb
 
@@ -88,14 +90,14 @@ def main():
     parser = ArgumentParser(description="BEC calculation with FHI-aims")
     parser.add_argument(
         "-x", "--executable", action="store",
-        help="path to FHI-aims binary", default="/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.scalapack.mpi.x"
+        help="path to FHI-aims binary", default="/home/elia/Google-Drive/google-personal/FHIaims/build/aims.221103.mpi.x"
     )
     parser.add_argument(
         "-s",
         "--suffix",
         action="store",
-        help="Call suffix for binary e.g. 'mpirun -np 12 '",
-        default="",
+        help="Call suffix for binary e.g. 'mpirun -n 8 '",
+        default="mpirun -n 8",
     )
     parser.add_argument(
         "-d",
@@ -105,7 +107,7 @@ def main():
         nargs="+",
         dest="delta",
         help="finite difference poles, defualt is [0.01]",
-        default=[0.5,-0.5,0.1,-0.1],
+        default=[0.1],
     )
     parser.add_argument(
         "-r", "--run", action="store", type=str2bool,
@@ -153,6 +155,14 @@ def main():
     options.aims_run = options.suffix + " " + options.executable
     options.aimsout = "FHI-aims.out"
 
+    # cmd = "{:s} > {:s} ".format(options.aims_run,options.aimsout)
+    script = 'run.BEC.sh'
+    # with open(script,'w') as s:
+    #     s.write('source ~/.bashrc\n')
+    #     s.write('source ~/.elia\n')
+    #     s.write(cmd)
+    # os.system('chmod +x {:s}'.format(script))
+
     if options.run : # perform DFT calculations
         print("\n\tComputing BEC tensors")
         data    = read(options.geofile)
@@ -175,18 +185,20 @@ def main():
                         print("\t\tcreating folder '%s'"%(folder))
                         os.mkdir(folder)
 
-                    if not options.overwrite :
-                        file = folder + "/" + options.aimsout
-                        print("\t\treading output file '%s'"%(file))
-                        if is_complete(file,show=False):
-                            print("\t\tcomputation completed")
-                            print("\t\t'overwrite' flag set to 'false': skipping computation")
-                            continue
-                    else:
-                        if os.path.exists(file):
-                            print("\t\tcomputation not completed")
-                            print("\t\t'overwrite' flag set to 'true': computing again")
-                            continue
+                    os.system("cp {:s} {:s}/.".format(script,folder))
+
+                    # if not options.overwrite :
+                    #     file = folder + "/" + options.aimsout
+                    #     print("\t\treading output file '%s'"%(file))
+                    #     if is_complete(file,show=False):
+                    #         print("\t\tcomputation completed")
+                    #         print("\t\t'overwrite' flag set to 'false': skipping computation")
+                    #         continue
+                    # else:
+                    #     if os.path.exists(file):
+                    #         print("\t\tcomputation not completed")
+                    #         print("\t\t'overwrite' flag set to 'true': computing again")
+                    #         continue
 
 
                     newcpfile = folder + "/control.in"
@@ -200,18 +212,21 @@ def main():
                     print("\t\tcopying restart files to folder '%s'"%(folder))
                     os.popen('cp %s* %s/.'%(options.restartsuffix,folder))
 
-                    print("\t\trunning calculation, output printed to '%s'"%(options.aimsout))
-                    os.chdir(folder)
-                    os.system(options.aims_run + " > " + options.aimsout)
-                    os.chdir("..")
+                    # print("\t\trunning calculation, output printed to '%s'"%(options.aimsout))
+                    # os.chdir(folder)
 
-                    if is_complete(folder + "/" + options.aimsout,show=False):
-                        print("\t\tcomputation completed")
-                    else :
-                        print("\t\tcomputation not completed")
+                    # #subprocess.Popen("./{:s}".format(script)).wait()
+                    # #subprocess.run(["./{:s}".format(script)], shell=True)
 
-                    print("\t\tremoving restart files from folder '%s'"%(folder))
-                    os.popen('rm %s/%s*'%(folder,options.restartsuffix))
+                    # os.chdir("..")
+
+                    # if is_complete(folder + "/" + options.aimsout,show=False):
+                    #     print("\t\tcomputation completed")
+                    # else :
+                    #     print("\t\tcomputation not completed")
+
+                    # print("\t\tremoving restart files from folder '%s'"%(folder))
+                    # os.popen('rm %s/%s*'%(folder,options.restartsuffix))
 
     if options.postprocessing : # Post-Processing
         print("\n\tPost-Processing")
