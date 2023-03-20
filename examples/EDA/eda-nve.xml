@@ -1,0 +1,51 @@
+<simulation verbosity='high'>
+
+  <total_steps>2000</total_steps>
+  <total_time> 28600 </total_time>
+
+  <ffsocket mode='unix' name='pw' pbc='False'>
+    <address>eda</address>
+    <!--port>0000</port-->
+    <!--timeout>100</timeout-->
+    <!--latency> 0.01</latency-->
+  </ffsocket>
+
+  <output prefix='i-pi.LiNbO3'>
+    <trajectory filename='velocities'>velocities</trajectory>
+    <trajectory filename='positions'>positions{angstrom}</trajectory>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, energy, potential, kinetic_md, Efield, Efieldmod, Eenvelope ] </properties>
+  </output>
+
+  <prng>
+    <seed>10545</seed>
+  </prng>
+
+  <system>
+    <forces> <force forcefield='pw'/> </forces>
+
+    <initialize nbeads='1'>
+      <file mode='xyz' units='angstrom' > LiNbO3.xyz </file>
+      <velocities mode='thermal' units='kelvin'>2</velocities>
+      <cell mode="manual" units="angstrom">[  5.144951296612928715e+00,	-2.572486490658787872e+00,	4.096894127495693595e-05,
+                                              0.000000000000000000e+00,	 4.455685958775735145e+00,	1.078569250078088940e-04,
+                                              0.000000000000000000e+00,	 0.000000000000000000e+00,	1.385773788692638675e+01   ]</cell>
+    </initialize>
+
+    <ensemble>
+      <temperature units='kelvin'>2</temperature>
+      <BEC mode='file'> BEC.txt </BEC>
+      <Eamp units='atomic_unit' > [ 0, 0, 0.01 ] </Eamp>
+      <Efreq units='thz'> 20 </Efreq>
+      <Epeak units='femtosecond'> 300 </Epeak>
+      <Esigma units='femtosecond'> 100 </Esigma>
+      <cpol> False </cpol>
+    </ensemble>
+
+    <motion mode='dynamics'>
+      <dynamics mode='eda-nve'>
+        <timestep units='femtosecond'> 0.5 </timestep>
+      </dynamics>
+    </motion>
+
+  </system>
+</simulation>
