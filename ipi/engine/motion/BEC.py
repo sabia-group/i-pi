@@ -282,9 +282,9 @@ class FDBECTensorsCalculator(dobject):
 
         # change of basis from (rlv,lv) to (lv,lv)
         for i in range(self.dm.beads.natoms):
-            self.dm.Epolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Epolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
-            self.dm.Ipolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Ipolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
-            self.dm.Tpolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Tpolmatrix[i],orig=("rlv","lv"),dest=("lv","lv"),verbose=False)
+            self.dm.Epolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Epolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
+            self.dm.Ipolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Ipolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
+            self.dm.Tpolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Tpolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
 
         return
         

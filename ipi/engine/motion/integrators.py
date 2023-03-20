@@ -411,7 +411,7 @@ class EDAIntegrator(DummyIntegrator):
             #
             #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
             #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
-            self.beads.p += self._forces()
+            self.beads.p += self._forces() * self.pdt[level]
         else : 
             raise ValueError("Something not okay in EDAIntegrator.pstep")
         return
