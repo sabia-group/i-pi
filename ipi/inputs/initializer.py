@@ -23,7 +23,6 @@ __all__ = [
     "InputInitMomenta",
     "InputInitVelocities",
     "InputInitMasses",
-    "InputInitAtomicNumbers",
     "InputInitLabels",
     "InputInitCell",
     "InputInitThermo",
@@ -100,7 +99,7 @@ class InputInitBase(InputValue):
         if self.mode.fetch() == "manual":
             if "[" in value and "]" in value:  # value appears to be a list
                 if self._storageclass is float:
-                    value = io_xml.read_array(np.float, value)
+                    value = io_xml.read_array(float, value)
                 else:
                     value = io_xml.read_list(value)
             else:
@@ -277,15 +276,6 @@ class InputInitMasses(InputInitPositions):
     default_label = "INITMASSES"
     default_help = "This is the class to initialize atomic masses."
 
-class InputInitAtomicNumbers(InputInitPositions):
-
-    """Class to handle initialization of the atomic numbers."""
-
-    attribs = deepcopy(InputInitPositions.attribs)
-
-    default_label = "INITATOMICNUMBERS"
-    default_help = "This is the class to initialize atomic numbers."
-
 
 class InputInitLabels(InputInitPositions):
 
@@ -329,8 +319,9 @@ class InputInitCell(InputInitBase):
 
         ibase = super(InputInitCell, self).fetch()
         if mode == "abc" or mode == "abcABC":
-
-            h = io_xml.read_array(np.float, ibase.value)
+            h = io_xml.read_array(
+                float, ibase.value
+            )  # As of numpy v1.20, numpy.float as well as similar aliases (including numpy.int) were deprecated
 
             if mode == "abc":
                 if h.size != 3:
@@ -431,12 +422,6 @@ class InputInitializer(Input):
                 "help": "Initializes atomic masses. Will take a 'units' attribute of dimension 'mass'"
             },
         ),
-        "Z": (
-            InputInitAtomicNumbers,
-            {
-                "help": "Initializes atomic numbers."
-            },
-        ),
         "labels": (InputInitLabels, {"help": "Initializes atomic labels"}),
         "cell": (
             InputInitCell,
@@ -480,7 +465,7 @@ class InputInitializer(Input):
 
         self.extra = []
 
-        for (k, el) in ii.queue:
+        for k, el in ii.queue:
             if k == "positions":
                 ip = InputInitPositions()
                 ip.store(el)
@@ -492,9 +477,6 @@ class InputInitializer(Input):
                 ip.store(el)
             elif k == "masses":
                 ip = InputInitMasses()
-                ip.store(el)
-            elif k == "Z":
-                ip = InputInitAtomicNumbers()
                 ip.store(el)
             elif k == "labels":
                 ip = InputInitLabels()
@@ -518,7 +500,7 @@ class InputInitializer(Input):
 
         super(InputInitializer, self).fetch()
         initlist = []
-        for (k, v) in self.extra:
+        for k, v in self.extra:
             if v.mode.fetch() == "chk" and not v.fetch(
                 initclass=ei.InitIndexed
             ).units in ["", "automatic"]:
@@ -538,8 +520,7 @@ class InputInitializer(Input):
                 if mode == "xyz" or mode == "pdb" or mode == "chk" or mode == "ase":
                     rm = v.fetch(initclass=ei.InitIndexed)
                     rm.units = ""
-                    initlist.append(("masses", rm)); 
-                    initlist.append(("Z", rm))
+                    initlist.append(("masses", rm))
                     initlist.append(("labels", v.fetch(initclass=ei.InitIndexed)))
                     rm = v.fetch(initclass=ei.InitIndexed)
                     rm.units = v.cell_units.fetch()

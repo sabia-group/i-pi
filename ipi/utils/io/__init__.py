@@ -242,13 +242,12 @@ def read_file_raw(mode, filedesc):
     """
     reader = _get_io_function(mode, "read")
 
-    comment, cell, atoms, names, masses, Z = reader(filedesc=filedesc)
+    comment, cell, atoms, names, masses = reader(filedesc=filedesc)
 
     return {
         "comment": comment,
         "data": atoms,
         "masses": masses,
-        "Z": Z,
         "names": names,
         "natoms": len(names),
         "cell": cell,
@@ -311,12 +310,11 @@ def iter_file_raw(mode, filedesc):
 
     try:
         while True:
-            comment, cell, atoms, names, masses, Z = reader(filedesc=filedesc) #ES
+            comment, cell, atoms, names, masses = reader(filedesc=filedesc)
             yield {
                 "comment": comment,
                 "data": atoms,
                 "masses": masses,
-                "Z":Z, # ES
                 "names": names,
                 "natoms": len(names),
                 "cell": cell,
@@ -394,7 +392,6 @@ def open_backup(filename, mode="r", buffering=-1):
     """
 
     if mode.startswith("w"):
-
         # If writing, make sure nothing is overwritten.
 
         i = 0

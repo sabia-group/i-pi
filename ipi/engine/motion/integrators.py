@@ -424,33 +424,20 @@ class EDAIntegrator(DummyIntegrator):
 
         # the ionic polarization is straighforward
         # check if its value is correct
-        if self._check_flag :
-            N = self.beads.nbeads
-            volume = self.ensemble.cell.V # Bohr^3
-            Z = self.beads.ZtoZ3().reshape((-1,3))
-            for i in range(N):
-                q = self.beads[i].q.reshape((-1,3))
-                ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
-                driver_pol = self.forces.extras["polarization"][i]["ions"]
-                if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
-                    warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
-                            "\n driver (atomic units):"+str(driver_pol)+\
-                            "\n   i-pi (atomic units):"+str(ions_pol)+\
-                            "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
+        # if self._check_flag :
+        #     N = self.beads.nbeads
+        #     volume = self.ensemble.cell.V # Bohr^3
+        #     Z = self.beads.ZtoZ3().reshape((-1,3))
+        #     for i in range(N):
+        #         q = self.beads[i].q.reshape((-1,3))
+        #         ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
+        #         driver_pol = self.forces.extras["polarization"][i]["ions"]
+        #         if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
+        #             warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
+        #                     "\n driver (atomic units):"+str(driver_pol)+\
+        #                     "\n   i-pi (atomic units):"+str(ions_pol)+\
+        #                     "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
         return True
-
-    # def _ions_forces(self,level=0):
-    #     """Compute the contribution to the forces due to the ionic polarization"""
-    #     Z = self.beads.ZtoZ3().reshape((-1,3))
-    #     forces = Constants.e * Z * self.ensemble.Efield # the electric field has to be updated!
-    #     return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1   
-
-    # def _elec_forces(self,level=0):
-    #     """Compute the contribution to the forces due to the electronic polarization"""
-    #     # the electric field and the BEC tensors are expressed in cartesian coordinates
-    #     # BEC = self.ensemble.BEC
-    #     forces = Constants.e * self.ensemble.BECcart @ self.ensemble.Efieldcart # the electric field has to be updated!
-    #     return forces.flatten().reshape((self.beads.nbeads,-1)) # ES: this line has to be modified if nbeads > 1  
     
     def _forces(self):
         """Compute the contribution to the forces due to the polarization"""

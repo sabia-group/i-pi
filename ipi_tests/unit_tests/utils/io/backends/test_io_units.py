@@ -56,7 +56,6 @@ def units_preparation(request):
 
 @pytest.mark.skip(reason="This needs to be updated to match current code.")
 def test_process_units_noobj(units_preparation):
-
     natoms, frames, comment, conver_xyz, conver_cell = units_preparation
     output = "noobj"
 
@@ -65,13 +64,11 @@ def test_process_units_noobj(units_preparation):
     cell = mt.abc2h(1.0, 1.0, 1.0, np.pi / 2.0, np.pi / 2.0, np.pi / 2.0)
 
     masses = []
-    Z = []
     _count = 0
     print("atom_names", atom_names)
     for _at in atom_names:
         print(Elements.mass(_at), _count, _at)
         masses.append(Elements.mass(_at))
-        Z.append(Elements.atomic_number(_at))
         _count += 1
 
     masses = np.array(masses)
@@ -82,7 +79,6 @@ def test_process_units_noobj(units_preparation):
         xyz.copy(),
         np.array(atom_names).copy(),
         np.array(masses).copy(),
-        np.array(Z,dtype=int).copy(),
         output=output,
     )
 
@@ -96,7 +92,6 @@ def test_process_units_noobj(units_preparation):
 
 @pytest.mark.skip(reason="This needs to be updated to match current code.")
 def test_process_units_object(units_preparation):
-
     natoms, frames, comment, conver_xyz, conver_cell = units_preparation
     output = "objects"
 
@@ -105,13 +100,11 @@ def test_process_units_object(units_preparation):
     cell = mt.abc2h(1.0, 1.0, 1.0, np.pi / 2.0, np.pi / 2.0, np.pi / 2.0)
 
     masses = []
-    Z = []
     _count = 0
 
     for _at in atom_names:
         print(Elements.mass(_at), _count, _at)
         masses.append(Elements.mass(_at))
-        Z.append(Elements.atomic_number(_at))
         _count += 1
 
     masses = np.array(masses)
@@ -122,7 +115,6 @@ def test_process_units_object(units_preparation):
         xyz.copy(),
         np.array(atom_names).copy(),
         np.array(masses).copy(),
-        np.array(Z,dtype=int).copy(),
         output=output,
     )
 

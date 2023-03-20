@@ -28,7 +28,6 @@ class InputBeads(Input):
     Attributes:
        nbeads: An optional integer giving the number of beads. Defaults to 0.
        natoms: An optional integer giving the number of atoms. Defaults to 0.
-       Z: An array giving the bead atomic numbers. Defaults to an empty array with no elements.
 
     Fields:
         q: An optional array giving the bead positions. Defaults to an empty array with no elements.
@@ -112,14 +111,6 @@ class InputBeads(Input):
                 "help": "The total polarization expressed in cartesian coordinates",
             },
         ),
-        "Z": (
-                InputArray,
-                {
-                    "dtype": int,
-                    "default": input_default(factory=np.zeros, args=(0,)),
-                    "help": "The atomic numbers of the atoms, in the format [Z1, Z2, ... ].",
-                },
-            ),
     }
 
     default_help = "Describes the bead configurations in a path integral simulation."
@@ -139,7 +130,6 @@ class InputBeads(Input):
         self.q.store(dstrip(beads.q))
         self.p.store(dstrip(beads.p))
         self.m.store(dstrip(beads.m))
-        self.Z.store(dstrip(beads.Z))
         self.IonsPol.store(dstrip(beads.IonsPol))
         self.ElecPol.store(dstrip(beads.ElecPol))
         self.TotalPol.store(dstrip(beads.TotalPol))
@@ -184,29 +174,23 @@ class InputBeads(Input):
             beads.names = n
         elif len(n) != 0:
             raise ValueError("Array shape mismatches for names in <beads> input.")
-
-        Z = self.Z.fetch()
-        if Z.shape == (beads.natoms,):
-            beads.Z = Z
-        elif len(Z) != 0:
-            raise ValueError("Array shape mismatches for Z in <beads> input.")
         
         IonsPol = self.IonsPol.fetch()
-        # if IonsPol.shape == (beads.nbeads,3):
-        #     beads.IonsPol = IonsPol
-        # elif len(IonsPol) != 0:
-        #     raise ValueError("Array shape mismatches for IonsPol in <beads> input.")
+        if IonsPol.shape == (beads.nbeads,3):
+            beads.IonsPol = IonsPol
+        elif len(IonsPol) != 0:
+            raise ValueError("Array shape mismatches for IonsPol in <beads> input.")
 
         ElecPol = self.ElecPol.fetch()
-        # if ElecPol.shape == (beads.nbeads,3):
-        #     beads.ElecPol = ElecPol
-        # elif len(ElecPol) != 0:
-        #     raise ValueError("Array shape mismatches for ElecPol in <beads> input.")
+        if ElecPol.shape == (beads.nbeads,3):
+            beads.ElecPol = ElecPol
+        elif len(ElecPol) != 0:
+            raise ValueError("Array shape mismatches for ElecPol in <beads> input.")
 
         TotalPol = self.TotalPol.fetch()
-        # if TotalPol.shape == (beads.nbeads,3):
-        #     beads.TotalPol = TotalPol
-        # elif len(TotalPol) != 0:
-        #     raise ValueError("Array shape mismatches for TotalPol in <beads> input.")
+        if TotalPol.shape == (beads.nbeads,3):
+            beads.TotalPol = TotalPol
+        elif len(TotalPol) != 0:
+            raise ValueError("Array shape mismatches for TotalPol in <beads> input.")
 
         return beads

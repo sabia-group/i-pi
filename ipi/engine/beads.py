@@ -34,7 +34,6 @@ class Beads(dobject):
     Attributes:
         natoms: The number of atoms.
         nbeads: The number of beads.
-        Z: An array giving all the bead atomic numbers.
         _blist: A list of Atoms objects for each replica of the system. Each
             replica is assumed to have the same mass and atom label.
             centroid: An atoms object giving the centroid coordinate of the beads.
@@ -123,9 +122,7 @@ class Beads(dobject):
         # positions and momenta. bead representation, base storage used everywhere
         dself.q = depend_array(name="q", value=np.zeros((nbeads, 3 * natoms), float))
         dself.p = depend_array(name="p", value=np.zeros((nbeads, 3 * natoms), float))
-
-        # ES: atomic numbers of the atoms
-        dself.Z = depend_array(name="Z", value=np.zeros(natoms, int))
+        
         # ES: polarization of the beads
         dself.IonsPol  = depend_array(name="IonsPol" , value=np.zeros((nbeads, 3 * natoms), float))
         dself.ElecPol  = depend_array(name="ElecPol" , value=np.zeros((nbeads, 3 * natoms), float))
@@ -159,7 +156,7 @@ class Beads(dobject):
         # create proxies to access the individual beads as Atoms objects
         # TODO: ACTUALLY THIS IS ONLY USED HERE METHINK, SO PERHAPS WE COULD REMOVE IT TO DECLUTTER THE CODE.
         self._blist = [
-            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.Z, self.names)) 
+            Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.names)) 
             #                        self.IonsPol[i, :], self.ElecPol[i, :], self.TotalPol[i, :]))
             for i in range(nbeads)
         ]
@@ -197,7 +194,6 @@ class Beads(dobject):
         newbd.q[:] = self.q[:nbeads]
         newbd.p[:] = self.p[:nbeads]
         newbd.m[:] = self.m
-        newbd.Z[:] = self.Z
         newbd.IonsPol[:]  = self.IonsPol [:nbeads]
         newbd.ElecPol[:]  = self.ElecPol [:nbeads]
         newbd.TotalPol[:] = self.TotalPol[:nbeads]
@@ -223,17 +219,7 @@ class Beads(dobject):
         m3[:, 1 : 3 * self.natoms : 3] = m3[:, 0 : 3 * self.natoms : 3]
         m3[:, 2 : 3 * self.natoms : 3] = m3[:, 0 : 3 * self.natoms : 3]
         return m3
-    
-    def ZtoZ3(self):
-        """Takes the atomic numbers array for each bead and returns one with an element
-        for each degree of freedom.
 
-        Returns:
-           An array of size (nbeads,3*natoms), with each element corresponding
-           to the atomic number associated with the appropriate degree of freedom in q.
-        """
-        
-        return np.asarray([self.Z,self.Z,self.Z]).T.flatten()
 
     def get_qc(self):
         """Gets the centroid coordinates."""
@@ -372,9 +358,5 @@ class Beads(dobject):
         self._blist[index].p[:] = value.p
         self._blist[index].q[:] = value.q
         self._blist[index].m[:] = value.m
-        self._blist[index].Z[:] = value.Z
-        # self._blist[index].IonsPol[:]  = value.IonsPol
-        # self._blist[index].ElecPol[:]  = value.ElecPol
-        # self._blist[index].TotalPol[:] = value.TotalPol
         self._blist[index].names[:] = value.names
         

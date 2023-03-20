@@ -29,7 +29,6 @@ def auto_units(
     cell_units="automatic",
     mode="xyz",
 ):
-
     """Processes comment line and requested units to determine how to interpret the I/O conversion."""
     # heuristics to detect units
     if mode in ("pdb", "ase"):  # these are the default units
@@ -79,14 +78,13 @@ def auto_units(
 
     return dimension, units, cell_units
 
-# ES
+
 def process_units(
     comment,
     cell,
     data,
     names,
     masses,
-    Z,
     natoms,
     dimension="automatic",
     units="automatic",
@@ -101,7 +99,6 @@ def process_units(
         data:
         names:
         masses:
-        Z:
         output:
 
     Returns:
@@ -127,7 +124,6 @@ def process_units(
     atoms.q[:] = data
     atoms.names[:] = names
     atoms.m[:] = masses
-    atoms.Z[:] = Z
 
     return {
         "atoms": atoms,
