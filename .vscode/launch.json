@@ -22,7 +22,7 @@
             "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
             //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/BEC.aims.py",
             //"cwd":"/home/elia/eda-nvt",
-            "cwd":"/home/elia/Google-Drive/google-personal/i-pi-sabia/examples/EDA-int/LiNbO3/eda-nve",
+            "cwd":"/home/elia/Google-Drive/google-personal/works/BEC",
             //"cwd":"/home/elia/eda-nvt",
             "console": "integratedTerminal",
             "justMyCode": true,

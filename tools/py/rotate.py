@@ -13,15 +13,9 @@ import os
 
 import numpy as np
 
-import ipi.utils.mathtools as mt
-from ipi.utils.depend import dstrip
-from ipi.utils.units import Elements
-from ipi.utils.units import Elements
-from ipi.utils.io.backends import io_xyz
 from ase.io import read,write
 from ase.cell import Cell
 from copy import copy
-from ipi.utils.messages import verbosity, warning, info
 from numpy.linalg import inv
 
 
