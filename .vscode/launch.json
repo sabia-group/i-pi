@@ -22,13 +22,13 @@
             "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
             //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/BEC.aims.py",
             //"cwd":"/home/elia/eda-nvt",
-            "cwd":"/home/elia/Google-Drive/google-personal/works/BEC",
+            "cwd":"/home/elia/Google-Drive/google-personal/works/EDA-int/LiNbO3/nve",
             //"cwd":"/home/elia/eda-nvt",
             "console": "integratedTerminal",
             "justMyCode": true,
-            //"args":"input.xml",
-            "args":"RESTART",
-            //"args":["-c","../geometry.in","-t","BEC.temp.csv","-ts",",","-to","['cart','cart']","-td","['lv','lv']"]
+            "args":"input.xml",
+            //"args":"RESTART",
+            //"args":["-t","unit"]
         }
     ]
 } 
