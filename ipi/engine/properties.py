@@ -294,6 +294,19 @@ class Properties(dobject):
                 "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
                 "func": (lambda: self.ensemble.EDAenergy ),
             },
+            "Eforce": { # implemented only for nbeads = 1 
+                "dimension": "force",
+                "help": "The additional EDA contribution to the forces (average over all ions).",
+                "size": 3,
+                "func": (lambda: np.asarray([ norm(self.motion.integrator.EDAxforces),\
+                                              norm(self.motion.integrator.EDAyforces),\
+                                              norm(self.motion.integrator.EDAzforces) ] ) ),
+            },
+            "Eforcemod": { # implemented only for nbeads = 1 
+                "dimension": "force",
+                "help": "The additional EDA contribution to the forces (average over all ions and components).",
+                "func": (lambda: norm(self.motion.integrator.EDAforces) ),
+            },
             # "BECcart": {
             #     "dimension": "number",
             #     "help": "The BEC tensors in cartesian components",

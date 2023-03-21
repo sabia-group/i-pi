@@ -398,6 +398,10 @@ class EDAIntegrator(DummyIntegrator):
             dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         )
         dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
+        dself.EDAforces  = depend_array(name="forces"  , func=lambda:self._forces()              ,value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble).Efield])
+        dself.EDAxforces = depend_array(name="xforces" , func=lambda:self._forces_component("x") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        dself.EDAyforces = depend_array(name="yforces" , func=lambda:self._forces_component("y") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         pass
 
     def pstep(self, level=0):
@@ -411,7 +415,7 @@ class EDAIntegrator(DummyIntegrator):
             #
             #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
             #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
-            self.beads.p += self._forces() * self.pdt[level]
+            self.beads.p += self.EDAforces * self.pdt[level]
         else : 
             raise ValueError("Something not okay in EDAIntegrator.pstep")
         return
@@ -440,10 +444,27 @@ class EDAIntegrator(DummyIntegrator):
         return True
     
     def _forces(self):
-        """Compute the contribution to the forces due to the polarization"""
+        """Compute the EDA contribution to the forces due to the polarization"""
         BEC = self.ensemble._get_BEC()
         forces = Constants.e * BEC @ self.ensemble.Efield
         return forces.flatten().reshape((self.beads.nbeads,-1))
+    
+    def _forces_component(self,xyz):
+        """Get a component of the EDA contribution to the forces"""
+        if xyz not in ["x","y","z"]:
+            raise ValueError("'xyz' can assume only the values ['x','y','z']")
+        if self.beads.nbeads != 1 :
+            raise ValueError("'_forces_component' implemented only for nbeads=1")
+        
+        f = self.EDAforces[0].reshape((-1,3))
+        if xyz == "x":
+            return f[:,0]
+        elif xyz == "y":
+            return f[:,1]
+        elif xyz == "z":
+            return f[:,2]
+        else :
+            raise ValueError("'xyz' can assume only the values ['x','y','z']")
 
 # ES
 # Pay attentions: using Method Resolution Order (MRO)
