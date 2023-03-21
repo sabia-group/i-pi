@@ -442,7 +442,6 @@ class EDAIntegrator(DummyIntegrator):
     def _forces(self):
         """Compute the contribution to the forces due to the polarization"""
         BEC = self.ensemble._get_BEC()
-        #E = self.ensemble.cell.change_basis(v=self.ensemble.Efield,orig="lv",dest="cart")
         forces = Constants.e * BEC @ self.ensemble.Efield
         return forces.flatten().reshape((self.beads.nbeads,-1))
 

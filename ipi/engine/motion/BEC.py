@@ -125,12 +125,12 @@ class BECTensorsCalculator(Motion):
                 "The polarization (row indices of the BEC tensors) are expressed w.r.t. the (normalized) lattice vectors.\n"+\
                 "The displacements (column indices of the BEC tensors) are expressed (and have been performed) along the (normalized) lattice vectors.\n"+\
                 "The BEC tensors of each ions are printed consecutively."
-            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
+            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f")#,header=header)
 
         for contr,M in zip(["electrons","ions","total"],[self.Ecorrection,self.Icorrection,self.Tcorrection]):
             file = "{:s}.BEC.correction.{:s}.txt".format(self.prefix,contr)
             header = "correction to the BEC tensors for {:s} computed imposing the Translational Sum Rule".format(contr)
-            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f",header=header)
+            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f")#,header=header)
 
         return 
 
@@ -211,7 +211,7 @@ class FDBECTensorsCalculator(dobject):
         # initializes the finite deviation
         dev = np.zeros(3 * self.dm.beads.natoms, float)
         
-        # displacement along the lattice vectors
+        # displacement in cartesian components
         dev[step] = self.dm.deltax
 
         # #print(step - step%3,":",step - step%3 + 3)
@@ -275,10 +275,10 @@ class FDBECTensorsCalculator(dobject):
         self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
 
         # transpose
-        for i in range(self.dm.beads.natoms):
-            self.dm.Epolmatrix[i] = self.dm.Epolmatrix[i].T
-            self.dm.Ipolmatrix[i] = self.dm.Ipolmatrix[i].T
-            self.dm.Tpolmatrix[i] = self.dm.Tpolmatrix[i].T
+        # for i in range(self.dm.beads.natoms):
+        #     self.dm.Epolmatrix[i] = self.dm.Epolmatrix[i].T
+        #     self.dm.Ipolmatrix[i] = self.dm.Ipolmatrix[i].T
+        #     self.dm.Tpolmatrix[i] = self.dm.Tpolmatrix[i].T
 
         # change of basis from (rlv,lv) to (lv,lv)
         # for i in range(self.dm.beads.natoms):

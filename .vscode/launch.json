@@ -26,8 +26,8 @@
             //"cwd":"/home/elia/eda-nvt",
             "console": "integratedTerminal",
             "justMyCode": true,
-            //"args":"input.xml",
-            "args":"RESTART",
+            "args":"input.xml",
+            //"args":"RESTART",
             //"args":["-in","MgO.scf.in","-v","MgO.scf.in"]
         }
     ]
