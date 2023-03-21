@@ -20,15 +20,15 @@
             "type": "python",
             "request": "launch",
             "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
-            //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/BEC.aims.py",
+            //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/rotate.py",
             //"cwd":"/home/elia/eda-nvt",
-            "cwd":"/home/elia/Google-Drive/google-personal/works/EDA-int/LiNbO3/nve",
+            "cwd":"/home/elia/Google-Drive/google-personal/works/EDA-int/MgO/jump",
             //"cwd":"/home/elia/eda-nvt",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args":"input.xml",
-            //"args":"RESTART",
-            //"args":["-t","unit"]
+            //"args":"input.xml",
+            "args":"RESTART",
+            //"args":["-in","MgO.scf.in","-v","MgO.scf.in"]
         }
     ]
 } 

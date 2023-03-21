@@ -267,19 +267,19 @@ class Properties(dobject):
             },
             "ionspol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) ionic polarization (reciprocal lattice vectors).",
+                "help": "The (ensemble averaged) ionic polarization (lattice vectors).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsIonsPol),
             },
             "elecpol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) electronic polarization (reciprocal lattice vectors).",
+                "help": "The (ensemble averaged) electronic polarization (lattice vectors).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsElecPol),
             },
             "totalpol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) total polarization (reciprocal lattice vectors).",
+                "help": "The (ensemble averaged) total polarization (lattice vectors).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsTotalPol ),
             },

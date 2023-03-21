@@ -176,19 +176,19 @@ class InputBeads(Input):
             raise ValueError("Array shape mismatches for names in <beads> input.")
         
         IonsPol = self.IonsPol.fetch()
-        if IonsPol.shape == (beads.nbeads,3):
+        if IonsPol.shape == (beads.nbeads,beads.natoms*3):
             beads.IonsPol = IonsPol
         elif len(IonsPol) != 0:
             raise ValueError("Array shape mismatches for IonsPol in <beads> input.")
 
         ElecPol = self.ElecPol.fetch()
-        if ElecPol.shape == (beads.nbeads,3):
+        if ElecPol.shape == (beads.nbeads,beads.natoms*3):
             beads.ElecPol = ElecPol
         elif len(ElecPol) != 0:
             raise ValueError("Array shape mismatches for ElecPol in <beads> input.")
 
         TotalPol = self.TotalPol.fetch()
-        if TotalPol.shape == (beads.nbeads,3):
+        if TotalPol.shape == (beads.nbeads,beads.natoms*3):
             beads.TotalPol = TotalPol
         elif len(TotalPol) != 0:
             raise ValueError("Array shape mismatches for TotalPol in <beads> input.")

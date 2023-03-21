@@ -335,8 +335,9 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
-        pol = self.cell.change_basis(v=self.EnsTotalPol,orig="rlv",dest="lv") # total polarization in cartesian coordinates
-        return float(self.cell.V * np.dot(pol , self.Efield))
+        pol = self.cell.change_basis(v=self.EnsTotalPol,orig="lv",dest="cart") # total polarization in cartesian coordinates
+        E = self.cell.change_basis(v=self.Efield,orig="lv",dest="cart")
+        return float(self.cell.V * np.dot(pol , E ))
 
     # def _get_Eenthalpy(self):
     #     return self.econs - self.EDAenergy
