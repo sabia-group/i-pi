@@ -251,14 +251,14 @@ class Properties(dobject):
             # ES
             "Efield": {
                 "dimension": "atomic_unit",
-                "help": "The external applied electric field (lattice vectors).",
+                "help": "The external applied electric field (cartesian axes).",
                 "size": 3,
                 "func": (lambda: self.ensemble.Efield),
             },
             "Efieldmod": {
                 "dimension": "atomic_unit",
                 "help": "The modulus of the external applied electric field.",
-                "func": (lambda: norm(self.ensemble.cell.change_basis(v=self.ensemble.Efield,orig="lv",dest="cart"))),
+                "func": (lambda: norm(self.ensemble.Efield)),
             },
             "Eenvelope": {
                 "dimension": "atomic_unit",
@@ -267,19 +267,19 @@ class Properties(dobject):
             },
             "ionspol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) ionic polarization (lattice vectors).",
+                "help": "The (ensemble averaged) ionic polarization (cartesian axes).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsIonsPol),
             },
             "elecpol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) electronic polarization (lattice vectors).",
+                "help": "The (ensemble averaged) electronic polarization (cartesian axes).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsElecPol),
             },
             "totalpol": {
                 "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) total polarization (lattice vectors).",
+                "help": "The (ensemble averaged) total polarization (cartesian axes).",
                 "size": 3,
                 "func": (lambda: self.ensemble.EnsTotalPol ),
             },

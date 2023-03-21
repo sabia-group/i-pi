@@ -335,9 +335,7 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
-        pol = self.cell.change_basis(v=self.EnsTotalPol,orig="lv",dest="cart") # total polarization in cartesian coordinates
-        E = self.cell.change_basis(v=self.Efield,orig="lv",dest="cart")
-        return float(self.cell.V * np.dot(pol , E ))
+        return float(self.cell.V * np.dot( self.EnsTotalPol , self.Efield ))
 
     # def _get_Eenthalpy(self):
     #     return self.econs - self.EDAenergy
@@ -362,7 +360,7 @@ class Ensemble(dobject):
             return None
 
     def _get_Efield(self):
-        """Get the value of the external electric field (w.r.t. the lattice vectors)"""
+        """Get the value of the external electric field (cartesian axes)"""
         if self.Eenvelope is not None :
             return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase) * self.Eenvelope#(self.cptime)
         else :
