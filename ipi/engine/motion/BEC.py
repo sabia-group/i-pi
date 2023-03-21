@@ -214,15 +214,6 @@ class FDBECTensorsCalculator(dobject):
         # displacement in cartesian components
         dev[step] = self.dm.deltax
 
-        # #print(step - step%3,":",step - step%3 + 3)
-        # displ = dev[step - step%3 : step - step%3 + 3]
-
-        # # displacement in cartesian coordinates
-        # cart = self.dm.ensemble.cell.change_basis(v=displ,orig="lv",dest="cart")
-    
-        # #print("norm:",norm(cart))
-        # dev[step - step%3 : step - step%3 + 3] = cart
-
         # displaces kth d.o.f by delta.
         self.dm.beads.q.set(self.original + dev)
         Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
@@ -279,12 +270,6 @@ class FDBECTensorsCalculator(dobject):
         #     self.dm.Epolmatrix[i] = self.dm.Epolmatrix[i].T
         #     self.dm.Ipolmatrix[i] = self.dm.Ipolmatrix[i].T
         #     self.dm.Tpolmatrix[i] = self.dm.Tpolmatrix[i].T
-
-        # change of basis from (rlv,lv) to (lv,lv)
-        # for i in range(self.dm.beads.natoms):
-        #     self.dm.Epolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Epolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
-        #     self.dm.Ipolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Ipolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
-        #     self.dm.Tpolmatrix[i] = self.dm.cell.change_basis(M=self.dm.Tpolmatrix[i],orig=("lv","cart"),dest=("cart","cart"),verbose=False)
 
         return
         

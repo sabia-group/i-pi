@@ -287,10 +287,6 @@ class Ensemble(dobject):
 
         dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
         #dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
-
-        #dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.lv2cart(self.Efield) ,value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
-        #dself.Efieldcart = depend_array(name="Efieldcart" , func=lambda:self.cell.change_basis(v=self.Efield,orig="lv",dest="cart"),value=np.zeros(3,dtype=float),dependencies=[dself.Efield])
-        #dself.BEC = depend_array(name="BEC" , func=lambda:self._get_BEC() ,value=np.zeros((3,3),dtype=float),dependencies=[dself.BEC])
         
     def add_econs(self, e):
         self._elist.append(e)
