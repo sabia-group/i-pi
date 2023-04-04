@@ -255,6 +255,12 @@ class Properties(dobject):
                 "size": 3,
                 "func": (lambda: self.ensemble.Efield),
             },
+            "TderEfield": {
+                "dimension": "atomic_unit",
+                "help": "The time derivatice of the external applied electric field (cartesian axes).",
+                "size": 3,
+                "func": (lambda: self.ensemble.TderEfield),
+            },
             "Efieldmod": {
                 "dimension": "atomic_unit",
                 "help": "The modulus of the external applied electric field.",
@@ -263,7 +269,7 @@ class Properties(dobject):
             "Eenvelope": {
                 "dimension": "atomic_unit",
                 "help": "The (gaussian) envelope function of the external applied electric field.",
-                "func": (lambda: self.ensemble.Eenvelope if self.ensemble.Eenvelope is not None else 0.0 ),
+                "func": (lambda: self.ensemble.Eenvelope ),
             },
             "ionspol": {
                 "dimension": "atomic_unit",
@@ -285,8 +291,8 @@ class Properties(dobject):
             },
             "Eenthalpy": {
                 "dimension": "energy",
-                "help": "The electric enthalpy.",
-                "func": (lambda: self.get_potential() - self.ensemble.EDAenergy ),
+                "help": "The (time dependent) electric enthalpy.",
+                "func": (lambda: self.ensemble.Eenthalpy ),
             },
             "EDAenergy": {
                 "dimension": "energy",
@@ -307,17 +313,16 @@ class Properties(dobject):
                 "help": "The additional EDA contribution to the forces (average over all ions and components).",
                 "func": (lambda: norm(self.motion.integrator.EDAforces) ),
             },
-            # "BECcart": {
-            #     "dimension": "number",
-            #     "help": "The BEC tensors in cartesian components",
-            #     "size": 9,
-            #     "func": (lambda: self.ensemble.BECcart ),
-            # },
             "energy": {
                 "dimension": "energy",
                 "help": "The energy of the system",
                 "func": (lambda: self.get_potential() + self.get_kinmd() ),
-            },          
+            },     
+            "Tconserved": {
+                "dimension": "energy",
+                "help": "The value of the conserved quantity for time-dependent Hamiltonian.",
+                "func": (lambda: self.ensemble.Tconserved),
+            },     
             "conserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved energy quantity per bead.",

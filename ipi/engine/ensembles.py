@@ -90,7 +90,8 @@ class Ensemble(dobject):
         Epeak=None,
         Esigma=None,
         BEC=None,
-        cpol=True
+        cpol=True,
+        tacc=0.0,
     ):
         """Initialises Ensemble.
 
@@ -165,6 +166,7 @@ class Ensemble(dobject):
         dself.BEC    = depend_array(name="BEC"   ,value=BEC    if BEC    is not None else np.zeros(0))
 
         self.cpol = cpol
+        self.tacc = tacc
 
     def copy(self):
         return Ensemble(
@@ -177,6 +179,7 @@ class Ensemble(dobject):
             bweights=dstrip(self.bweights).copy(),
             hweights=dstrip(self.hweights).copy(),
             time=self.time,
+            tacc=self.tacc,
         )
 
     def bind(
@@ -190,6 +193,7 @@ class Ensemble(dobject):
         elist=[],
         xlpot=[],
         xlkin=[],
+        tacc=0.0,
     ):
         self.beads = beads
         self.cell = cell
@@ -263,30 +267,35 @@ class Ensemble(dobject):
 
         # I need cptime to be defined here, and not in TimeDependentIntegrator
         dself.cptime = depend_value(name="cptime",value=0)
-        dself.Eenvelope  = depend_value(name="Eenvelope" ,value=0.0,func=self._get_Eenvelope,dependencies=[dself.cptime,dself.Epeak,dself.Esigma])
-        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=[dself.cptime,dself.Eamp,dself.Efreq,dself.Ephase,dself.Eenvelope])
+
+        # same dependencies for Eenvelope and its time derivative
+        dep = [dself.cptime,dself.Epeak,dself.Esigma] 
+        dself.Eenvelope  = depend_value(name="Eenvelope" ,value=1.0,func=self._get_Eenvelope,dependencies=dep)
+        # dself.TderEenvelope  = depend_value(name="TderEenvelope" ,value=0.0,func=self._get_TderEenvelope,dependencies=dep)
         
+        # same dependencies for Efield and its time derivative
+        dep = [dself.cptime,dself.Eamp,dself.Efreq,dself.Ephase,dself.Eenvelope] 
+        dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=dep)
+        dself.TderEfield = depend_array(name="TderEfield",value=np.zeros(3, float),func=self._get_TderEfield,dependencies=dep)
     
         # ES: polarization(s) for each beads
-        #all_q = [dd(self.beads[i]).q for i in range(self.beads.nbeads)]
-        #print(len(self.beads.q._dependants))
         val = np.full(self.beads.nbeads,np.zeros(3,dtype=float)) if self.beads.nbeads > 1 else np.zeros(3,dtype=float)
         dself.IonsPol  = depend_array(name="IonsPol" , func=lambda:self._get_pol(what="ions") ,value=val,dependencies=[dself.time,dd(self.beads).q])
         dself.ElecPol  = depend_array(name="ElecPol" , func=lambda:self._get_pol(what="elec") ,value=val,dependencies=[dself.time,dd(self.beads).q])
         dself.TotalPol = depend_array(name="TotalPol", func=lambda:self._get_pol(what="total"),value=val,dependencies=[dself.time,dd(self.beads).q])
         
-        # print(dself.ElecPol)
-        # print(dself.ElecPol)
-        # dself.beads.q.taint(True)
-        # print(dself.ElecPol)
-
         # ES: Ensemble polarization(s): the average over the bead of the previous quantities
         dself.EnsIonsPol  = depend_array(name="EnsIonsPol" , func=lambda:self._get_enspol(what="ions") ,value=np.zeros(3,dtype=float),dependencies=[dself.IonsPol ,dself.time])
         dself.EnsElecPol  = depend_array(name="EnsElecPol" , func=lambda:self._get_enspol(what="elec") ,value=np.zeros(3,dtype=float),dependencies=[dself.ElecPol ,dself.time])
         dself.EnsTotalPol = depend_array(name="EnsTotalPol", func=lambda:self._get_enspol(what="total"),value=np.zeros(3,dtype=float),dependencies=[dself.TotalPol,dself.time])
 
-        dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=[dd(self.cell).V,dself.EnsTotalPol,dself.Efield])
-        #dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        dep = [dd(self.cell).V,dself.EnsTotalPol,dself.Efield]
+        dself.EDAenergy = depend_value(name="EDAenergy", func=self._get_EDAenergy,value=0.0,dependencies=dep)
+        dself.TderEDAenergy = depend_value(name="TderEDAenergy", func=self._get_TderEDAenergy,value=0.0,dependencies=dep)
+        dself.Eenthalpy = depend_value(name="Eenthalpy", func=self._get_Eenthalpy,value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+
+        dself.tacc = depend_value(name="tacc" ,value=tacc)
+        dself.Tconserved = depend_value(name="Tconserved", func=self._get_Tconserved,value=0.0,dependencies=[dself.Eenthalpy,dself.tacc,dself.time,dself.cptime])
         
     def add_econs(self, e):
         self._elist.append(e)
@@ -331,44 +340,75 @@ class Ensemble(dobject):
         return lpens
 
     def _get_EDAenergy(self):
+        """EDA contribution to the enthalpy"""
         return float(self.cell.V * np.dot( self.EnsTotalPol , self.Efield ))
+    
+    def _get_TderEDAenergy(self):
+        """Time derivative of EDAenergy"""
+        #self._check_time(msg="calling")
+        return float(self.cell.V * np.dot( self.EnsTotalPol , self.TderEfield ))
 
-    # def _get_Eenthalpy(self):
-    #     return self.econs - self.EDAenergy
-
-    def _get_enspol(self,what=None):
-        """Return the ensemble average of the polarization(s)"""
-        pol = self._get_pol(what)
-        if self.beads.nbeads > 1 :
-            return np.asarray(pol).mean(axis=0)
-        else :
-            return pol
+    def _get_Eenthalpy(self):
+        """Electric enthalpy"""
+        return self.econs - self.EDAenergy
+          
+    def _get_Tconserved(self):
+        """Conserved quantity for time-dependent systems"""
+        # tacc is added and not subtracted because it is defined using EDAenergy
+        # but EDAenergy is subtracted the energy
+        # # so we have two minus signs 
+        self._check_time(msg="calling")
+        return self.Eenthalpy + self.tacc
+    
+    def _Eenvelope_is_on(self):
+        return self.Epeak > 0.0 and self.Esigma != np.inf
 
     def _get_Eenvelope(self):
-        """Gte the gaussian envelope function of the external electric field"""
+        """Get the gaussian envelope function of the external electric field"""
         # https://en.wikipedia.org/wiki/Normal_distribution
-        if self.Epeak > 0.0 and self.Esigma != np.inf :
+        if self._Eenvelope_is_on() :
             x = self.cptime # indipendent variable
             u = self.Epeak  # mean value
             s = self.Esigma # standard deviation
             return np.exp( - 0.5 * ((x-u)/s)**2 ) # the returned maximum value is 1, when x = u
         else :
-            return None
+            return 1.0
+        
+    def _get_TderEenvelope(self):
+        """Get the time derivative of Eenvelope"""
+        # https://en.wikipedia.org/wiki/Normal_distribution
+        if self._Eenvelope_is_on() :
+            x = self.cptime # indipendent variable
+            u = self.Epeak  # mean value
+            s = self.Esigma # standard deviation
+            return - self.Eenvelope * ( x - u ) / s**2
+        else :
+            return 0.0
+            #raise warning("Time derivative of Eenvelope should be evaluate only when Eenvelope is non vanishing")
 
     def _get_Efield(self):
         """Get the value of the external electric field (cartesian axes)"""
-        if self.Eenvelope is not None :
-            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase) * self.Eenvelope#(self.cptime)
-        else :
-            return self.Eamp * np.cos( self.Efreq * self.cptime + self.Ephase)
-
-    # def _lv2cart(self,BEC):
-    #     """Get the BEC tensors expressed w.r.t. the lattice vectors and returns the same tensor expressed in cartesian coordinates"""
-    #     R = np.asarray(self.cell.h)#.copy()
-    #     for i in range(3):
-    #         R[:,i] = R[:,i] / linalg.norm(R[:,i])
-    #     return linalg.inv(R) @ BEC @ R
-
+        #if self.Eenvelope is not None :
+        return self.Eamp * self._get_Ecos() * self.Eenvelope
+        #else :
+        #    return self.Eamp * self._get_Ecos()
+    
+    def _get_TderEfield(self):
+        """Get the time derivative of the external electric field (cartesian axes)"""
+        #if self.Eenvelope is not None : 
+        #  chain rule
+        return self.Eamp * ( self._get_Ecos() * self._get_TderEenvelope() + self._get_TderEcos() * self.Eenvelope ) 
+        #else :
+        #    return self.Eamp * self._get_TderEcos()
+        
+    def _get_Ecos(self):
+        """Get the sinusoidal part of the external electric field"""
+        return np.cos( self.Efreq * self.cptime + self.Ephase)
+    
+    def _get_TderEcos(self):
+        """Get the time derivative sinusoidal part of the external electric field"""
+        return - self.Efreq * np.sin( self.Efreq * self.cptime + self.Ephase)
+        
     def _get_BEC(self):
         """Return the BEC tensors (cart,cart).
         The BEC tensor are stored in a compact form.
@@ -438,7 +478,14 @@ class Ensemble(dobject):
         else:
             raise ValueError("Error in get_pol: '"+what+"' is not a 'polarization' key") 
         
-
+    def _get_enspol(self,what=None):
+        """Return the ensemble average of the polarization(s)"""
+        pol = self._get_pol(what)
+        if self.beads.nbeads > 1 :
+            return np.asarray(pol).mean(axis=0)
+        else :
+            return pol
+        
     def _check_pol(self):
         """Check that the polarization is correctly formatted."""
         # check whether the driver returned to i-pi the polarization values
@@ -470,7 +517,7 @@ class Ensemble(dobject):
         return True
 
     # I moved this method from TimeDependentIntegrator (no longer available) to Ensemble
-    def _check_time(self):
+    def _check_time(self,msg="coding"):
         """Check that self.cptime is equal to self.ensemble.time.
         Pay attention that this is not always true all over the simulation!
         These variable have to be equal only before and after the Integration procedure.
@@ -480,11 +527,25 @@ class Ensemble(dobject):
         This method should always return True, but perhaps future code changes could "break" this.
         Better to be sure that everythin is fine :) """
 
-        thr_time_comparison = 0.1
-        if abs(self.cptime - self.time) > thr_time_comparison:
-            raise ValueError("Error in EDAIntegrator._check_time: the 'continous' time of EDAIntegrator does not match"+\
+        coding = "Error in Ensemble._check_time: the 'continous' time 'Esnemble.cptime' does not match"+\
                 "Ensemble.time (up to a threshold).\nThis seems to be a coding error, not due to wrong input parameters."+\
                 "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
-                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)")
+                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)"
+        
+        calling = "Error in Ensemble._check_time: the 'continous' time 'Esnemble.cptime' does not match"+\
+                "Ensemble.time (up to a threshold).\nThis seems to be a coding error, not due to wrong input parameters."+\
+                "\nIt seems that you are trying to evaluate the time derivative of some variables in the wrong moment."+\
+                "\nRead the description of the function in file ipi/engine/motion/dynamics.py."+\
+                "\nAnd then, if you still have problem, you can write me an email to stocco@fhi-berlin.mpg.de.\nBye :)"
+        
+        messages = {"coding":coding,"calling":calling}
+        
+        # if the specified msg does not exists, the code will tell you and it will print the 'coding' error message
+        if msg not in messages.keys():
+            messages[msg] = "'{:s}' is not a valid message key for _check_time.\n".format(msg) + messages["coding"]
+
+        thr_time_comparison = 0.1
+        if abs(self.cptime - self.time) > thr_time_comparison:
+            raise ValueError(messages[msg])
         return True
 

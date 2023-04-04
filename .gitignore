@@ -17,3 +17,4 @@ regtest-ref
 /dist
 *.egg-info/
 */**/core
+ipi.zip

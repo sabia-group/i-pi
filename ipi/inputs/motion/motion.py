@@ -46,6 +46,7 @@ from ipi.engine.motion import (
     SCPhononsMover,
     NormalModeMover,
     BECTensorsCalculator,
+    dPdaTensorCalculator,
 )
 from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
@@ -65,6 +66,8 @@ from .planetary import InputPlanetary
 from .ramp import InputTemperatureRamp, InputPressureRamp
 from .al6xxx_kmc import InputAlKMC
 from .BEC import InputBECTensorsCalculator
+from .dPda import InputdPdaTensorCalculator
+
 from ipi.utils.units import *
 
 __all__ = ["InputMotion"]
@@ -111,6 +114,7 @@ class InputMotionBase(Input):
                     "scp",
                     "normalmodes",
                     "BEC",
+                    "dPda",
                 ],
             },
         )
@@ -181,7 +185,11 @@ class InputMotionBase(Input):
         ),
         "BEC": (
             InputBECTensorsCalculator,
-            {"default": {}, "help": "Option for phonon computation"},
+            {"default": {}, "help": "Option for BEC computation"},
+        ),
+        "dPda": (
+            InputdPdaTensorCalculator,
+            {"default": {}, "help": "Option for dP/da computation"},
         ),
         "normalmodes": (
             InputNormalMode,
@@ -266,6 +274,10 @@ class InputMotionBase(Input):
         elif type(sc) is BECTensorsCalculator:
             self.mode.store("BEC")
             self.BEC.store(sc)
+            tsc = 1
+        elif type(sc) is dPdaTensorCalculator:
+            self.mode.store("dPda")
+            self.dPda.store(sc)
             tsc = 1
         elif type(sc) is SCPhononsMover:
             self.mode.store("scp")
@@ -388,6 +400,12 @@ class InputMotionBase(Input):
                 #fixcom=self.fixcom.fetch(),
                 #fixatoms=self.fixatoms.fetch(),
                 **self.BEC.fetch()
+            )
+        elif mode == "dPda":
+            sc = dPdaTensorCalculator(
+                #fixcom=self.fixcom.fetch(),
+                #fixatoms=self.fixatoms.fetch(),
+                **self.dPda.fetch()
             )
         elif mode == "normalmodes":
             sc = NormalModeMover(

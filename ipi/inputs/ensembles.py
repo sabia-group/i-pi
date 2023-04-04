@@ -167,6 +167,15 @@ class InputEnsemble(Input):
                 "help": "The Born Effective Charges tensors (w.r.t. the lattice vectors)",
             },
         ),
+        "tacc": (
+            InputValue,
+            {   
+                "dtype": float, 
+                "default": 0.0,
+                "help": "Time accumulator: integral w.r.t. time of the time derivative of the Hamiltonian.\
+                    You should NEVER specify this quantity in the input.xml file",
+            },
+        ),
     }
     dynamic = {}
 

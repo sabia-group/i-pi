@@ -257,7 +257,8 @@ class Dynamics(Motion):
             self.integrator.cptime = self.ensemble.time
 
         self.integrator.step(step)
-        self.ensemble.time += self.dt  # increments internal time
+        #self.ensemble.tacc = self.ensemble.TderEDAenergy * self.dt
+        self.ensemble.time += self.dt  # increments internal time        
         
         # ES: check that the times are the same 
         # this check should never go wrong ... if it does, read the description of self.integrator._check_time

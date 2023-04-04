@@ -191,7 +191,7 @@ class FDBECTensorsCalculator(dobject):
         def check_dimension(M,name):
             if M.size != ( 3 * self.dm.beads.q.size ):
                 if M.size == 0:
-                    M = np.zeros((self.dm.beads.q.size, 3 ),float)
+                    M = np.full((self.dm.beads.q.size, 3 ),np.nan,dtype=float)
                 else:
                     raise ValueError("{:s} polarization matrix constant matrix size does not match system size".format(name))
             else:

@@ -33,9 +33,6 @@ class InputBeads(Input):
         q: An optional array giving the bead positions. Defaults to an empty array with no elements.
         p: An optional array giving the bead momenta. Defaults to an empty array with no elements.
         m: An optional array giving the bead masses. Defaults to an empty array with no elements.
-        IonsPol : an array giving the ionic polarization.
-        ElecPol : an array giving the ionic polarization.
-        TotalPol: an array giving the ionic polarization.
         names: An optional array giving the bead names. Defaults to an empty array with no elements.
     """
 
@@ -87,30 +84,6 @@ class InputBeads(Input):
                 "help": "The names of the atoms, in the format [name1, name2, ... ].",
             },
         ),
-        "IonsPol": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The ionic polarization expressed in cartesian coordinates",
-            },
-        ),
-        "ElecPol": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The electronic polarization expressed in cartesian coordinates",
-            },
-        ),
-        "TotalPol": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The total polarization expressed in cartesian coordinates",
-            },
-        ),
     }
 
     default_help = "Describes the bead configurations in a path integral simulation."
@@ -130,9 +103,6 @@ class InputBeads(Input):
         self.q.store(dstrip(beads.q))
         self.p.store(dstrip(beads.p))
         self.m.store(dstrip(beads.m))
-        self.IonsPol.store(dstrip(beads.IonsPol))
-        self.ElecPol.store(dstrip(beads.ElecPol))
-        self.TotalPol.store(dstrip(beads.TotalPol))
         self.names.store(dstrip(beads.names))
         
     def fetch(self):
@@ -175,22 +145,4 @@ class InputBeads(Input):
         elif len(n) != 0:
             raise ValueError("Array shape mismatches for names in <beads> input.")
         
-        IonsPol = self.IonsPol.fetch()
-        if IonsPol.shape == (beads.nbeads,beads.natoms*3):
-            beads.IonsPol = IonsPol
-        elif len(IonsPol) != 0:
-            raise ValueError("Array shape mismatches for IonsPol in <beads> input.")
-
-        ElecPol = self.ElecPol.fetch()
-        if ElecPol.shape == (beads.nbeads,beads.natoms*3):
-            beads.ElecPol = ElecPol
-        elif len(ElecPol) != 0:
-            raise ValueError("Array shape mismatches for ElecPol in <beads> input.")
-
-        TotalPol = self.TotalPol.fetch()
-        if TotalPol.shape == (beads.nbeads,beads.natoms*3):
-            beads.TotalPol = TotalPol
-        elif len(TotalPol) != 0:
-            raise ValueError("Array shape mismatches for TotalPol in <beads> input.")
-
         return beads

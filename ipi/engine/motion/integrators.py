@@ -390,18 +390,23 @@ class EDAIntegrator(DummyIntegrator):
         """bind the flag '_okay' to 'self.ensemble.time'"""
         super(EDAIntegrator,self).bind(motion) 
         dself = dd(self)
-        dself.cptime = depend_value(name="cptime",value=0)
+        #dself.cptime = depend_value(name="cptime",value=0)
+        dself.tacc = depend_array(name="tacc",value=0.0)
         dself._okay = depend_value(
             name="_okay",
             value=False,
             func=self._check,
             dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         )
-        dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
-        dself.EDAforces  = depend_array(name="forces"  , func=lambda:self._forces()              ,value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble).Efield])
-        dself.EDAxforces = depend_array(name="xforces" , func=lambda:self._forces_component("x") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
-        dself.EDAyforces = depend_array(name="yforces" , func=lambda:self._forces_component("y") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
-        dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        # dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
+        dself.EDAforces  = depend_array(name="forces"  , func=lambda:self._forces()              ,\
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble).Efield])
+        dself.EDAxforces = depend_array(name="xforces" , func=lambda:self._forces_component("x") ,\
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        dself.EDAyforces = depend_array(name="yforces" , func=lambda:self._forces_component("y") ,\
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,\
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         pass
 
     def pstep(self, level=0):
@@ -416,6 +421,8 @@ class EDAIntegrator(DummyIntegrator):
             #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
             #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
             self.beads.p += self.EDAforces * self.pdt[level]
+            #self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
+            #self.ensemble.cptime += self.pdt[level] # update cptime
         else : 
             raise ValueError("Something not okay in EDAIntegrator.pstep")
         return
@@ -521,18 +528,25 @@ class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
     # author: Elia Stocco
     # motivation: deal with time-dependent external potential, in particular the EDA potential (have a look at EDAIntegrator)
 
-    order = True
+    # order = True
+
+    # def pstep(self,level):
+    #     if self.order :
+    #         EDAIntegrator.pstep(self,level)
+    #         NVEIntegrator.pstep(self,level)
+    #         self.order = False
+    #     else :
+    #         NVEIntegrator.pstep(self,level) # the drive is called here
+    #         EDAIntegrator.pstep(self,level)
+    #         self.order = True
+    #     #self.cptime += self.pdt[level] # update cptime
+    #     pass
 
     def pstep(self,level):
-        if self.order :
-            EDAIntegrator.pstep(self,level)
-            NVEIntegrator.pstep(self,level)
-            self.order = False
-        else :
-            NVEIntegrator.pstep(self,level) # the drive is called here
-            EDAIntegrator.pstep(self,level)
-            self.order = True
-        self.cptime += self.pdt[level] # update cptime
+        NVEIntegrator.pstep(self,level) # the drive is called here
+        EDAIntegrator.pstep(self,level)
+        self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
+        self.ensemble.cptime += self.pdt[level] # update cptime
         pass
 
 
@@ -563,7 +577,7 @@ class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
             NVTIntegrator.pstep(self,level) # the drive is called here
             EDAIntegrator.pstep(self,level)
             self.order = True
-        self.cptime += self.pdt[level] # update cptime
+        #self.cptime += self.pdt[level] # update cptime
         pass
 
 

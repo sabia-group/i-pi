@@ -128,9 +128,6 @@ class Atoms(dobject):
             dself.q = depend_array(name="q", value=np.zeros(3 * natoms, float))
             dself.p = depend_array(name="p", value=np.zeros(3 * natoms, float))
             dself.m = depend_array(name="m", value=np.zeros(natoms, float))
-            # dself.IonsPol  = depend_array(name="IonsPol" , value=np.zeros(3, float))
-            # dself.ElecPol  = depend_array(name="ElecPol" , value=np.zeros(3, float))
-            # dself.TotalPol = depend_array(name="TotalPol", value=np.zeros(3, float))
             dself.names = depend_array(
                 name="names", value=np.zeros(natoms, np.dtype("|U6"))
             )
@@ -139,9 +136,6 @@ class Atoms(dobject):
             dself.p     = _prebind[1]
             dself.m     = _prebind[2]
             dself.names = _prebind[3]
-            # dself.IonsPol  = _prebind[5]
-            # dself.ElecPol  = _prebind[6]
-            # dself.TotalPol = _prebind[7]
 
         dself.m3 = depend_array(
             name="m3",

@@ -57,9 +57,6 @@ class Beads(dobject):
             contained in the properties module.
         kstress: The total kinetic stress tensor for the system.
         rg: An array giving the radius of gyration of each atom.
-        IonsPol : an array giving the ionic polarization.
-        ElecPol : an array giving the ionic polarization.
-        TotalPol: an array giving the ionic polarization.
     """
 
     def __init__(self, natoms, nbeads):
@@ -122,11 +119,6 @@ class Beads(dobject):
         # positions and momenta. bead representation, base storage used everywhere
         dself.q = depend_array(name="q", value=np.zeros((nbeads, 3 * natoms), float))
         dself.p = depend_array(name="p", value=np.zeros((nbeads, 3 * natoms), float))
-        
-        # ES: polarization of the beads
-        dself.IonsPol  = depend_array(name="IonsPol" , value=np.zeros((nbeads, 3 * natoms), float))
-        dself.ElecPol  = depend_array(name="ElecPol" , value=np.zeros((nbeads, 3 * natoms), float))
-        dself.TotalPol = depend_array(name="TotalPol", value=np.zeros((nbeads, 3 * natoms), float))
 
         # position and momentum of the centroid
         dself.qc = depend_array(
@@ -157,7 +149,6 @@ class Beads(dobject):
         # TODO: ACTUALLY THIS IS ONLY USED HERE METHINK, SO PERHAPS WE COULD REMOVE IT TO DECLUTTER THE CODE.
         self._blist = [
             Atoms(natoms, _prebind=(self.q[i, :], self.p[i, :], self.m, self.names)) 
-            #                        self.IonsPol[i, :], self.ElecPol[i, :], self.TotalPol[i, :]))
             for i in range(nbeads)
         ]
 
@@ -194,9 +185,6 @@ class Beads(dobject):
         newbd.q[:] = self.q[:nbeads]
         newbd.p[:] = self.p[:nbeads]
         newbd.m[:] = self.m
-        newbd.IonsPol[:]  = self.IonsPol [:nbeads]
-        newbd.ElecPol[:]  = self.ElecPol [:nbeads]
-        newbd.TotalPol[:] = self.TotalPol[:nbeads]
         newbd.names[:] = self.names
         return newbd
 

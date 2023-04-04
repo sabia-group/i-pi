@@ -26,3 +26,4 @@ from .ramp import TemperatureRamp, PressureRamp
 from .al6xxx_kmc import AlKMC
 from .polarization import get_pol,_check_pol
 from .BEC import BECTensorsCalculator
+from .dPda import dPdaTensorCalculator
