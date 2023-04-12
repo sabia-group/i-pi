@@ -407,6 +407,8 @@ class EDAIntegrator(DummyIntegrator):
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
+        
+        dself.BEC = depend_array(name="BEC",func=self._get_BEC,value=np.zeros((self.beads.natoms,3,3)),dependencies=[dd(self.ensemble).time])
         pass
 
     def pstep(self, level=0):
@@ -450,10 +452,17 @@ class EDAIntegrator(DummyIntegrator):
         #                     "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
         return True
     
+    def _get_BEC(self):
+        if self.ensemble.cBEC:
+            bec = self.ensemble.dfptBEC 
+        else :
+            bec = self.ensemble.BEC
+        return bec
+
     def _forces(self):
         """Compute the EDA contribution to the forces due to the polarization"""
-        BEC = self.ensemble._get_BEC()
-        forces = Constants.e * BEC @ self.ensemble.Efield
+        # ES: if 'nbeads' > 1, then we will have to fix something here
+        forces = Constants.e * self.BEC @ self.ensemble.Efield
         return forces.flatten().reshape((self.beads.nbeads,-1))
     
     def _forces_component(self,xyz):

@@ -159,12 +159,20 @@ class InputEnsemble(Input):
                 "help": "Wheter the polarization is returned by the driver",
             },
         ),
+        "cBEC": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": False,
+                "help": "Wheter the BEC tensors are computed on the fly by the driver, or read from file and kept fixed during the dynamics",
+            },
+        ),
         "BEC": (
-            InputArray,
+            InputArray, #InputBEC,
             {   
-                "dtype": float, 
+                "dtype": float,
                 "default": input_default(factory=np.zeros, args=(0,)),
-                "help": "The Born Effective Charges tensors (w.r.t. the lattice vectors)",
+                "help": "The Born Effective Charges tensors (cartesian coordinates)",
             },
         ),
         "tacc": (
@@ -209,6 +217,7 @@ class InputEnsemble(Input):
         self.Esigma.store(ens.Esigma)
         self.BEC.store(ens.BEC)
         self.cpol.store(ens.cpol)
+        self.cBEC.store(ens.cBEC)
 
 
     def fetch(self):
@@ -236,7 +245,9 @@ class InputEnsemble(Input):
             Epeak=self.Epeak.fetch(),
             Esigma=self.Esigma.fetch(),
             BEC=self.BEC.fetch(),
-            cpol=self.cpol.fetch()
+            cpol=self.cpol.fetch(),
+            tacc=self.tacc.fetch(),
+            cBEC=self.cBEC.fetch()
         )
 
         return ens

@@ -525,10 +525,12 @@ class TrajectoryOutput(BaseOutput):
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names
             fatom.q[:] = data[b]
-        elif key == "polarization":
-            fatom = Atoms(3)
-            fatom.names[:] = ["ions","elec","total"]
-            fatom.q[:] = data[b]
+        elif key == "BEC":
+            if b != 0 :
+                raise ValueError("printing of BEC implemented only for 'nbeads' = 0")
+            fatom = Atoms(self.system.beads.natoms)
+            fatom.names[:] = self.system.beads.names
+            dd(fatom).q = data.reshape((self.system.beads.natoms,9)) # ES: pay attention!
         else:
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names

@@ -67,7 +67,7 @@ class dPdaTensorCalculator(Motion):
 
     def step(self, step=None):
         """Executes one step of dPda computation."""
-        if step < 3 * self.beads.natoms:
+        if step < 6:
             self.phcalc.step(step)
         else:
             # self.phcalc.transform()

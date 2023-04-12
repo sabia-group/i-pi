@@ -271,23 +271,23 @@ class Properties(dobject):
                 "help": "The (gaussian) envelope function of the external applied electric field.",
                 "func": (lambda: self.ensemble.Eenvelope ),
             },
-            "ionspol": {
-                "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) ionic polarization (cartesian axes).",
-                "size": 3,
-                "func": (lambda: self.ensemble.EnsIonsPol),
-            },
-            "elecpol": {
-                "dimension": "atomic_unit",
-                "help": "The (ensemble averaged) electronic polarization (cartesian axes).",
-                "size": 3,
-                "func": (lambda: self.ensemble.EnsElecPol),
-            },
+            # "ionspol": {
+            #     "dimension": "atomic_unit",
+            #     "help": "The (ensemble averaged) ionic polarization (cartesian axes).",
+            #     "size": 3,
+            #     "func": (lambda: self.ensemble.EnsIonsPol),
+            # },
+            # "elecpol": {
+            #     "dimension": "atomic_unit",
+            #     "help": "The (ensemble averaged) electronic polarization (cartesian axes).",
+            #     "size": 3,
+            #     "func": (lambda: self.ensemble.EnsElecPol),
+            # },
             "totalpol": {
                 "dimension": "atomic_unit",
                 "help": "The (ensemble averaged) total polarization (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.EnsTotalPol ),
+                "func": (lambda: self.ensemble.TotalPol ),
             },
             "Eenthalpy": {
                 "dimension": "energy",
@@ -2688,13 +2688,12 @@ class Trajectories(dobject):
                 "help": "The momentum trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",
                 "func": (lambda: 1.0 * self.system.beads.p),
             },
-            # # ES
-            # "polarization": {
-            #     "dimension": "polarization",
-            #     "help": "The polarization expressed in cartesian coordinates.",
-            #     "size": 9,
-            #     "func": (lambda: self.system.motion.integrator.get_pol(what="all") if hasattr(self.system.motion.integrator,"get_pol") else np.zeros(9)),
-            # },
+            # ES
+            "BEC": {
+                "dimension": "number",
+                "help": "The BEC tensors in cartesian coordinates.",
+                "func": (lambda: self.system.motion.integrator.BEC ),
+            },
             "forces": {
                 "dimension": "force",
                 "help": "The force trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",

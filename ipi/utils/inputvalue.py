@@ -34,7 +34,7 @@ __all__ = [
     "InputAttribute",
     "InputArray",
     "input_default",
-    "InputArrayGeneric"
+    "InputBEC"
 ]
 
 
@@ -1070,7 +1070,6 @@ class InputRaw(InputValue):
 
 ELPERLINE = 5
 
-
 class InputArray(InputValue):
 
     """Class for handling array input.
@@ -1212,43 +1211,31 @@ class InputArray(InputValue):
         if self.shape.fetch() == (0,):
             self.shape.store((len(self.value),))
 
-class InputArrayGeneric(InputArray):
-
-    """Class for handling array input.
-
-    Has the methods for dealing with simple data tags of the form:
-    <tag_name shape="(shape)"> data </tag_name>, where data is an array
-    of the form [data[0], data[1], ... , data[length]].
-
-    Takes the data and converts it to the required data type,
-    so that it can be used in the simulation. Also holds the shape of the array,
-    so that we can use a simple 1D list of data to specify a multi-dimensional
-    array.
-
-    Attributes:
-       shape: The shape of the array.
-    """
+class InputBEC(InputArray):
 
     attribs = copy(InputArray.attribs)
-    attribs["basis"] = (
+
+    attribs["mode"] = (
         InputAttribute,
         {
             "dtype": str,
-            "default": "lv",
-            "options": ["lv", "rlv","cart"],
-            "help": "The basis of w.r.t. the vector components are referred: (normalized) lattice vectors [lv], (normalized) reciprocal lattice vectors [rlv], or cartesian [cart].",
+            "default": "fly",
+            "options": ["fly","manual", "file"],
+            "help": "If 'mode' is 'DFPT', then the array is computed on the fly. " + InputArray.attribs["mode"][1]["help"],
         },
     )
 
-    def __init__(self, help=None, default=None, dtype=None, dimension=None):
-        """Initialises InputArray.
+    def parse(self, xml=None, text=""):
+        """Reads the data for an array from an xml file.
 
         Args:
-           help: A help string.
-           dimension: The dimensionality of the value.
-           default: A default value.
-           dtype: An optional data type. Defaults to None.
+           xml: An xml_node object containing the all the data for the parent
+              tag.
+           text: The data held between the start and end tags.
         """
-
-        super(InputArray, self).__init__(help, default, dtype, dimension=dimension)
-        #self.basis = self.attribs["basis"]
+        Input.parse(self, xml=xml, text=text)
+        mode = self.mode.fetch()
+        if mode in InputArray.attribs["mode"][1]["options"]: # ['manual','file']
+            super(InputBEC, self).parse(xml,text)
+        else :
+            self.value = mode
