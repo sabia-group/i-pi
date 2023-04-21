@@ -18,3 +18,4 @@ regtest-ref
 *.egg-info/
 */**/core
 ipi.zip
+.vscode/
