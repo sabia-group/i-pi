@@ -2,6 +2,9 @@
 # i-PI Copyright (C) 2014-2015 i-PI developers
 # See the "licenses" directory for full license information.
 
+# author: Elia Stocco
+# email : stocco@fhi-berlin.mpg.de
+
 import argparse
 import numpy as np
 
@@ -21,12 +24,24 @@ def prepare_parser():
     parser = argparse.ArgumentParser(description="Compute the time-dependent vibrational modes occupations given the velocities of a MD simulation.")
 
     parser.add_argument(
+        "-q", "--positions", action="store", type=str,
+        help="input file with the positions of all the configurations (in 'xyz' format)", default=None
+    )
+    parser.add_argument(
+        "-r", "--relaxed", action="store", type=str,
+        help="input file with the relaxed/original configuration (in 'xyz' format)", default=None
+    )
+    parser.add_argument(
+        "-M", "--masses", action="store", type=str,
+        help="input file with the nuclear masses (in 'txt' format)", default=None
+    )
+    parser.add_argument(
         "-v", "--velocities", action="store", type=str,
         help="input file with the velocities of all the configurations (in 'xyz' format)", default=None
     )
     parser.add_argument(
         "-m", "--modes", action="store", type=str,
-        help="file containing the vibrational modes computed by i-PI", default=None
+        help="folder containing the vibrational modes computed by i-PI", default=None
     )
     parser.add_argument(
         "-o", "--occupations", action="store", type=str,
@@ -43,98 +58,318 @@ def prepare_parser():
         help="output file for the modes occupation plot", default=None
     )
 
-    parser.add_argument(
-        "-s", "--signal", action="store", type=str,
-        help="output file for the velocities projected on the vibrational modes", default=None
-    )
+    # parser.add_argument(
+    #     "-s", "--signal", action="store", type=str,
+    #     help="output file for the velocities projected on the vibrational modes", default=None
+    # )
        
     options = parser.parse_args()
 
     return options
+
+def get_one_file_in_folder(folder,ext):
+    import os
+    files = list()
+    for file in os.listdir(folder):
+        if file.endswith(".mode"):
+            files.append(os.path.join(folder, file))
+    if len(files) == 0 :
+        raise ValueError("no '*{:s}' files found".format(ext))
+    elif len(files) > 1 :
+        raise ValueError("more than one '*{:s}' file found".format(ext))
+    return files[0]
+
+class Data:
+
+    tab = "\t\t"
+    check = True
+
+    def __init__(self,\
+                 options,\
+                 compute:bool=True,\
+                 plot:bool=True):
+        
+        self.displacements = None
+        self.velocities = None
+        self.eigvals = None
+        self.modes = None
+        self.Nmodes = None
+        self.Nconf = None
+    
+        if compute :
+
+            from ase.io import read
+            import os
+
+            ###
+            # reading original position
+            print("\n{:s}reading original/relaxed position from file '{:s}'".format(self.tab,options.relaxed))
+            relaxed = read(options.relaxed)
+
+            if options.masses is None :
+                print("\n{:s}storing nuclear masses from the original/relaxed position file using ASE".format(self.tab))
+                masses = relaxed.get_masses()
+            else:
+                print("\n{:s}reading masses from file '{:s}'".format(self.tab,options.masses))
+                masses = np.loadtxt(options.masses)
+                if len(masses) != len(relaxed.positions) :
+                    raise ValueError("wrong number of nuclear masses")
+                
+            # set masses
+            M = np.zeros((3 * len(masses)), float)
+            M[ 0 : 3 * len(masses) : 3] = masses
+            M[ 1 : 3 * len(masses) : 3] = masses
+            M[ 2 : 3 * len(masses) : 3] = masses
+            masses = M
+            
+            # positions
+            relaxed = relaxed.positions
+            Nmodes = relaxed.shape[0] * 3
+
+            ###
+            # reading positions
+            print("\n{:s}reading positions from file '{:s}'".format(self.tab,options.positions))
+            positions = read(options.positions,index=":")
+            Nconf = len(positions) 
+
+            ###
+            # reading velocities
+            print("\n{:s}reading velocities from file '{:s}'".format(self.tab,options.velocities))
+            velocities = read(options.velocities,index=":")
+            Nvel = len(velocities)
+            print("{:s}read {:d} configurations".format(self.tab,Nconf))
+            if Nvel != Nconf :
+                raise ValueError("number of velocities and positions configuration are different")
+
+            ###
+            # reading vibrational modes
+            if os.path.isdir(options.modes):
+                print("\n{:s}searching for '*.mode' file in folder '{:s}'".format(self.tab,options.modes))
+                
+                # modes
+                file = get_one_file_in_folder(folder=options.modes,ext=".mode")
+                print("\n{:s}reading vibrational modes from file '{:s}'".format(self.tab,file))
+                modes = np.loadtxt(file)
+                if modes.shape[0] != Nmodes or modes.shape[1] != Nmodes :
+                    raise ValueError("vibrational modes matrix with wrong size")
+
+                # hess
+                file = get_one_file_in_folder(folder=options.modes,ext=".hess")
+                print("\n{:s}reading vibrational modes from file '{:s}'".format(self.tab,file))
+                hess = np.loadtxt(file)
+                if hess.shape[0] != Nmodes or hess.shape[1] != Nmodes:
+                    raise ValueError("hessian matrix with wrong size")
+                
+                # eigval
+                file = get_one_file_in_folder(folder=options.modes,ext=".eigval")
+                print("\n{:s}reading vibrational modes from file '{:s}'".format(self.tab,file))
+                eigval = np.loadtxt(file)
+                if len(eigval) != Nmodes:
+                    raise ValueError("eigenvalues array with wrong size")
+
+                print("\n{:s}read {:d} modes".format(self.tab,Nmodes))
+
+            else:
+                raise ValueError("'--modes' should be a folder")
+
+            if modes.shape[0] != modes.shape[1]:
+                raise ValueError("vibrtional mode matrix is not square")
+
+            if not np.all(np.asarray([ positions[i].positions.flatten().shape for i in range(Nconf)]) == Nmodes) :
+                raise ValueError("some configurations do not have the correct shape")
+            
+            # if self.check :
+                #     print("\n{:s}Let's do a little test".format(self.tab))
+                #     mode      = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".mode"))
+                #     dynmat    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".dynmat"))
+                #     full_hess = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext="_full.hess"))
+                #     eigval    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".eigval"))
+                #     eigvec    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".eigvec"))
+                #     hess      = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".hess"))
+                    
+                #     print("{:s}checking that D@V = E@V".format(self.tab))
+                #     res = np.sqrt(np.square(dynmat @ eigvec - eigval @ eigvec).sum())
+                #     print("{:s} | D@V - E@V | = {:>20.12e}".format(self.tab,res))
+
+                #     eigsys = np.linalg.eigh(mode)
+
+                #     print("{:s}checking that eigvec(M) = M".format(self.tab))
+                #     res = np.sqrt(np.square(eigsys[1] - mode).flatten().sum())
+                #     print("{:s} | eigvec(H) - M | = {:>20.12e}".format(self.tab,res))
+
+                #     print("{:s}checking that eigval(H) = E".format(self.tab))
+                #     res = np.sqrt(np.square( np.sort(eigsys[0]) - np.sort(eigval)).sum())
+                #     print("{:s} | eigvec(H) - E | = {:>20.12e}".format(self.tab,res))
+
+                #     print("{:s}checking that H@eigvec(H) = eigval(H)@eigvec(H)".format(self.tab))
+                #     res = np.sqrt(np.square(eigsys[0] - eigval).sum())
+                #     print("{:s} | eigvec(H) - E | = {:>20.12e}".format(self.tab,res))
+            
+            ###
+            # flatten the velocities
+            for n in range(Nconf):
+                positions[n] = positions[n].positions.flatten()
+            displacements = np.asarray(positions) - relaxed.flatten()
+            
+            # ###
+            # # project on phonon modes
+            # # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.hilbert.html#scipy.signal.hilbert
+            # print("\n\tprojecting displacements on vibrational modes")
+            # signal = displacement @ modes
+
+            # if options.signal is not None :
+            #     print("\tsaving displacements projected on the vibrational modes to file '{:s}'".format(options.signal))
+            #     np.savetxt(options.signal,signal,delimiter=" ",fmt="%20.12e")
+
+            # print("\tcomputing the analytic signal of the displacements along the vibrational modes")
+            # analytic_signal = hilbert(signal,axis=0)
+
+            # print("\tcomputing the time-dependent occupations of the vibrational modes")
+            # occupations = np.absolute(analytic_signal)
+            
+            # ###
+            # # save occupations to file  
+            # print("\tsaving modes occupations to file '{:s}'".format(options.occupations))
+            # np.savetxt(options.occupations,occupations,delimiter=" ",fmt="%20.12e")
+
+            # arrays
+            self.displacements = displacements
+            self.velocities = velocities
+            self.modes = modes
+            self.hess = hess
+            self.eigval = eigval
+            self.masses = masses
+
+            # information
+            self.Nconf = Nconf
+            self.Nmodes = Nmodes
+
+        if plot :
+            print("\n{:s}reading modes occupations from file '{:s}'".format(self.tab,options.occupations))
+            occupations = np.loadtxt(options.occupations)
+
+            self.occupations = occupations
+            Nmodes = occupations.shape[1]
+            self.Nmodes = Nmodes
+
+        pass
+
+    @staticmethod
+    def potential_energy_per_mode(displ,modes,hess,eigvals=None,check=False):
+        """return an array with the potential energy of each vibrational mode"""        
+
+        omega_sqr = modes.T @ hess @ modes
+        proj_displ = np.linalg.inv(modes) @ displ
+        
+        if check :
+            N = len(eigvals)
+            eig_sqr = np.zeros((N,N))
+            np.fill_diagonal(eig_sqr,np.square(eigvals))
+
+            print("{:s}checking that E^t @ Phi @ E = W^2".format(Data.tab))
+            res = np.sqrt(np.square(omega_sqr - eig_sqr).sum())
+            print("{:s} | E^t @ Phi @ E - W^2 | = {:>20.12e}".format(Data.tab,res))
+            
+            print("{:s}checking the off diagonal elements of A = E^t @ Phi @ E".format(Data.tab))
+            omega_sqr_copy = omega_sqr.copy()
+            np.fill_diagonal(omega_sqr_copy,0)
+            res = np.sqrt(np.square(omega_sqr_copy).sum())
+            print("{:s} | A - diag(A) | = {:>20.12e}".format(Data.tab,res))
+
+        return 0.5 * proj_displ * np.diag(omega_sqr) * proj_displ, 0.5 * proj_displ * omega_sqr @ proj_displ
+    
+    @staticmethod
+    def kinetic_energy_per_mode(vel,modes,masses,eigvals=None,check=False):
+        """return an array with the kinetic energy of each vibrational mode"""        
+
+        identity = modes.T @ masses @ modes
+        proj_vel = np.linalg.inv(modes) @ vel
+        
+        if check :
+            print("{:s}checking that E^t @ M @ E = Id".format(Data.tab))
+            res = np.sqrt(np.square(identity - np.eye(len(identity),1)).sum())
+            print("{:s} | E^t @ M @ E - Id | = {:>20.12e}".format(Data.tab,res))
+            
+            print("{:s}checking the off diagonal elements of A = E^t @ M @ E".format(Data.tab))
+            identity_copy = identity.copy()
+            np.fill_diagonal(identity_copy,0)
+            res = np.sqrt(np.square(identity_copy).sum())
+            print("{:s} | A - diag(A) | = {:>20.12e}".format(Data.tab,res))
+
+        return 0.5 * np.square(proj_vel * eigvals), 0.5 * ( proj_vel * eigvals ) * identity @ ( eigvals * proj_vel )
+
+
+    def compute_occ(self):
+        
+        arrays = [  self.displacements,\
+                    self.velocities,\
+                    self.modes, \
+                    self.hess, \
+                    self.eigval, \
+                    self.Nmodes, \
+                    self.Nconf,\
+                    self.masses ]
+        
+        if np.any( arrays is None ) :
+            raise ValueError("Some arrays are missing")
+        
+        Vs,Vs_tot = Data.potential_energy_per_mode(self.displacements.T, self.modes, self.hess,   self.eigval, check=True)
+        Ks,Ks_tot = Data.kinetic_energy_per_mode  (self.velocities.T,    self.modes, self.masses, self.eigval, check=True)
+        Es = Vs + Ks
+        Es_tot = Vs_tot + Ks_tot
+        
+        V = np.sum(Vs)
+        K = np.sum(Ks)
+        E = np.sum(Es)
+
+        V_tot = np.sum(Vs_tot)
+        K_tot = np.sum(Ks_tot)
+        E_tot = np.sum(Es_tot)        
+
+        print("\n{:s}pot. energy = {:>20.12e}".format(self.tab,V))
+        print("\n{:s}kin. energy = {:>20.12e}".format(self.tab,K))
+        print("\n{:s}tot. energy = {:>20.12e}".format(self.tab,E))
+        
+        print("\n{:s}pot. energy (with off diag.) = {:>20.12e}".format(self.tab,V_tot))
+        print("\n{:s}kin. energy (with off diag.) = {:>20.12e}".format(self.tab,K_tot))
+        print("\n{:s}tot. energy (with off diag.) = {:>20.12e}".format(self.tab,E_tot))
+
+        print("\n{:s}Delta pot. energy = {:>20.12e}".format(self.tab,V-V_tot))
+        print("\n{:s}Delta kin. energy = {:>20.12e}".format(self.tab,K-K_tot))
+
+        return             
+
 
 def main():
     """main routine"""
 
     ###
     # prepare/read input arguments
+    print("\n\tReding input arguments")
     options = prepare_parser()
 
-    occupations = None
+    ###
+    # read input argumfilesents
+    print("\n\tReding input files")
+    data = Data(options,compute=options.compute,plot=options.plot is not None)
+    
+    ###
+    # compute occupations
     if options.compute :
+        print("\n\tComputing occupations")
+        data.compute_occ() # occupations are stored in 'data.occupations'
 
-        from ase.io import read
-        from scipy.signal import hilbert
-
-        ###
-        # reading velocities
-        print("\n\treading velocities from file '{:s}'".format(options.velocities))
-        velocities = read(options.velocities,index=":")
-        Nconf = len(velocities)
-        print("\tread {:d} configurations".format(Nconf))
-
-        ###
-        # reading vibrational modes
-        print("\n\treading vibrational modes from file '{:s}'".format(options.modes))
-        modes = np.loadtxt(options.modes)
-        Nmodes = len(modes)
-        print("\tread {:d} modes".format(Nmodes))
-
-        if modes.shape[0] != modes.shape[1]:
-            raise ValueError("matrix of vibrational modes is not square")
-    
-        if not np.all(np.asarray([ velocities[i].positions.flatten().shape for i in range(Nconf)]) == Nmodes) :
-            raise ValueError("some configurations do not have the correct shape")
-
-        # ###
-        # # reading eigenvalues
-        # print("\n\treading eigenvalues from file '{:s}'".format(options.eigenvalues))
-        # eigvals = np.loadtxt(options.eigenvalues)
-        # Nvals = len(eigvals)
-        # print("\tread {:d} eigenvalues".format(Nvals))
-        # if Nvals != Nmodes:
-        #     raise ValueError("the number fo eigenvalues is not equal to the number of vibrational modes")
-        
-        ###
-        # flatten the velocities
-        for n in range(Nconf):
-            velocities[n] = velocities[n].positions.flatten()
-        velocities = np.asarray(velocities)
-        
-        ###
-        # project on phonon modes
-        # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.hilbert.html#scipy.signal.hilbert
-        print("\n\tprojecting velocities on vibrational modes")
-        signal = velocities @ modes
-
-        if options.signal is not None :
-            print("\tsaving velocities projected on the vibrational modes to file '{:s}'".format(options.signal))
-            np.savetxt(options.signal,signal,delimiter=" ",fmt="%20.12e")
-
-        print("\tcomputing the analytic signal of the velocities along the vibrational modes")
-        analytic_signal = hilbert(signal,axis=0)
-
-        print("\tcomputing the time-dependent occupations of the vibrational modes")
-        occupations = np.absolute(analytic_signal)
-        
-        ###
-        # save occupations to file  
-        print("\tsaving modes occupations to file '{:s}'".format(options.occupations))
-        np.savetxt(options.occupations,occupations,delimiter=" ",fmt="%20.12e")
-    
-    if options.plot is not None:
+    ###
+    # plot occupations
+    if options.plot:
 
         import matplotlib.pyplot as plt
 
-        if occupations is None :
-            print("\n\treading modes occupations from file '{:s}'".format(options.occupations))
-            occupations = np.loadtxt(options.occupations)
-        
         print("\n\tplotting modes occupations")
 
         plt.figure()
-        Nmodes = occupations.shape[1]
-        for n in range(Nmodes):
-            plt.plot(occupations[:,n],label=str(n))
+        for n in range(data.Nmodes):
+            plt.plot(data.occupations[:,n],label=str(n))
         
         plt.grid()
         plt.legend()
