@@ -18,7 +18,7 @@
             //"args":"input.xml",
             //"args":"RESTART",
             //"args":["-m","-1","-s","signal.txt","-p","images/mode.png","-e","energy.png","-w","vib/i-pi.phonons.eigval"],
-            "args":["-q","traj/i-pi.LiNbO3.positions_0.xyz","-v","traj/i-pi.LiNbO3.velocities_0.xyz","-r","LiNbO3.xyz","-o","occupations.txt","-m","vib"],
+            "args":["-q","traj/i-pi.LiNbO3.positions_0.xyz","-v","traj/i-pi.LiNbO3.velocities_0.xyz","-r","LiNbO3.xyz","-o","occupations.txt","-m","vib","-M","vib/i-pi.phonons.masses"],
         }
     ]
 }

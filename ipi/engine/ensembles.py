@@ -443,12 +443,13 @@ class Ensemble(dobject):
         bec = [np.asarray(self.forces.extras["BEC"][i]).reshape((Na,3,3)) for i in range(Nb)]
         return bec[0] if bead is None else bec[bead] 
 
-    def _get_static_BEC(self,bead=None):
+    def _get_static_BEC(self,bead=None,empty_is_okay=True):
         """Return the BEC tensors (in cartesian coordinates).
         The BEC tensor are stored in a compact form.
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to perform fast matrix multiplication.
         """
+        self.first = True 
 
         N = len(self.BEC)      # lenght of the BEC array
         Na = self.beads.natoms # number of atoms
@@ -478,7 +479,8 @@ class Ensemble(dobject):
             for i in range(Na):
                 Z[i,:,:] = temp[i,:,:]
             return Z # self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
-
+        elif N == 0 and empty_is_okay:
+            return np.zeros((Na,3,3))
         else :
             raise ValueError("BEC tensor with wrong size!")
 
