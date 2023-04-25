@@ -391,16 +391,16 @@ class EDAIntegrator(DummyIntegrator):
         super(EDAIntegrator,self).bind(motion) 
         dself = dd(self)
         #dself.cptime = depend_value(name="cptime",value=0)
-        dself.tacc = depend_array(name="tacc",value=0.0)
-        dself._okay = depend_value(
-            name="_okay",
-            value=False,
-            func=self._check,
-            dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
-        )
+        # dself.tacc = depend_array(name="tacc",value=0.0)
+        # dself._okay = depend_value(
+        #     name="_okay",
+        #     value=False,
+        #     func=self._check,
+        #     dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
+        # )
         # dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
         dself.EDAforces  = depend_array(name="forces"  , func=lambda:self._forces()              ,\
-                                        value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble).Efield])
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble.eda).Efield])
         dself.EDAxforces = depend_array(name="xforces" , func=lambda:self._forces_component("x") ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         dself.EDAyforces = depend_array(name="yforces" , func=lambda:self._forces_component("y") ,\
@@ -408,26 +408,29 @@ class EDAIntegrator(DummyIntegrator):
         dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         
-        dself.BEC = depend_array(name="BEC",func=self._get_BEC,value=np.zeros((self.beads.natoms,3,3)),dependencies=[dd(self.ensemble).time])
+        # dself.BEC = depend_array(name="BEC",func=self._get_BEC,value=np.zeros((self.beads.natoms,3,3)),dependencies=[dd(self.ensemble).time])
         pass
 
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
-        # check that everything is okay (but just once for each step), and if it is so, go on!
-        okay = self._okay
-        if okay:       
-            #
-            # ES: this has to be changed
-            # The BEC tensors already contain the whole contribution to the forces, both electronic and ionic!
-            #
-            #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
-            #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
-            self.beads.p += self.EDAforces * self.pdt[level]
-            #self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
-            #self.ensemble.cptime += self.pdt[level] # update cptime
-        else : 
-            raise ValueError("Something not okay in EDAIntegrator.pstep")
-        return
+        self.beads.p += self.EDAforces * self.pdt[level]
+        pass
+
+    # check that everything is okay (but just once for each step), and if it is so, go on!
+    # okay = self._okay
+    # if okay:       
+    #
+    # ES: this has to be changed
+    # The BEC tensors already contain the whole contribution to the forces, both electronic and ionic!
+    #
+    #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
+    #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
+    
+    #self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
+    #self.ensemble.cptime += self.pdt[level] # update cptime
+    # else : 
+    #     raise ValueError("Something not okay in EDAIntegrator.pstep")
+    #return
 
     def _check(self):
         """Check that everything is okay before computing the external electric field contribution to the forces."""
@@ -452,17 +455,17 @@ class EDAIntegrator(DummyIntegrator):
         #                     "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
         return True
     
-    def _get_BEC(self):
-        if self.ensemble.cBEC:
-            bec = self.ensemble.dfptBEC 
-        else :
-            bec = self.ensemble.BEC
-        return bec
+    # def _get_BEC(self):
+    #     if self.ensemble.eda.BEC.cBEC:
+    #         bec = self.ensemble.eda.BEC.dfptBEC 
+    #     else :
+    #         bec = self.ensemble.eda.BEC.BEC
+    #     return bec
 
     def _forces(self):
         """Compute the EDA contribution to the forces due to the polarization"""
         # ES: if 'nbeads' > 1, then we will have to fix something here
-        forces = Constants.e * self.BEC @ self.ensemble.Efield
+        forces = Constants.e * self.ensemble.eda.BEC @ self.ensemble.eda.Efield
         return forces.flatten().reshape((self.beads.nbeads,-1))
     
     def _forces_component(self,xyz):

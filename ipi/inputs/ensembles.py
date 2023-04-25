@@ -159,7 +159,7 @@ class InputEnsemble(Input):
                 "help": "Wheter the polarization is returned by the driver",
             },
         ),
-        "cBEC": (
+        "cbec": (
             InputValue,
             {
                 "dtype": bool,
@@ -167,8 +167,8 @@ class InputEnsemble(Input):
                 "help": "Wheter the BEC tensors are computed on the fly by the driver, or read from file and kept fixed during the dynamics",
             },
         ),
-        "BEC": (
-            InputArray, #InputBEC,
+        "bec": (
+            InputBEC, #InputBEC,
             {   
                 "dtype": float,
                 "default": input_default(factory=np.zeros, args=(0,)),
@@ -215,9 +215,10 @@ class InputEnsemble(Input):
         self.Ephase.store(ens.Ephase)
         self.Epeak.store(ens.Epeak)
         self.Esigma.store(ens.Esigma)
-        self.BEC.store(ens.BEC)
+        self.bec.store(ens.bec)
         self.cpol.store(ens.cpol)
-        self.cBEC.store(ens.cBEC)
+        self.cbec.store(ens.cbec)
+        # self.eda.store(ens.eda)
 
 
     def fetch(self):
@@ -244,10 +245,10 @@ class InputEnsemble(Input):
             Ephase=self.Ephase.fetch(),
             Epeak=self.Epeak.fetch(),
             Esigma=self.Esigma.fetch(),
-            BEC=self.BEC.fetch(),
+            bec=self.bec.fetch(),
             cpol=self.cpol.fetch(),
             tacc=self.tacc.fetch(),
-            cBEC=self.cBEC.fetch()
+            cbec=self.cbec.fetch()
         )
 
         return ens

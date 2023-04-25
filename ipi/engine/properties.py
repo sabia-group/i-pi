@@ -2692,7 +2692,7 @@ class Trajectories(dobject):
             "BEC": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.system.motion.integrator.BEC ),
+                "func": (lambda: self.system.ensemble.eda.BEC ),
             },
             "forces": {
                 "dimension": "force",

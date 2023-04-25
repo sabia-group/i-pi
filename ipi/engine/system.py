@@ -111,6 +111,7 @@ class System(dobject):
             self.forces,
             self.simul.fflist,
             simul.output_maker,
+            self.motion.enstype,
         )
 
         info(" # Binding the motion integrator", verbosity.low)

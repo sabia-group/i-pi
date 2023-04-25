@@ -179,6 +179,14 @@ class depend_base(object):
             else:
                 self.taint(taintme=tainted)
 
+    def __call__(self,*argv):
+        """An object that inherits from 'depend_base' can be called as if it were a function.
+        Pay attention that '_func' has to be defined and it should have default arguments.
+        """
+        # author: Elia Stocco
+        # email : stocco@fhi-berlin.mpg.de
+        return self._func(*argv)
+
     def __deepcopy__(self, memo):
         """Overrides deepcopy behavior, to avoid copying the (uncopiable) RLOCK"""
 
