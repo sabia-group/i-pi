@@ -189,16 +189,16 @@ class Ensemble(dobject):
             bweights=dstrip(self.bweights).copy(),
             hweights=dstrip(self.hweights).copy(),
             time=self.time,
-            eda=self.EDA
-            # Eamp=self.Eamp,
-            # Efreq=self.Efreq,
-            # Ephase=self.Ephase,
-            # Epeak=self.Epeak,
-            # Esigma=self.Esigma,
-            # BEC=self.BEC,
-            # cpol=self.cpol,
-            # tacc=self.tacc,
-            # cBEC=self.cBEC,
+            # eda=self.EDA
+            Eamp=self.Eamp,
+            Efreq=self.Efreq,
+            Ephase=self.Ephase,
+            Epeak=self.Epeak,
+            Esigma=self.Esigma,
+            bec=self.bec,
+            cpol=self.cpol,
+            tacc=self.tacc,
+            cBEC=self.cBEC,
             )
 
     def bind(
@@ -364,26 +364,30 @@ class Ensemble(dobject):
         
 class BEC(dobject):
 
-    def __init__(self,cbec):
-        self.cbec = depend_value(name="cbec",value=cbec)
+    def __init__(self,cbec,bec):
+        self.cbec = cbec
+        dd(self).bec  = depend_array(name="bec",value=bec)
         pass
 
-    def bind(self,ensemble,enstype):
+    def bind(self,eda,ensemble,enstype):
 
         self.enstype = enstype
-        self.nbeads = ensemble.beads.nbeads
-        self.natoms = ensemble.beads.natoms
-        self.first = True
-        self.forces = ensemble.forces # is this a weakref??
+        self.nbeads  = ensemble.beads.nbeads
+        self.natoms  = ensemble.beads.natoms
+        self.forces  = ensemble.forces # is this a weakref??
+        self.first   = True
 
         dself = dd(self)        
-        if self.cbec:
-            dself.bec = depend_array(name="BEC",value=np.full((self.nbeads,3,3),np.nan),func=self._get_DFPT_BEC) 
+        if self.cbec: 
+            dself.bec = depend_array(name="bec",\
+                                     value=np.full((self.natoms,3,3),np.nan),\
+                                     func=self._get_DFPT_BEC,\
+                                     dependencies=[dd(eda).time,dd(ensemble.beads).q]) 
         elif self.enstype in EDA.integrators :
             temp = self._get_static_BEC() # reshape the BEC once and for all
-            dself.bec = depend_array(name="BEC",value=temp)
+            dself.bec = depend_array(name="bec",value=temp)
         else :
-            dself.bec = depend_array(name="BEC",value=np.full((self.nbeads,3,3),np.nan)) 
+            dself.bec = depend_array(name="bec",value=np.full((self.natoms,3,3),np.nan)) 
 
         self.first = False
         pass
@@ -399,9 +403,9 @@ class BEC(dobject):
         # check that bead is a correct value
         if bead is not None:
             if bead < 0:
-                raise ValueError("Error in '_check_BEC': 'beads' is negative") 
+                raise ValueError("Error in '_check_BEC': 'bead' is negative") 
             if bead >= self.nbeads :
-                raise ValueError("Error in '_check_BEC': 'beads' is greater than the number of beads") 
+                raise ValueError("Error in '_check_BEC': 'bead' is greater than the number of beads") 
         
         if self.first:
             return np.zeros((self.natoms,3,3))
@@ -419,21 +423,21 @@ class BEC(dobject):
         """
         # self.first = True 
 
-        N = len(self.BEC)      # lenght of the BEC array
-        Na = self.beads.natoms # number of atoms
+        N = len(self.bec)      # lenght of the BEC array
+        Na = self.natoms # number of atoms
 
         if N == Na:     # scalar BEC
             Z = np.zeros((Na,3,3))
             for i in range(Na):
                 for j in range(3):
-                    Z[i,j,j] = self.BEC[i]
+                    Z[i,j,j] = self.bec[i]
                 Z[i,:,:] = Z[i,:,:]
             return Z #self._lv2cart(Z)
             #lambda a,b : a*b # element-wise (matrix) multplication (only the diagonal elements have been allocated)
 
         elif N == 3*Na: # diagonal BEC
             Z = np.zeros((Na,3,3))
-            temp = self.BEC.reshape((Na,3))
+            temp = self.bec.reshape((Na,3))
             for i in range(Na):
                 for j in range(3):
                     Z[i,j,j] = temp[i,j]
@@ -443,7 +447,7 @@ class BEC(dobject):
         
         elif N == 9*Na: # all-components BEC
             Z = np.zeros((Na,3,3))
-            temp = self.BEC.reshape((Na,3,3))
+            temp = self.bec.reshape((Na,3,3))
             for i in range(Na):
                 Z[i,:,:] = temp[i,:,:]
             return Z # self._lv2cart(Z) # rows-by-columns (matrix) multplication (all the elements have been allocated)
@@ -466,7 +470,7 @@ class BEC(dobject):
         else : # the polarization is not computed by the driver, then skip this check
             return True
 
-        Nb = self.beads.nbeads
+        Nb = self.nbeads
         # check whether the number of polarization values is correct, i.e. equal to the number of beads 
         # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
         if len(self.forces.extras["BEC"]) != Nb:
@@ -475,7 +479,7 @@ class BEC(dobject):
         # check whether the BEC tensors have the correct shape
         for i in range(Nb):
             Na = len(self.forces.extras["BEC"][i])
-            if Na != self.beads.natoms:
+            if Na != self.natoms:
                 raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
             for j in range(Na):
                 if len(self.forces.extras["BEC"][i][j]) != 9 :
@@ -521,14 +525,14 @@ class Polarization(dobject):
             if not self.cpol:
                 return np.asarray([0,0,0]) # the polarization is not computed by the driver, then return [0,0,0]
             else :
-                pol = [self.forces.extras["polarization"][i][what] for i in range(N)]
+                pol = [self.forces.extras["polarization"][i][what] for i in range(self.nbeads)]
                 return pol[0] if bead is None else pol[bead] 
             
         elif what == "all":
             # ES: pay attention, these following have to be in the same order to line 530 in /ipi/engine/outputs.py
             pol = [ np.asarray(list(self.forces.extras["polarization"][i]["ions"])+\
                                 list(self.forces.extras["polarization"][i]["elec"])+\
-                                list(self.forces.extras["polarization"][i]["total"])) for i in range(N)]
+                                list(self.forces.extras["polarization"][i]["total"])) for i in range(self.nbeads)]
             return pol if bead is None else pol[bead] 
         
         else:
@@ -553,13 +557,13 @@ class Polarization(dobject):
 
         # check whether the total, electronic, and ionic polarizations are all available
         for word in ["total","ions","elec"]:
-            if not np.all([word in self.forces.extras["polarization"][i] for i in range(N)]):
+            if not np.all([word in self.forces.extras["polarization"][i] for i in range(self.nbeads)]):
                 raise ValueError(msg+": "+word+" polarization not present for all the beads.")
 
         # check whether the polarizations (total, electronic, and ionic) are identically vanishing
         from numpy import linalg as LA
         for word in ["total","ions","elec"]:
-            if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(N)]):
+            if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(self.nbeads)]):
                 warning(word+" polarization is vanishing for all the beads.",verbosity.high)
         return True
 
@@ -586,12 +590,17 @@ class ElectricField(dobject):
         dself.Eenvelope      = depend_value(name="Eenvelope" ,value=1.0,func=self._get_Eenvelope,dependencies=dep)
         dself.TderEenvelope  = depend_value(name="TderEenvelope" ,value=0.0,func=self._get_TderEenvelope,dependencies=dep)
 
-        dep = [dself.cptime,dself.Eamp,dself.Efreq,dself.Ephase,dself.Eenvelope] 
+         
         if enstype in EDA.integrators:
-            dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=self._get_Efield,dependencies=dep)
+            # with dependencies
+            dep = [dself.cptime,dself.Eamp,dself.Efreq,dself.Ephase,dself.Eenvelope]
+            dself.Efield     = depend_array(name="Efield",    value=np.zeros(3, float),func=self._get_Efield,    dependencies=dep)
+            dself.TderEfield = depend_array(name="TderEfield",value=np.zeros(3, float),func=self._get_TderEfield,dependencies=dep)
         else :
-            dself.Efield = depend_array(name="Efield",value=np.zeros(3, float),func=lambda : np.zeros(3, float))
-
+            # no dependencies
+            dself.Efield     = depend_array(name="Efield",    value=np.zeros(3, float),func=lambda time=None : np.zeros(3, float))
+            dself.TderEfield = depend_array(name="TderEfield",value=np.zeros(3, float),func=lambda time=None : np.zeros(3, float))
+        
         pass
 
     def store(self,ef):
@@ -603,17 +612,18 @@ class ElectricField(dobject):
         self.Esigma.store(ef.Esigma)
         pass
 
-    def __get__(self):
-        return self.Efield
+    # def __get__(self):
+    #     return self.Efield
     
-    def __call__(self,time=None):
-        # bypass self.Efield
-        return self._get_Efield(time)
+    # def __call__(self,time=None):
+    #     # bypass self.Efield
+    #     return self._get_Efield(time)
     
     def _get_Efield(self,time=None):
         """Get the value of the external electric field (cartesian axes)"""
-        E = dd(self).Eenvelope(time)
-        return self.Eamp * self._get_Ecos(time) * E
+        if time is None :
+            raise ValueError("Hey man! Don't you think it's better to specify the time you want to evaluate the electric field?")
+        return self.Eamp * self._get_Ecos(time) * dd(self).Eenvelope(time)
     
     def _Eenvelope_is_on(self):
         return self.Epeak > 0.0 and self.Esigma != np.inf
@@ -636,7 +646,7 @@ class ElectricField(dobject):
             x = self.cptime if time is None else time # indipendent variable
             u = self.Epeak  # mean value
             s = self.Esigma # standard deviation
-            return - self.Eenvelope(time) * ( x - u ) / s**2
+            return - dd(self).Eenvelope(time) * ( x - u ) / s**2
         else :
             return 0.0
             #raise warning("Time derivative of Eenvelope should be evaluate only when Eenvelope is non vanishing")
@@ -645,7 +655,9 @@ class ElectricField(dobject):
         """Get the time derivative of the external electric field (cartesian axes)"""
         #if self.Eenvelope is not None : 
         #  chain rule
-        return self.Eamp * ( self._get_Ecos(time) * self._get_TderEenvelope(time) + self._get_TderEcos(time) * self.Eenvelope(time) ) 
+        if time is None :
+            raise ValueError("Hey man! Don't you think it's better to specify the time you want to evaluate the (time derivative of the) electric field?")
+        return self.Eamp * ( self._get_Ecos(time) * self._get_TderEenvelope(time) + self._get_TderEcos(time) * dd(self).Eenvelope(time) ) 
         #else :
         #    return self.Eamp * self._get_TderEcos()
 
@@ -667,7 +679,7 @@ class EDA(dobject):
         super(EDA,self).__init__(**kwargv)
         self.electric_field = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
         self.polarization   = Polarization(cpol)
-        self.bec            = BEC(cbec)
+        self.born_charges   = BEC(cbec,bec)
         self.tacc           = depend_value(name="tacc" ,value=tacc)
         pass
 
@@ -687,16 +699,27 @@ class EDA(dobject):
 
         self.electric_field.bind(self,enstype)
         self.polarization.bind(self,ensemble)
-        self.bec.bind(ensemble,enstype)  
+        self.born_charges.bind(self,ensemble,enstype)  
         
         # for easier access
-        dself.Efield   = depend_array(name="Efield",  value=np.full(dd(self.electric_field).Efield.shape,np.nan))
-        dself.BEC      = depend_array(name="BEC",     value=np.full(dd(self.bec).bec.shape,              np.nan))
+        # dself.Efield   = dd(self.electric_field).Efield
+        # dself.bec      = dd(self.born_charges).bec
+        # dself.totalpol = dd(self.polarization).totalpol
+
+        # for easier access
+        dself.Efield   = depend_array(name="Efield",  value=np.full(dd(self.electric_field).Efield.shape,np.nan),func=lambda time=None: dd(self.electric_field).Efield(time))
+        # dself.bec      = depend_array(name="bec",     value=np.full(dd(self.born_charges).bec.shape,     np.nan),func=lambda: self.born_charges.bec)
+        # dself.totalpol = depend_array(name="totalpol",value=np.full(dd(self.polarization).totalpol.shape,np.nan),func=lambda: self.polarization.totalpol)
+
+        dself.bec      = depend_array(name="bec",     value=np.full(dd(self.born_charges).bec.shape,     np.nan))
         dself.totalpol = depend_array(name="totalpol",value=np.full(dd(self.polarization).totalpol.shape,np.nan))
 
-        dpipe(dfrom=dd(self.electric_field).Efield,dto=dself.Efield)
-        dpipe(dfrom=dd(self.bec).bec,              dto=dself.BEC)
+        # dpipe(dfrom=dd(self.electric_field).Efield,dto=dself.Efield)
+        dpipe(dfrom=dd(self.born_charges).bec,     dto=dself.bec)
         dpipe(dfrom=dd(self.polarization).totalpol,dto=dself.totalpol)  
+
+        # experimental
+        dpipe(dfrom=dself.time,dto=dself.cptime)
 
         dep = [dself.volume,dself.totalpol,dself.Efield]
         dself.EDAenergy     = depend_value(name="EDAenergy",     func=self._get_EDAenergy,    value=0.0,dependencies=dep)
@@ -717,26 +740,26 @@ class EDA(dobject):
 
     def _get_EDAenergy(self,time=None):
         """EDA contribution to the enthalpy"""
-        return float(self.volume * np.dot( self.TotalPol , self.Efield(time) ))
+        return float(self.volume * np.dot( self.totalpol , dd(self.electric_field).Efield(time) ))
     
     def _get_TderEDAenergy(self,time=None): # ES: to be modified
         """Time derivative of EDAenergy"""
         #self._check_time(msg="calling")
-        return float(self.volume * np.dot( self.TotalPol , self.TderEfield(time) ))
+        return float(self.volume * np.dot( self.totalpol , dd(self.electric_field).TderEfield(time) ))
 
     def _get_Eenthalpy(self,time=None):
         """Electric enthalpy"""
-        return self.econs - self.EDAenergy(time)
+        return self.econs - dd(self).EDAenergy(time)
               
     def _get_Tconserved(self,time=None):
         """Conserved quantity for time-dependent systems"""
         # tacc is added and not subtracted because it is defined using EDAenergy
         # but EDAenergy is subtracted the energy
         # # so we have two minus signs 
-        self._check_time(msg="calling")
-        return self.Eenthalpy(time) + self.tacc
+        self._check_time(msg="calling",time=time)
+        return dd(self).Eenthalpy(time) + self.tacc
 
-    def _check_time(self,msg="coding"):
+    def _check_time(self,msg="coding",time=None):
         """Check that self.cptime is equal to self.ensemble.time.
         Pay attention that this is not always true all over the simulation!
         These variable have to be equal only before and after the Integration procedure.
@@ -765,6 +788,8 @@ class EDA(dobject):
 
         thr_time_comparison = 0.1
         if abs(self.cptime - self.time) > thr_time_comparison:
+            raise ValueError(messages[msg])
+        if time is not None and abs(time - self.time) > thr_time_comparison:
             raise ValueError(messages[msg])
         return True
 

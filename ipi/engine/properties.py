@@ -253,23 +253,23 @@ class Properties(dobject):
                 "dimension": "atomic_unit",
                 "help": "The external applied electric field (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.Efield),
+                "func": (lambda: dd(self.ensemble.eda).Efield(self.ensemble.time)),
             },
             "TderEfield": {
                 "dimension": "atomic_unit",
                 "help": "The time derivatice of the external applied electric field (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.TderEfield),
+                "func": (lambda: dd(self.ensemble.eda.electric_field).TderEfield(self.ensemble.time)),
             },
             "Efieldmod": {
                 "dimension": "atomic_unit",
                 "help": "The modulus of the external applied electric field.",
-                "func": (lambda: norm(self.ensemble.Efield)),
+                "func": (lambda: norm(dd(self.ensemble.eda).Efield(self.ensemble.time))),
             },
             "Eenvelope": {
                 "dimension": "atomic_unit",
                 "help": "The (gaussian) envelope function of the external applied electric field.",
-                "func": (lambda: self.ensemble.Eenvelope ),
+                "func": (lambda: dd(self.ensemble.eda.electric_field).Eenvelope(self.ensemble.time) ),
             },
             # "ionspol": {
             #     "dimension": "atomic_unit",
@@ -287,32 +287,32 @@ class Properties(dobject):
                 "dimension": "atomic_unit",
                 "help": "The (ensemble averaged) total polarization (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.TotalPol ),
+                "func": (lambda: self.ensemble.eda.totalpol ),
             },
             "Eenthalpy": {
                 "dimension": "energy",
                 "help": "The (time dependent) electric enthalpy.",
-                "func": (lambda: self.ensemble.Eenthalpy ),
+                "func": (lambda: dd(self.ensemble.eda).Eenthalpy(self.ensemble.time) ),
             },
             "EDAenergy": {
                 "dimension": "energy",
                 "help": "The EDA energy contribution.",
                 "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
-                "func": (lambda: self.ensemble.EDAenergy ),
+                "func": (lambda: dd(self.ensemble.eda).EDAenergy(self.ensemble.time) ),
             },
-            "Eforce": { # implemented only for nbeads = 1 
-                "dimension": "force",
-                "help": "The additional EDA contribution to the forces (average over all ions).",
-                "size": 3,
-                "func": (lambda: np.asarray([ norm(self.motion.integrator.EDAxforces),\
-                                              norm(self.motion.integrator.EDAyforces),\
-                                              norm(self.motion.integrator.EDAzforces) ] ) ),
-            },
-            "Eforcemod": { # implemented only for nbeads = 1 
-                "dimension": "force",
-                "help": "The additional EDA contribution to the forces (average over all ions and components).",
-                "func": (lambda: norm(self.motion.integrator.EDAforces) ),
-            },
+            # "Eforce": { # implemented only for nbeads = 1 
+            #     "dimension": "force",
+            #     "help": "The additional EDA contribution to the forces (average over all ions).",
+            #     "size": 3,
+            #     "func": (lambda: np.asarray([ norm(self.motion.integrator.EDAxforces),\
+            #                                   norm(self.motion.integrator.EDAyforces),\
+            #                                   norm(self.motion.integrator.EDAzforces) ] ) ),
+            # },
+            # "Eforcemod": { # implemented only for nbeads = 1 
+            #     "dimension": "force",
+            #     "help": "The additional EDA contribution to the forces (average over all ions and components).",
+            #     "func": (lambda: norm(self.motion.integrator.EDAforces) ),
+            # },
             "energy": {
                 "dimension": "energy",
                 "help": "The energy of the system",
@@ -321,7 +321,7 @@ class Properties(dobject):
             "Tconserved": {
                 "dimension": "energy",
                 "help": "The value of the conserved quantity for time-dependent Hamiltonian.",
-                "func": (lambda: self.ensemble.Tconserved),
+                "func": (lambda: dd(self.ensemble.eda).Tconserved(self.ensemble.time)),
             },     
             "conserved": {
                 "dimension": "energy",
@@ -2689,10 +2689,10 @@ class Trajectories(dobject):
                 "func": (lambda: 1.0 * self.system.beads.p),
             },
             # ES
-            "BEC": {
+            "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.system.ensemble.eda.BEC ),
+                "func": (lambda: self.system.ensemble.eda.bec ), # .flatten()
             },
             "forces": {
                 "dimension": "force",

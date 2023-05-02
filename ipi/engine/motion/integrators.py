@@ -399,8 +399,9 @@ class EDAIntegrator(DummyIntegrator):
         #     dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
         # )
         # dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
-        dself.EDAforces  = depend_array(name="forces"  , func=lambda:self._forces()              ,\
-                                        value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=[dd(self.ensemble.eda).Efield])
+        dep = [dd(self.ensemble).time,dd(self.ensemble.eda).cptime,dd(self.ensemble.eda).bec,dd(self.ensemble.eda).Efield]
+        dself.EDAforces  = depend_array(name="forces"  , func=self._forces              ,\
+                                        value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=dep)
         dself.EDAxforces = depend_array(name="xforces" , func=lambda:self._forces_component("x") ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         dself.EDAyforces = depend_array(name="yforces" , func=lambda:self._forces_component("y") ,\
@@ -465,7 +466,7 @@ class EDAIntegrator(DummyIntegrator):
     def _forces(self):
         """Compute the EDA contribution to the forces due to the polarization"""
         # ES: if 'nbeads' > 1, then we will have to fix something here
-        forces = Constants.e * self.ensemble.eda.BEC @ self.ensemble.eda.Efield
+        forces = Constants.e * self.ensemble.eda.bec @ dd(self.ensemble.eda).Efield(self.ensemble.eda.cptime)
         return forces.flatten().reshape((self.beads.nbeads,-1))
     
     def _forces_component(self,xyz):
@@ -555,10 +556,10 @@ class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
     #     pass
 
     def pstep(self,level):
-        NVEIntegrator.pstep(self,level) # the drive is called here
+        NVEIntegrator.pstep(self,level) # the driver is called here
         EDAIntegrator.pstep(self,level)
-        self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
-        self.ensemble.cptime += self.pdt[level] # update cptime
+        self.ensemble.eda.tacc   += dd(self.ensemble.eda).TderEDAenergy(self.ensemble.eda.cptime) * self.pdt[level]
+        # self.ensemble.eda.cptime += self.pdt[level] # update cptime
         pass
 
 

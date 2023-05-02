@@ -8,11 +8,12 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
+            //"preLaunchTask": "write_scf", // The name of the task defined above
             "program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/bin/i-pi",
             //"program": "/home/elia/Google-Drive/google-personal/i-pi-sabia/tools/py/project-on-vibrational-modes.py",
             //"program": "/home/elia/Google-Drive/google-personal/works/proj-vib/plot.py",
             //"cwd":"/home/elia/Google-Drive/google-personal/works/phBEC",
-            //"cwd":"/home/elia/Google-Drive/google-personal/works/proj-vib",
+            //"cwd":"/home/elia/Google-Drive/google-personal/works/phBEC/",
             "cwd":"/home/elia/Google-Drive/google-personal/works/T-conserved",
             "console": "integratedTerminal",
             "justMyCode": true,

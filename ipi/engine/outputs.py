@@ -525,7 +525,7 @@ class TrajectoryOutput(BaseOutput):
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names
             fatom.q[:] = data[b]
-        elif key == "BEC":
+        elif key == "bec":
             if b != 0 :
                 raise ValueError("printing of BEC implemented only for 'nbeads' = 0")
             fatom = Atoms(self.system.beads.natoms)

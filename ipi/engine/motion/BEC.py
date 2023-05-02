@@ -60,11 +60,11 @@ class BECTensorsCalculator(Motion):
         #self.deltaw = output_shift
         self.deltax = pos_shift
         #self.deltae = energy_shift
-        self.Epolmatrix = Epolmatrix.copy()
-        self.Ipolmatrix = Ipolmatrix.copy()
+        # self.Epolmatrix = Epolmatrix.copy()
+        # self.Ipolmatrix = Ipolmatrix.copy()
         self.Tpolmatrix = Tpolmatrix.copy()
-        self.Ecorrection = np.zeros(0, float)
-        self.Icorrection = np.zeros(0, float)
+        # self.Ecorrection = np.zeros(0, float)
+        # self.Icorrection = np.zeros(0, float)
         self.Tcorrection = np.zeros(0, float)
 
         # self.frefine = False
@@ -119,7 +119,7 @@ class BECTensorsCalculator(Motion):
     def printall(self):
         """Prints matrices to file"""
 
-        for contr,M in zip(["electrons","ions","total"],[self.Epolmatrix,self.Ipolmatrix,self.Tpolmatrix]):
+        for contr,M in zip(["electrons","ions","total"],[self.Tpolmatrix]): # self.Epolmatrix,self.Ipolmatrix,
             file = "{:s}.BEC.{:s}.txt".format(self.prefix,contr)
             header = "BEC for {:s} polarization.\n".format(contr)+\
                 "The polarization (row indices of the BEC tensors) are expressed w.r.t. the (normalized) lattice vectors.\n"+\
@@ -152,13 +152,13 @@ class BECTensorsCalculator(Motion):
         # and self.correction has the shape (3,3) 
         #
 
-        self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
-        self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
+        # self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
+        # self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
         self.Tcorrection = self.Tpolmatrix.sum(axis=0)/self.beads.natoms
 
         if self.asr == "lin" :            
-            self.Epolmatrix -= self.Ecorrection            
-            self.Ipolmatrix -= self.Icorrection            
+            # self.Epolmatrix -= self.Ecorrection            
+            # self.Ipolmatrix -= self.Icorrection            
             self.Tpolmatrix -= self.Tcorrection
 
         elif self.asr == "nonr" :
@@ -199,9 +199,9 @@ class FDBECTensorsCalculator(dobject):
             return M
 
         # Initialises a 3*number of atoms X 3*number of atoms dynamic matrix.
-        self.dm.Epolmatrix = check_dimension(self.dm.Epolmatrix,"Electronic")
-        self.dm.Ipolmatrix = check_dimension(self.dm.Ipolmatrix,"Ionic")
-        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix,"Total")
+        # self.dm.Epolmatrix = check_dimension(self.dm.Epolmatrix,"Electronic")
+        # self.dm.Ipolmatrix = check_dimension(self.dm.Ipolmatrix,"Ionic")
+        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix,"total")
 
         return
 
@@ -216,15 +216,15 @@ class FDBECTensorsCalculator(dobject):
 
         # displaces kth d.o.f by delta.
         self.dm.beads.q.set(self.original + dev)
-        Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
-        Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tplus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
+        # Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
+        # Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
+        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
         # displaces kth d.o.f by -delta.
         self.dm.beads.q.set(self.original - dev)
-        Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
-        Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tminus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
+        # Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
+        # Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
+        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
         #
         # the following line computes a component of a BEC tensor
@@ -252,8 +252,8 @@ class FDBECTensorsCalculator(dobject):
         # Have a nice day :)
         #
 
-        self.dm.Epolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Eplus - Eminus ) / ( 2 * self.dm.deltax )
-        self.dm.Ipolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Iplus - Iminus ) / ( 2 * self.dm.deltax )
+        # self.dm.Epolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Eplus - Eminus ) / ( 2 * self.dm.deltax )
+        # self.dm.Ipolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Iplus - Iminus ) / ( 2 * self.dm.deltax )
         self.dm.Tpolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
 
         return

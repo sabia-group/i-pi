@@ -491,7 +491,7 @@ class Initializer(dobject):
                     )
 
                 rtemp = v.value * unit_to_internal("temperature", v.units, 1.0)
-                if rtemp <= 0:
+                if rtemp < 0:
                     warning(
                         "Using the simulation temperature to resample velocities",
                         verbosity.low,
