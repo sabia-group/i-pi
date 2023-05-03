@@ -300,6 +300,11 @@ class Properties(dobject):
                 "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
                 "func": (lambda: dd(self.ensemble.eda).EDAenergy(self.ensemble.time) ),
             },
+            "tacc": {
+                "dimension": "energy",
+                "help": "The integral of the time derivative of the electric field",
+                "func": (lambda: dd(self.ensemble.eda).EDAenergy(self.ensemble.time) ),
+            },
             # "Eforce": { # implemented only for nbeads = 1 
             #     "dimension": "force",
             #     "help": "The additional EDA contribution to the forces (average over all ions).",
