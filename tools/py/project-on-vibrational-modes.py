@@ -398,7 +398,6 @@ class Data:
 
         return self.occupations.copy()
 
-
 def main():
     """main routine"""
 
