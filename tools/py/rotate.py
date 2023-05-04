@@ -18,6 +18,8 @@ from ase.cell import Cell
 from copy import copy
 from numpy.linalg import inv
 
+fmt = "%20.16f"
+
 
 def print_cell(cell,tab="\t\t"):
     string = tab+"{:14s} {:1s} {:^10s} {:^10s} {:^10s}".format('','','x','y','z')
@@ -54,10 +56,10 @@ def main():
         "-oc", "--outcell", action="store", type=str,
         help="output file for the cell", default="cell.txt"
     ) 
-    parser.add_argument(
-        "-cs", "--cellsep", action="store", type=str,
-        help="separator for the cell (output) file", default="\t"
-    )   
+    # parser.add_argument(
+    #     "-cs", "--cellsep", action="store", type=str,
+    #     help="separator for the cell (output) file", default="\t"
+    # )   
     # parser.add_argument(
     #     "-or", "--outrot", action="store", type=str,
     #     help="output file for the rotation matrix", default="rotation.csv"
@@ -141,9 +143,9 @@ def main():
         # np.savetxt(f,np.asarray(U).T,delimiter=options.cellsep)
 
         f.write("\n# transposed unit cell (row vectors) -> driver\n")
-        np.savetxt(f,np.asarray(L),delimiter=options.cellsep)
+        np.savetxt(f,np.asarray(L),delimiter="\t",fmt=fmt)
         f.write("\n# unit cell (column vectors) -> i-pi\n")
-        np.savetxt(f,np.asarray(L).T,delimiter=options.cellsep)
+        np.savetxt(f,np.asarray(L).T,delimiter=",",fmt=fmt)
 
     # outfile = options.folder+"/"+options.outrot
     # print("\n\tsaving rotation matrix to '%s'"%(outfile))
@@ -180,7 +182,7 @@ def main():
             write(outfile,newdata,format=options.format)
 
         else :
-            np.savetxt(outfile,positions,delimiter=options.vecsep)
+            np.savetxt(outfile,positions,delimiter=options.vecsep,fmt=fmt)
 
     if options.tensor is not None:
         print("\n\treading file containing tensors: '%s'"%(options.tensor))
@@ -213,7 +215,7 @@ def main():
                         
             outfile = options.folder+"/"+options.tensor
             print("\tsaving rotated tensors to '%s'"%(outfile))
-            np.savetxt(outfile,BEC,delimiter=options.tensep)
+            np.savetxt(outfile,BEC,delimiter=options.tensep,fmt=fmt)
 
 
 

@@ -253,8 +253,8 @@ class Dynamics(Motion):
         # but I can not bind these variable!
         # I need them to be equal only here, and after self.integrator.step(step)
         # In the meanwhile they could (or have to) be different!
-        if hasattr(self.integrator,"cptime"):
-            self.integrator.cptime = self.ensemble.time
+        # if hasattr(self.integrator,"cptime"):
+        #    self.integrator.cptime = self.ensemble.time
 
         self.integrator.step(step)
         #self.ensemble.tacc = self.ensemble.TderEDAenergy * self.dt
@@ -262,5 +262,5 @@ class Dynamics(Motion):
         
         # ES: check that the times are the same 
         # this check should never go wrong ... if it does, read the description of self.integrator._check_time
-        if hasattr(self.integrator,"cptime"):
-            self.ensemble._check_time() 
+        # if hasattr(self.integrator,"cptime"):
+        #    self.ensemble._check_time() 

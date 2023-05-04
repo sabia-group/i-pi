@@ -165,7 +165,6 @@ class DummyIntegrator(dobject):
                 bp[self.fixatoms * 3 + 1] = 0.0
                 bp[self.fixatoms * 3 + 2] = 0.0
 
-
 class NVEIntegrator(DummyIntegrator):
 
     """Integrator object for constant energy simulations.
@@ -275,7 +274,6 @@ class NVEIntegrator(DummyIntegrator):
         # print(" # NVEIntegrator.step")
         self.mtsprop(0)
 
-
 class NVTIntegrator(NVEIntegrator):
 
     """Integrator object for constant temperature simulations.
@@ -315,7 +313,6 @@ class NVTIntegrator(NVEIntegrator):
             self.tstep()
             self.pconstraints()
             self.mtsprop_ab(0)
-
 
 class NPTIntegrator(NVTIntegrator):
 
@@ -387,18 +384,11 @@ class EDAIntegrator(DummyIntegrator):
         super(EDAIntegrator,self).__init__()
 
     def bind(self,motion):
-        """bind the flag '_okay' to 'self.ensemble.time'"""
+        """bind variables"""
         super(EDAIntegrator,self).bind(motion) 
+
         dself = dd(self)
-        #dself.cptime = depend_value(name="cptime",value=0)
-        # dself.tacc = depend_array(name="tacc",value=0.0)
-        # dself._okay = depend_value(
-        #     name="_okay",
-        #     value=False,
-        #     func=self._check,
-        #     dependencies=[dd(self.ensemble).time], # this variable is update just once for each step
-        # )
-        # dpipe(dfrom=dself.cptime,dto=dd(self.ensemble).cptime)
+
         dep = [dd(self.ensemble).time,dd(self.ensemble.eda).cptime,dd(self.ensemble.eda).bec,dd(self.ensemble.eda).Efield]
         dself.EDAforces  = depend_array(name="forces"  , func=self._forces              ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms*3)),dependencies=dep)
@@ -409,59 +399,15 @@ class EDAIntegrator(DummyIntegrator):
         dself.EDAzforces = depend_array(name="zforces" , func=lambda:self._forces_component("z") ,\
                                         value=np.zeros((self.beads.nbeads,self.beads.natoms))  ,dependencies=[dd(self).EDAforces])
         
-        # dself.BEC = depend_array(name="BEC",func=self._get_BEC,value=np.zeros((self.beads.natoms,3,3)),dependencies=[dd(self.ensemble).time])
+        dself.dt = depend_value(name="dt", value=0.0)
+        dpipe(dfrom=dd(motion).dt,dto=dself.dt)
+
         pass
 
     def pstep(self, level=0):
         """Velocity Verlet momentum propagator."""
         self.beads.p += self.EDAforces * self.pdt[level]
         pass
-
-    # check that everything is okay (but just once for each step), and if it is so, go on!
-    # okay = self._okay
-    # if okay:       
-    #
-    # ES: this has to be changed
-    # The BEC tensors already contain the whole contribution to the forces, both electronic and ionic!
-    #
-    #self.beads.p += self._ions_forces(level) # add ionic polarization contribution to the forces
-    #self.beads.p += self._elec_forces(level) # add electronic polarization contribution to the forces
-    
-    #self.ensemble.tacc   += self.ensemble.TderEDAenergy * self.pdt[level]
-    #self.ensemble.cptime += self.pdt[level] # update cptime
-    # else : 
-    #     raise ValueError("Something not okay in EDAIntegrator.pstep")
-    #return
-
-    def _check(self):
-        """Check that everything is okay before computing the external electric field contribution to the forces."""
-
-        # if some problems occur, this method raise and Exception
-        self.ensemble._check_pol()
-
-        # the ionic polarization is straighforward
-        # check if its value is correct
-        # if self._check_flag :
-        #     N = self.beads.nbeads
-        #     volume = self.ensemble.cell.V # Bohr^3
-        #     Z = self.beads.ZtoZ3().reshape((-1,3))
-        #     for i in range(N):
-        #         q = self.beads[i].q.reshape((-1,3))
-        #         ions_pol = Constants.e /volume * np.sum( Z * q , axis=0)*self.from_atomic_to_Cm2
-        #         driver_pol = self.forces.extras["polarization"][i]["ions"]
-        #         if np.sum(np.square( ions_pol - driver_pol )) > self.thr_pol_comparison**2 :
-        #             warning("ions polarization returned from the driver does not match the one computed in i-pi:"+ \
-        #                     "\n driver (atomic units):"+str(driver_pol)+\
-        #                     "\n   i-pi (atomic units):"+str(ions_pol)+\
-        #                     "\nPay attention to branch mapping: the numerical values could differ, but the polarization can be equivalent!",verbosity.high)
-        return True
-    
-    # def _get_BEC(self):
-    #     if self.ensemble.eda.BEC.cBEC:
-    #         bec = self.ensemble.eda.BEC.dfptBEC 
-    #     else :
-    #         bec = self.ensemble.eda.BEC.BEC
-    #     return bec
 
     def _forces(self):
         """Compute the EDA contribution to the forces due to the polarization"""
@@ -485,45 +431,6 @@ class EDAIntegrator(DummyIntegrator):
             return f[:,2]
         else :
             raise ValueError("'xyz' can assume only the values ['x','y','z']")
-
-# ES
-# Pay attentions: using Method Resolution Order (MRO)
-# https://www.programiz.com/python-programming/multiple-inheritance
-# The 'step' method is inherited by NVEIntegrator or NVTIntegrator
-
-# def decorator(Cls,N=None):
-#     def n_decorator(cls,N):
-#         """decorator that automatically call the __init__ and bind function for (N of) the parent classes (accordingly to MRO"""
-#         def __init__(self,*args, **kw):
-#             super(cls,self).__init__(*args, **kw)
-#             # for pc in cls.__mro__[1:N]: # cycle over the parent classes
-#             #     pc.__init__(self)
-#         def bind(self,*args, **kw):
-#             super(cls,self).bind(*args, **kw)
-#             # for pc in cls.__mro__[1:N]: # cycle over the parent classes
-#             #     pc.bind(self)       
-
-#         cls.__init__ = __init__
-#         cls.bind     = bind
-#         cls.pstep    = EDAIntegrator.pstep # so I can get rid of the correct parent class for calling pstep
-#         return cls
-#     return n_decorator(Cls,N)
-
-# def decorator(cls):
-#     """decorator that automatically call the __init__ and bind function for the parent classes (accordingly to MRO"""
-#     # def __init__(self,*args, **kw):
-#     #     super(cls,self).__init__(*args, **kw)
-#     # def bind(self,*args, **kw):
-#     #     super(cls,self).bind(*args, **kw)
-
-#     # cls.__init__ = __init__
-#     # cls.bind     = bind
-#     def pstep(self,level):
-#         super(cls,self).pstep(level)
-#         self.cptime += self.pdt[level]
-#     cls.pstep    = pstep # so I can get rid of the correct parent class for calling pstep
-#     return cls
-     
 
 class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
     """Integrator object for simulations with constant number of particles, energy, and volume, using the electric dipole approximation when an external electric field is applied.
@@ -558,10 +465,13 @@ class EDANVEIntegrator(EDAIntegrator,NVEIntegrator):
     def pstep(self,level):
         NVEIntegrator.pstep(self,level) # the driver is called here
         EDAIntegrator.pstep(self,level)
-        self.ensemble.eda.tacc   += dd(self.ensemble.eda).TderEDAenergy(self.ensemble.eda.cptime) * self.pdt[level]
+        # self.ensemble.eda.tacc   += dd(self.ensemble.eda).TderEDAenergy(self.ensemble.eda.cptime) * self.pdt[level] # wrong
         # self.ensemble.eda.cptime += self.pdt[level] # update cptime
         pass
 
+    def step(self,step=None):
+        super(EDANVEIntegrator,self).step(step)
+        self.ensemble.eda.tacc += dd(self.ensemble.eda).TderEDAenergy(self.ensemble.eda.time) * self.dt
 
 class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
     """Integrator object for simulations with constant number of particles, temperature, and volume, using the electric dipole approximation when an external electric field is applied.
@@ -592,7 +502,6 @@ class EDANVTIntegrator(EDAIntegrator,NVTIntegrator):
             self.order = True
         #self.cptime += self.pdt[level] # update cptime
         pass
-
 
 class NVTCCIntegrator(NVTIntegrator):
     """Integrator object for constant temperature simulations with constrained centroid.
@@ -643,7 +552,6 @@ class NVTCCIntegrator(NVTIntegrator):
         self.nm.pnm[0, :] = 0.0
         self.pconstraints()
 
-
 class NSTIntegrator(NPTIntegrator):
 
     """Ensemble object for constant pressure simulations.
@@ -663,7 +571,6 @@ class NSTIntegrator(NPTIntegrator):
     the cell volume.
     pext: External pressure.
     """
-
 
 class SCIntegrator(NVTIntegrator):
     """Integrator object for constant temperature simulations.
@@ -746,7 +653,6 @@ class SCIntegrator(NVTIntegrator):
             self.pconstraints()
             self.mtsprop_ab(0)
             self.beads.p += dstrip(self.forces.fsc_part_2) * self.dt * 0.5
-
 
 class SCNPTIntegrator(SCIntegrator):
     """Integrator object for constant pressure Suzuki-Chin simulations.
