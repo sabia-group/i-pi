@@ -41,8 +41,12 @@ def main():
         help="file containing the vectors (positions) to be rotated", default=None
     )
     parser.add_argument(
-        "-fmt", "--format", action="store", type=str,
-        help="format of the file containing the vectors (positions) to be rotated. Examples: espresso-in, aims", default='espresso-in'
+        "-if", "--input_format", action="store", type=str,
+        help="format of the input file containing the vectors (positions) to be rotated. Examples: espresso-in, aims", default='espresso-in'
+    )
+    parser.add_argument(
+        "-of", "--output_format", action="store", type=str,
+        help="format of the output file containing the vectors (positions) to be rotated. Examples: espresso-in, aims", default='espresso-in'
     )
     parser.add_argument(
         "-t", "--tensor", action="store", type=str,
@@ -158,16 +162,13 @@ def main():
             raise ValueError("%s does not exist"%(options.vector))
         else:
             ext = os.path.splitext(options.vector)[-1][1:]
-            if options.format in ["csv","txt"] or ext in ["csv","txt"]:
+            if options.input_format in ["csv","txt"] or ext in ["csv","txt"]:
                 positions = np.loadtxt(options.vector,delimiter=options.vecsep)
                 if len(positions.shape) == 1:
                     positions = positions.reshape((1,-1))
             else :
-                temp = read(options.vector,format=options.format)
+                temp = read(options.vector,format=options.input_format)
                 positions = temp.positions
-                #in_format = temp.format
-            # else:
-            #     raise ValueError("'%s' extension not supported"%(ext))
 
         print("\trotating vectors (saved as row vectors): (R @ V^t)^t")
         positions = (R @ positions.T).T
@@ -179,7 +180,7 @@ def main():
             newdata = copy(data)
             newdata.cell = Cell(L)
             newdata.set_positions(positions,apply_constraint=False)
-            write(outfile,newdata,format=options.format)
+            write(outfile,newdata,format=options.output_format)
 
         else :
             np.savetxt(outfile,positions,delimiter=options.vecsep,fmt=fmt)

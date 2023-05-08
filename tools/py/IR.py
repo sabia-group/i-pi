@@ -7,12 +7,12 @@
 
 import argparse
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 def prepare_parser():
     """set up the script input parameters"""
 
-    parser = argparse.ArgumentParser(description="Compute the Infra RED (IR) Raman activity of the vibrational modes.")
+    parser = argparse.ArgumentParser(description="Compute the Infra Red (IR) Raman intensities of the vibrational modes.")
 
     parser.add_argument(
         "-z", "--born_charges", action="store", type=str,
@@ -24,7 +24,19 @@ def prepare_parser():
     )
     parser.add_argument(
         "-o", "--output", action="store", type=str,
-        help="output file with the IR activities", default="IR.txt"
+        help="output file with the IR intensities", default="IR.txt"
+    ) 
+    parser.add_argument(
+        "-p", "--plot", action="store", type=str,
+        help="output file of the plot of the IR intensities", default="IR.pdf"
+    ) 
+    parser.add_argument(
+        "-n", "--number", action="store", type=int,
+        help="index of the Born Effective Charges to be plotted", default=0
+    ) 
+    parser.add_argument(
+        "-w", "--eigenvalues", action="store", type=str,
+        help="input file with the eigenvalues computed by i-PI", default=None
     ) 
        
     options = parser.parse_args()
@@ -72,6 +84,12 @@ def read_input(options):
 
     if len(data.modes) != data.Z.shape[2]:
         raise ValueError("Vibrational modes and Born Effective Charges shapes do not match")
+    
+    file = options.eigenvalues
+    if file is not None and options.plot is not None :
+        data.w = np.sqrt(np.loadtxt(file))
+        if len(data.w) != len(data.modes):
+            raise ValueError("Vibrational modes and eigenvalues shapes do not match")
 
     return data
 
@@ -81,23 +99,25 @@ def compute(data):
     class Results: pass
     results = Results()
 
+    # number of Molecular Dynamics steps
     Nmd = len(data.Z)
+    # number of vibrational modes
     Nmodes = len(data.modes)
-    # IR Raman activities
+
+    # IR Raman intensities (for each mode and MD step)
     results.IR = np.full((Nmd,Nmodes),np.nan)
-    # derivative of the polarization w.r.t. normal modes
+
+    # derivative of the polarization w.r.t. normal/vibrational modes
     results.dP_dQ = np.full((Nmd,3,Nmodes),np.nan)
 
     # derivative of the cartesian coordinates w.r.t. normal modes
-    dRdQ = np.linalg.inv(data.modes)
-    # for i in range(Nmd):
-    #     results.dP_dQ[i,:,:] = data.Z[i,:,:] @ dRdQ 
+    dRdQ = np.linalg.inv(data.modes.T)
     results.dP_dQ = data.Z @ dRdQ 
 
     # IR Raman activities
     # row: MD step
     # col: mode 
-    results.IR = np.square(results.dP_dQ).sum(axis=1)
+    results.IR = np.square(results.dP_dQ.sum(axis=1)) # sum over cartesian components
 
     return results
 
@@ -116,13 +136,33 @@ def main():
     data = read_input(options)
 
     # compute IR activity
-    print("\tComputing IR activities")
+    print("\tComputing IR intesities")
     results = compute(data)
 
-    # print IR activities to file
-    print("\tSaving IR activities to file '{:s}'".format(options.output))
+    # print IR intesity to file
+    print("\tSaving IR intesities to file '{:s}'".format(options.output))
     np.savetxt(options.output,results.IR)
     
+    # produce plot of the IR intesities
+    if options.plot is not None :
+        print("\tPlotting IR {:d}-th intesity to file '{:s}'".format(options.number,options.plot))
+        
+        fig, ax = plt.subplots(figsize=(10,6))
+
+        x = data.w / 1.5198298e-4
+        y = results.IR[options.number,:]
+        ax.bar(x,y,color="blue",width=2e-1) #label=str(n)
+        ax.yaxis.grid(True)
+        ax.xaxis.grid(True)
+        ax.set_ylabel('IR Raman intensity (a.u.)')
+        ax.set_xlabel('frequency (THz)')
+
+        plt.tight_layout()
+        file = options.plot
+        print("\tsaving plot to file '{:s}'".format(file))
+        plt.savefig(file)
+    
+
     print("\n\tJob done :)\n")
 
 if __name__ == "__main__":

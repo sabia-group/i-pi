@@ -18,7 +18,6 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-
 def prepare_parser():
 
     parser = argparse.ArgumentParser(description="Compute the time-dependent vibrational modes occupations given the velocities of a MD simulation.")
@@ -387,7 +386,10 @@ class Data:
         print("{:s}kin. energy = {:>20.12e}".format(self.tab,K))
         print("{:s}tot. energy = {:>20.12e}".format(self.tab,E))
 
-        self.occupations = (2 * Es.T / self.eigval)
+        # self.occupations = (2 * Es.T / self.eigval)
+        self.energy = Es.T
+        self.occupations = Es.T / np.sqrt( self.eigval) # - 0.5
+        self.amplitudes  = np.sqrt( 2 * Es.T / self.eigval  )
         
         # print("\n{:s}pot. energy (with off diag.) = {:>20.12e}".format(self.tab,V_tot))
         # print("\n{:s}kin. energy (with off diag.) = {:>20.12e}".format(self.tab,K_tot))
@@ -417,6 +419,8 @@ def main():
         print("\n\tComputing occupations")
         occ = data.compute_occ() # occupations are stored in 'data.occupations'
         np.savetxt("occupations.txt",occ,fmt="%20.12e")
+        np.savetxt("energy.txt",data.energy,fmt="%20.12e")
+        np.savetxt("amplitudes.txt",data.amplitudes,fmt="%20.12e")
 
     ###
     # plot occupations
@@ -430,6 +434,7 @@ def main():
         for n in range(data.Nmodes):
             plt.plot(data.occupations[:,n],label=str(n))
         
+        plt.yscale('log')
         plt.grid()
         plt.legend()
 
