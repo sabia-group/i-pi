@@ -375,7 +375,7 @@ class BEC(dobject):
         self.nbeads  = ensemble.beads.nbeads
         self.natoms  = ensemble.beads.natoms
         self.forces  = ensemble.forces # is this a weakref??
-        self.first   = True
+        # self.first   = True
 
         dself = dd(self)        
         if self.cbec: 
@@ -389,7 +389,7 @@ class BEC(dobject):
         else :
             dself.bec = depend_array(name="bec",value=np.full((self.natoms,3,3),np.nan)) 
 
-        self.first = False
+        # self.first = False
         pass
 
     def store(self,bec):
@@ -398,7 +398,7 @@ class BEC(dobject):
 
     def _get_DFPT_BEC(self,bead=None):
         """Return the BEC tensors (in cartesian coordinates), when computed on the fly by the driver"""
-        self._check_BEC(skip=self.first)
+        self._check_BEC()#skip=self.first)
 
         # check that bead is a correct value
         if bead is not None:
@@ -407,8 +407,8 @@ class BEC(dobject):
             if bead >= self.nbeads :
                 raise ValueError("Error in '_check_BEC': 'bead' is greater than the number of beads") 
         
-        if self.first:
-            return np.zeros((self.natoms,3,3))
+        # if self.first:
+        #     return np.zeros((self.natoms,3,3))
 
         Nb = self.nbeads # number of beads
         Na = self.natoms # number of atoms
@@ -456,11 +456,11 @@ class BEC(dobject):
         else :
             raise ValueError("BEC tensor with wrong size!")
 
-    def _check_BEC(self,skip=False):
+    def _check_BEC(self):#,skip=False):
         """Check that the BEC tensors are correctly formatted."""
         # check whether the driver returned to i-pi the polarization values
-        if skip :
-            return True
+        # if skip :
+        #     return True
         
         msg = "Error in '_check_BEC'"
 
@@ -721,10 +721,10 @@ class EDA(dobject):
         # experimental
         dpipe(dfrom=dself.time,dto=dself.cptime)
 
-        dep = [dself.volume,dself.totalpol,dself.Efield]
+        dep = [dself.volume,dself.totalpol,dself.Efield,dself.time]
         dself.EDAenergy     = depend_value(name="EDAenergy",     func=self._get_EDAenergy,    value=0.0,dependencies=dep)
         dself.TderEDAenergy = depend_value(name="TderEDAenergy", func=self._get_TderEDAenergy,value=0.0,dependencies=dep)
-        dself.Eenthalpy     = depend_value(name="Eenthalpy",     func=self._get_Eenthalpy,    value=0.0,dependencies=[dself.econs,dself.EDAenergy])
+        dself.Eenthalpy     = depend_value(name="Eenthalpy",     func=self._get_Eenthalpy,    value=0.0,dependencies=dep)
 
         dself.Tconserved = depend_value(name="Tconserved", func=self._get_Tconserved,value=0.0,dependencies=[dself.Eenthalpy,dself.tacc,dself.time,dself.cptime])
 

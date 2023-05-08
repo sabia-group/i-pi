@@ -47,6 +47,7 @@ from ipi.engine.motion import (
     NormalModeMover,
     BECTensorsCalculator,
     dPdaTensorCalculator,
+    Sequence
 )
 from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
@@ -67,6 +68,7 @@ from .ramp import InputTemperatureRamp, InputPressureRamp
 from .al6xxx_kmc import InputAlKMC
 from .BEC import InputBECTensorsCalculator
 from .dPda import InputdPdaTensorCalculator
+from .sequence import InputSequence
 
 from ipi.utils.units import *
 
@@ -115,6 +117,7 @@ class InputMotionBase(Input):
                     "normalmodes",
                     "BEC",
                     "dPda",
+                    "seq"
                 ],
             },
         )
@@ -190,6 +193,10 @@ class InputMotionBase(Input):
         "dPda": (
             InputdPdaTensorCalculator,
             {"default": {}, "help": "Option for dP/da computation"},
+        ),
+        "seq": (
+            InputSequence,
+            {"default": {}, "help": "Option for sequence computation"},
         ),
         "normalmodes": (
             InputNormalMode,
@@ -278,6 +285,10 @@ class InputMotionBase(Input):
         elif type(sc) is dPdaTensorCalculator:
             self.mode.store("dPda")
             self.dPda.store(sc)
+            tsc = 1
+        elif type(sc) is Sequence:
+            self.mode.store("seq")
+            self.seq.store(sc)
             tsc = 1
         elif type(sc) is SCPhononsMover:
             self.mode.store("scp")
@@ -406,6 +417,10 @@ class InputMotionBase(Input):
                 #fixcom=self.fixcom.fetch(),
                 #fixatoms=self.fixatoms.fetch(),
                 **self.dPda.fetch()
+            )
+        elif mode == "seq":
+            sc = Sequence(
+                **self.seq.fetch()
             )
         elif mode == "normalmodes":
             sc = NormalModeMover(
