@@ -45,7 +45,7 @@ class dPdaTensorCalculator(Motion):
         self.Tpolmatrix = Tpolmatrix.copy()
         #self.Ecorrection = np.zeros(0, float)
         #self.Icorrection = np.zeros(0, float)
-        self.Tcorrection = np.zeros(0, float)
+        #self.Tcorrection = np.zeros(0, float)
 
         self.prefix = prefix
         # self.asr = asr
@@ -134,17 +134,17 @@ class FDdPdaTensorCalculator(dobject):
         #print(type(self.dm.ensemble.ElecPol))
         #dd(self.dm.ensemble).ElecPol.add_dependency(dd(self.dm.dbeads).q)
 
-        def check_dimension(M,name):
+        def check_dimension(M):
             if M.size != ( 3 * 6 ):
                 if M.size == 0:
                     M = np.full((6, 3),np.nan,dtype=float)
                 else:
-                    raise ValueError("{:s} polarization matrix constant matrix size does not match system size".format(name))
+                    raise ValueError("polarization matrix constant matrix size does not match system size")
             else:
                 M = M.reshape(((6, 3 )))
             return M
 
-        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix,"Total")
+        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix)
 
         return
     
@@ -188,7 +188,7 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tplus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
+        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
         # displaces kth d.o.f by -delta.
         self.new_geo(-dev)
@@ -196,7 +196,7 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tminus = np.asarray(dstrip(self.dm.ensemble.TotalPol).copy())
+        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
         Delta_a = 2 * self.dm.deltax
         factor = 1 # self.dm.ensemble.cell.V / Constants.e
