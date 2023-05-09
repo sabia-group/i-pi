@@ -257,7 +257,7 @@ class Properties(dobject):
             },
             "TderEfield": {
                 "dimension": "atomic_unit",
-                "help": "The time derivatice of the external applied electric field (cartesian axes).",
+                "help": "The time derivative of the external applied electric field (cartesian axes).",
                 "size": 3,
                 "func": (lambda: dd(self.ensemble.eda.electric_field).TderEfield(self.ensemble.time)),
             },
