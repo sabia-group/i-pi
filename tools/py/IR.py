@@ -28,7 +28,7 @@ def prepare_parser():
     ) 
     parser.add_argument(
         "-p", "--plot", action="store", type=str,
-        help="output file of the plot of the IR intensities", default="IR.pdf"
+        help="output file of the plot of the IR intensities", default=None
     ) 
     parser.add_argument(
         "-n", "--number", action="store", type=int,
@@ -86,7 +86,7 @@ def read_input(options):
         raise ValueError("Vibrational modes and Born Effective Charges shapes do not match")
     
     file = options.eigenvalues
-    if file is not None and options.plot is not None :
+    if file is not None and ( options.plot is not None or options.plot != "") :
         data.w = np.sqrt(np.loadtxt(file))
         if len(data.w) != len(data.modes):
             raise ValueError("Vibrational modes and eigenvalues shapes do not match")

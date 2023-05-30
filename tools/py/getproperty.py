@@ -14,7 +14,63 @@ Syntax:
 
 import sys
 import re
+import numpy as np
 from ipi.utils.messages import warning
+
+def getproperty(inputfile, propertyname,data=None,skip="0"):
+
+    import re
+    import numpy as np
+
+    if type(propertyname) in [list,np.ndarray]: 
+        out = dict()
+        data = np.loadtxt(inputfile)
+        for p in propertyname:
+            out[p] = getproperty(inputfile,p,data,skip=skip)
+        return out
+    
+    print("searching for '{:s}'".format(propertyname))
+
+    skip = int(skip)
+
+    propertyname = " " + propertyname + " "
+
+    # opens & parses the input file
+    ifile = open(inputfile, "r")
+
+    # now reads the file one frame at a time, and outputs only the required column(s)
+    icol = 0
+    while True:
+        try:
+            line = ifile.readline()
+            if len(line) == 0:
+                raise EOFError
+            while "#" in line :  # fast forward if line is a comment
+                line = line.split(":")[0]
+                if propertyname in line :
+                    cols = [ int(i)-1 for i in re.findall(r"\d+", line) ]                    
+                    if len(cols) == 1 :
+                        icol += 1
+                        output = data[:,cols[0]]
+                    elif len(cols) == 2 :
+                        icol += 1
+                        output = data[:,cols[0]:cols[1]+1]
+                    elif len(cols) != 0 :
+                        raise ValueError("wrong string")
+                    if icol > 1 :
+                        raise ValueError("Multiple instances for '{:s}' have been found".format(propertyname))                    
+                # get new line
+                line = ifile.readline()
+                if len(line) == 0:
+                    raise EOFError
+            if icol <= 0:
+                print("Could not find " + propertyname + " in file " + inputfile)
+                raise EOFError
+            else :
+                return np.asarray(output)
+
+        except EOFError:
+            break
 
 
 def main(inputfile, propertyname="potential", skip="0"):

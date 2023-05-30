@@ -105,7 +105,7 @@ def getproperty(inputfile, propertyname,data=None,skip="0"):
             out[p],units[p] = getproperty(inputfile,p,data,skip=skip)
         return out,units
     
-    print("searching for '{:s}'".format(propertyname))
+    print("\tsearching for '{:s}'".format(propertyname))
 
     skip = int(skip)
 
@@ -165,7 +165,8 @@ class Data:
     fmt = "%20.12e"
     ofile = {"energy":"energy.txt",\
              "Aamp":"A-amplitudes.txt",\
-             "Bamp":"B-amplitudes.txt"}
+             "Bamp":"B-amplitudes.txt",\
+             "violin":"violin.csv"}
 
     def __init__(self,\
                  options,\
@@ -260,11 +261,11 @@ class Data:
             if hess.shape[0] != Nmodes or hess.shape[1] != Nmodes:
                 raise ValueError("hessian matrix with wrong size")
             
-            # eigval
+            # eigvals
             file = get_one_file_in_folder(folder=options.modes,ext=".eigval")
             print("{:s}reading vibrational modes from file '{:s}'".format(self.tab,file))
-            eigval = np.loadtxt(file)
-            if len(eigval) != Nmodes:
+            eigvals = np.loadtxt(file)
+            if len(eigvals) != Nmodes:
                 raise ValueError("eigenvalues array with wrong size")
             
             # dynmat
@@ -287,12 +288,12 @@ class Data:
                 #     mode      = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".mode"))
                 #     dynmat    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".dynmat"))
                 #     full_hess = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext="_full.hess"))
-                #     eigval    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".eigval"))
+                #     eigvals    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".eigvals"))
                 #     eigvec    = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".eigvec"))
                 #     hess      = np.loadtxt(get_one_file_in_folder(folder=options.modes,ext=".hess"))
                     
                 #     print("{:s}checking that D@V = E@V".format(self.tab))
-                #     res = np.sqrt(np.square(dynmat @ eigvec - eigval @ eigvec).sum())
+                #     res = np.sqrt(np.square(dynmat @ eigvec - eigvals @ eigvec).sum())
                 #     print("{:s} | D@V - E@V | = {:>20.12e}".format(self.tab,res))
 
                 #     eigsys = np.linalg.eigh(mode)
@@ -301,12 +302,12 @@ class Data:
                 #     res = np.sqrt(np.square(eigsys[1] - mode).flatten().sum())
                 #     print("{:s} | eigvec(H) - M | = {:>20.12e}".format(self.tab,res))
 
-                #     print("{:s}checking that eigval(H) = E".format(self.tab))
-                #     res = np.sqrt(np.square( np.sort(eigsys[0]) - np.sort(eigval)).sum())
+                #     print("{:s}checking that eigvals(H) = E".format(self.tab))
+                #     res = np.sqrt(np.square( np.sort(eigsys[0]) - np.sort(eigvals)).sum())
                 #     print("{:s} | eigvec(H) - E | = {:>20.12e}".format(self.tab,res))
 
-                #     print("{:s}checking that H@eigvec(H) = eigval(H)@eigvec(H)".format(self.tab))
-                #     res = np.sqrt(np.square(eigsys[0] - eigval).sum())
+                #     print("{:s}checking that H@eigvec(H) = eigvals(H)@eigvec(H)".format(self.tab))
+                #     res = np.sqrt(np.square(eigsys[0] - eigvals).sum())
                 #     print("{:s} | eigvec(H) - E | = {:>20.12e}".format(self.tab,res))
             
             ###
@@ -348,7 +349,7 @@ class Data:
             self.velocities = velocities
             # self.modes = modes
             self.hess = hess
-            self.eigval = eigval
+            self.eigvals = eigvals
             self.masses = masses
             self.dynmat = dynmat
             self.eigvec = eigvec
@@ -368,7 +369,7 @@ class Data:
             # print( np.linalg.norm( b - self.ortho_modes ) )
             # print( np.linalg.norm( M @ hess @ M - self.dynmat ) )
             # eigsys = np.linalg.eigh(self.dynmat)
-            # print( np.linalg.norm( ( eigsys[0] - eigval ) ) )
+            # print( np.linalg.norm( ( eigsys[0] - eigvals ) ) )
             
             # M = np.eye(len(modes))
             # np.fill_diagonal(M,np.sqrt(self.masses))
@@ -376,11 +377,11 @@ class Data:
 
         elif what == "plot" :
 
-            # eigval
+            # eigvals
             file = get_one_file_in_folder(folder=options.modes,ext=".eigval")
             print("{:s}reading vibrational modes from file '{:s}'".format(Data.tab,file))
-            self.eigval = np.loadtxt(file)
-            self.Nmodes = len(self.eigval)
+            self.eigvals = np.loadtxt(file)
+            self.Nmodes = len(self.eigvals)
     
             file = Data.output_file(options.output,Data.ofile["energy"])
             print("{:s}reading energy from file '{:s}'".format(Data.tab,file))
@@ -462,7 +463,7 @@ class Data:
                     self.velocities,\
                     self.modes, \
                     self.hess, \
-                    self.eigval, \
+                    self.eigvals, \
                     self.Nmodes, \
                     self.dynmat, \
                     self.eigvec, \
@@ -474,8 +475,8 @@ class Data:
         if np.any( arrays is None ) :
             raise ValueError("Some arrays are missing")
         
-        Vs = Data.potential_energy_per_mode(self.displacements.T,self.proj, self.eigval) #, self.hess, check=True)
-        Ks = Data.kinetic_energy_per_mode  (self.velocities.T,   self.proj, self.eigval) #, self.masses, check=True)
+        Vs = Data.potential_energy_per_mode(self.displacements.T,self.proj, self.eigvals) #, self.hess, check=True)
+        Ks = Data.kinetic_energy_per_mode  (self.velocities.T,   self.proj, self.eigvals) #, self.masses, check=True)
         Es = Vs + Ks
         # Es_tot = Vs_tot + Ks_tot
         
@@ -492,12 +493,12 @@ class Data:
         print("{:s}kin. energy = {:>20.12e}".format(self.tab,K))
         print("{:s}tot. energy = {:>20.12e}".format(self.tab,E))
 
-        # self.occupations = (2 * Es.T / self.eigval)
+        # self.occupations = (2 * Es.T / self.eigvals)
         self.energy = self.occupations = self.Aamplitudes = self.Bamplitudes = None 
     
         self.energy = Es.T
-        # self.occupations = Es.T / np.sqrt( self.eigval) # - 0.5
-        self.Aamplitudes  = np.sqrt( 2 * Es.T / self.eigval  )
+        # self.occupations = Es.T / np.sqrt( self.eigvals) # - 0.5
+        self.Aamplitudes  = np.sqrt( 2 * Es.T / self.eigvals  )
 
         self.Bamplitudes = Data.A2B(A=self.Aamplitudes,\
                                     N=self.ortho_modes,\
@@ -563,17 +564,61 @@ class Data:
 
         normalized_occupations = np.zeros(self.Aamplitudes.shape)
         for i in range(Ndof):
-            normalized_occupations[:,i] = np.square(self.Aamplitudes[:,i])  * self.eigval[i] / ( 2*normalization[i] )
+            normalized_occupations[:,i] = np.square(self.Aamplitudes[:,i])  * self.eigvals[i] / ( 2*normalization[i] )
 
-        plt.figure(figsize=(10,6))
-        plt.plot(self.time,normalized_occupations)
-        plt.title('LiNbO$_3$ (NVT@$20K$,$\\Delta t = 1fs$,T$=20-50ps$,$\\tau=10fs$)')
-        plt.ylabel("$A^2_s\\omega^2_s / \\left( 2 N \\right)$ with $N=E_{harm}\\left(t\\right)$")
-        plt.xlabel("time ({:s})".format("fs" if self.units == "femtosecond" else "a.u."))
-        plt.xlim(min(self.time),max(self.time))
+        fig, ax = plt.subplots(figsize=(10,6))
+        ax.plot(self.time,normalized_occupations)
+
+        # plt.title('LiNbO$_3$ (NVT@$20K$,$\\Delta t = 1fs$,T$=20-50ps$,$\\tau=10fs$)')
+        ax.set_ylabel("$A^2_s\\omega^2_s / \\left( 2 N \\right)$ with $N=E_{harm}\\left(t\\right)$")
+        ax.set_xlabel("time ({:s})".format("fs" if self.units == "femtosecond" else "a.u."))
+        ax.set_xlim(min(self.time),max(self.time))
+        ylim = ax.get_ylim()
+        ax.set_ylim(0,ylim[1])
+        # ax.set_yscale("log")
+
         plt.grid()
         plt.tight_layout()
         plt.savefig(options.plot)
+
+        ###
+        plt.figure().clear()
+        plt.close()
+        plt.cla()
+        plt.clf()
+
+        mean = np.mean(normalized_occupations,axis=0)
+        std = np.mean(normalized_occupations,axis=0)
+        if len(mean) != Ndof or len(std) != Ndof:
+            raise ValueError("wrong array size for barplot")
+
+        fig, ax = plt.subplots(figsize=(10,6))
+        w = np.sqrt(self.eigvals)
+        # ax.scatter(x=w,y=mean,color="navy")
+        ax.errorbar(x=w,y=mean,yerr=std,color="red",ecolor="navy",fmt="o")
+
+        # plt.title('LiNbO$_3$ (NVT@$20K$,$\\Delta t = 1fs$,T$=20-50ps$,$\\tau=10fs$)')
+        ax.set_ylabel("$A^2_s\\omega^2_s / \\left( 2 N \\right)$ with $N=E_{harm}\\left(t\\right)$")
+        ax.set_xlabel("$\\omega$ (a.u.)")
+        #ax.set_xlim(min(self.time),max(self.time))
+        #ylim = ax.get_ylim()
+        #ax.set_ylim(0,ylim[1])
+        # ax.set_yscale("log")
+
+        plt.grid()
+        plt.tight_layout()
+        tmp = os.path.splitext(options.plot)
+        file = "{:s}.{:s}{:s}".format(tmp[0],"mean-std",tmp[1])
+        # plt.show()
+        plt.savefig(file)
+
+        import pandas as pd
+        df = pd.DataFrame(columns=["w","mean","std"])
+        df["w"] = w
+        df["mean"] = mean
+        df["std"] = std
+        file = file = Data.output_file(options.output,Data.ofile["violin"])
+        df.to_csv(file,index=False)
 
         pass
 
