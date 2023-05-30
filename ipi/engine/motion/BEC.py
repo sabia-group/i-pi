@@ -24,8 +24,8 @@ class BECTensorsCalculator(Motion):
         #energy_shift=0.0,
         pos_shift=0.001,
         #output_shift=0.000,
-        Epolmatrix=np.zeros(0, float),
-        Ipolmatrix=np.zeros(0, float),
+        # Epolmatrix=np.zeros(0, float),
+        # Ipolmatrix=np.zeros(0, float),
         Tpolmatrix=np.zeros(0, float),
         #refdynmat=np.zeros(0, float),
         prefix="",
@@ -261,8 +261,8 @@ class FDBECTensorsCalculator(dobject):
     def transform(self):
 
         # reshape
-        self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
-        self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
+        # self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
+        # self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
         self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
 
         # transpose

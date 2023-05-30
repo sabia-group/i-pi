@@ -36,12 +36,19 @@ class Sequence(Motion):
             raise ValueError(
                 "Calculation not possible for number of beads greater than one."
             )
-        # self.dm = beads
+        self.ens = ens
 
     def step(self, step=None):
         """Executes one step."""
         if self.positions is None :
             positions = read(self.input,index=":")
-        q = positions[step].positions.flatten()
-        self.beads.q.set( q )
+        if step >= len(positions) :
+            softexit.trigger(
+                status="success",
+                message="Finished sequence of configurations. Exiting simulation",
+            )
+        else :
+            q = positions[step].positions.flatten()
+            self.beads.q.set( q )
+            fake = dstrip(self.ens.econs)
         pass

@@ -121,7 +121,7 @@ class InputEnsemble(Input):
             {
                 "dtype": float,
                 "default": 0.0,
-                "help": "The frequency of the external electric field (in hertz)",
+                "help": "The pulsation of the external electric field",
                 "dimension": "frequency",
             },
         ),

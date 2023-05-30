@@ -397,7 +397,7 @@ UnitMap = {
         "": 1.00,
         "automatic": 1.00,
         "atomic_unit": 1.00,
-        "angstrom": 1.88972612463,
+        "angstrom": 1.88972612463, 
         "meter": 1.88972612463e10,
         "radian": 1.00,
         "degree": 0.017453292519943295,

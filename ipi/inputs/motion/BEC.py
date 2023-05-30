@@ -47,22 +47,22 @@ class InputBECTensorsCalculator(InputDictionary):
                 "help": "Removes the zero frequency vibrational modes depending on the symmerty of the system.",
             },
         ),
-        "Epolmatrix": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": np.zeros(0, float),
-                "help": "Portion of the electronic polarization matrix known up to now.",
-            },
-        ),
-        "Ipolmatrix": (
-            InputArray,
-            {
-                "dtype": float,
-                "default": np.zeros(0, float),
-                "help": "Portion of the ionic polarization matrix known up to now.",
-            },
-        ),
+        # "Epolmatrix": (
+        #     InputArray,
+        #     {
+        #         "dtype": float,
+        #         "default": np.zeros(0, float),
+        #         "help": "Portion of the electronic polarization matrix known up to now.",
+        #     },
+        # ),
+        # "Ipolmatrix": (
+        #     InputArray,
+        #     {
+        #         "dtype": float,
+        #         "default": np.zeros(0, float),
+        #         "help": "Portion of the ionic polarization matrix known up to now.",
+        #     },
+        # ),
         "Tpolmatrix": (
             InputArray,
             {
