@@ -3,6 +3,7 @@ import os
 from ase.io import read
 import numpy as np
 import matplotlib.pyplot as plt
+from ipi.utils.units import unit_to_internal
 
 class Data:
 
@@ -173,32 +174,9 @@ class Data:
                 velocities[n] = velocities[n].positions.flatten()
             velocities = np.asarray(velocities)
             
-            
-            # ###
-            # # project on phonon modes
-            # # https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.hilbert.html#scipy.signal.hilbert
-            # print("\n\tprojecting displacements on vibrational modes")
-            # signal = displacement @ modes
-
-            # if options.signal is not None :
-            #     print("\tsaving displacements projected on the vibrational modes to file '{:s}'".format(options.signal))
-            #     np.savetxt(options.signal,signal,delimiter=" ",fmt="%20.12e")
-
-            # print("\tcomputing the analytic signal of the displacements along the vibrational modes")
-            # analytic_signal = hilbert(signal,axis=0)
-
-            # print("\tcomputing the time-dependent occupations of the vibrational modes")
-            # occupations = np.absolute(analytic_signal)
-            
-            # ###
-            # # save occupations to file  
-            # print("\tsaving modes occupations to file '{:s}'".format(options.occupations))
-            # np.savetxt(options.occupations,occupations,delimiter=" ",fmt="%20.12e")
-
             # arrays
             self.displacements = displacements
             self.velocities = velocities
-            # self.modes = modes
             self.hess = hess
             self.eigvals = eigvals
             self.masses = masses
@@ -209,21 +187,8 @@ class Data:
             self.Nconf = Nconf
             self.Nmodes = Nmodes
 
-            # M = np.eye(len(modes))
-            # np.fill_diagonal(M,1.0/np.sqrt(self.masses))
-            # a = M @ self.eigvec
             self.ortho_modes = modes
             self.modes = Data.massexp(self.masses,"-1/2") @ self.eigvec
-            # b = self.modes.copy()
-            # for i in range(len(b)):
-            #     b[:,i] /= np.linalg.norm(b[:,i])
-            # print( np.linalg.norm( b - self.ortho_modes ) )
-            # print( np.linalg.norm( M @ hess @ M - self.dynmat ) )
-            # eigsys = np.linalg.eigh(self.dynmat)
-            # print( np.linalg.norm( ( eigsys[0] - eigvals ) ) )
-            
-            # M = np.eye(len(modes))
-            # np.fill_diagonal(M,np.sqrt(self.masses))
             self.proj = self.eigvec.T @ Data.massexp(self.masses,"1/2")
 
         elif what == "plot" :
@@ -250,7 +215,11 @@ class Data:
         self.units = u["time"]
 
         if u["time"] not in ["a.u.","atomic_unit"]:
-            raise ValueError("time should in atomic units")
+            print("{:s}'time' is not in 'atomic units' but in '{:s}'".format(Data.tab,u["time"]))
+            factor = unit_to_internal("time","femtosecond",1)
+            print("{:s}converting 'time' to 'atomic units' by multiplication for {:>14.10e}".format(Data.tab,factor))
+            self.time *= factor
+            self.units = "a.u."
 
         pass
 
@@ -265,25 +234,6 @@ class Data:
         np.fill_diagonal(omega_inv,1.0/np.sqrt(eigvals))
         return omega_inv @ proj @ vel
     
-    # @staticmethod
-    # def potential_energy_per_mode(displ,proj,eigvals): #,hess=None,check=False):
-    #     """return an array with the potential energy of each vibrational mode"""        
-
-    #     # proj_displ = np.linalg.inv(modes) @ displ
-    #     proj_displ = proj @ displ
-    #     return 0.5 * ( np.square(proj_displ).T * eigvals ).T #, 0.5 * proj_displ * omega_sqr @ proj_displ
-    
-    # @staticmethod
-    # def kinetic_energy_per_mode(vel,proj,eigvals): #,check=False):
-    #     """return an array with the kinetic energy of each vibrational mode"""        
-
-    #     N = len(eigvals)
-    #     omega_inv = np.zeros((N,N))
-    #     np.fill_diagonal(omega_inv,1.0/np.sqrt(eigvals))
-    #     # proj_vel = omega_inv @ np.linalg.inv(modes) @ vel
-    #     proj_vel = omega_inv @ proj @ vel
-    #     return 0.5 * ( np.square(proj_vel).T * eigvals ).T #, 0.5 * ( proj_vel * eigvals ) * identity @ ( eigvals * proj_vel )
-
     @staticmethod
     def potential_energy_per_mode(proj_displ,eigvals): #,hess=None,check=False):
         """return an array with the potential energy of each vibrational mode"""        
@@ -373,7 +323,7 @@ class Data:
         # print("{:s}tot. energy = {:>20.12e}".format(self.tab,E))
 
         # self.occupations = (2 * Es.T / self.eigvals)
-        self.energy = self.occupations = self.phases =self.Aamplitudes = self.Bamplitudes = None 
+        self.energy = self.occupations = self.phases = self.Aamplitudes = self.Bamplitudes = None 
     
         self.energy = Es.T
         self.occupations = self.energy / np.sqrt( self.eigvals) # - 0.5 # hbar = 1 in a.u.

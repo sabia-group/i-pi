@@ -11,16 +11,6 @@ from ase.io import read, write
 from ase import Atoms
 import json
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
 def prepare_parser():
     description= "Create a sequence of nuclear configurations (xyz format) where the nuclei are displaced along the vibrational mode.\
                 The output file can be used by i-PI using the 'Sequence' class to compute (for example) the numerical differences of the polarization along the vibrational mode."
@@ -50,7 +40,7 @@ def prepare_parser():
     )
     parser.add_argument(
         "-o", "--output", action="store", type=str,
-        help="output file with displaced positions (xyz format, and in a.u.)", default="output.txt"
+        help="output file with displaced positions (xyz format, and in a.u.)", default="sequence.xyz"
     )      
     parser.add_argument(
         "-i", "--information", action="store", type=str,

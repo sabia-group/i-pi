@@ -111,7 +111,7 @@ def compute(data):
     results.dP_dQ = np.full((Nmd,3,Nmodes),np.nan)
 
     # derivative of the cartesian coordinates w.r.t. normal modes
-    dRdQ = np.linalg.inv(data.modes.T)
+    dRdQ = data.modes #np.linalg.inv(data.modes)
     results.dP_dQ = data.Z @ dRdQ 
 
     # IR Raman activities
