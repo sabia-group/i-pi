@@ -19,7 +19,7 @@ class dPdaTensorCalculator(Motion):
         self,
         mode="fd",
         pos_shift=0.01,
-        Tpolmatrix=np.zeros((6,3), float),
+        polmatrix=np.zeros((6,3), float),
         prefix="",
         # asr="none",
     ):
@@ -40,9 +40,7 @@ class dPdaTensorCalculator(Motion):
         self.phcalc = FDdPdaTensorCalculator()
 
         self.deltax = pos_shift
-        #self.Epolmatrix = Epolmatrix.copy()
-        #self.Ipolmatrix = Ipolmatrix.copy()
-        self.Tpolmatrix = Tpolmatrix.copy()
+        self.polmatrix = polmatrix.copy()
         #self.Ecorrection = np.zeros(0, float)
         #self.Icorrection = np.zeros(0, float)
         #self.Tcorrection = np.zeros(0, float)
@@ -81,7 +79,7 @@ class dPdaTensorCalculator(Motion):
     def printall(self):
         """Prints matrices to file"""
 
-        M = self.Tpolmatrix
+        M = self.polmatrix
         fmt = ipi_global_settings["floatformat"] 
         file = "{:s}.dPda.txt".format(self.prefix) if len(self.prefix) > 0 else "dPda.txt".format(self.prefix) 
         np.savetxt(file,M,delimiter=" ",fmt=fmt)
@@ -95,12 +93,12 @@ class dPdaTensorCalculator(Motion):
 
     #     #self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
     #     #self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
-    #     #self.Tcorrection = self.Tpolmatrix.sum(axis=0)/self.beads.natoms
+    #     #self.Tcorrection = self.polmatrix.sum(axis=0)/self.beads.natoms
 
     #     # if self.asr == "lin" :            
     #     #     self.Epolmatrix -= self.Ecorrection            
     #     #     self.Ipolmatrix -= self.Icorrection            
-    #     #     self.Tpolmatrix -= self.Tcorrection
+    #     #     self.polmatrix -= self.Tcorrection
 
     #     if self.asr == "none" :
     #         return 
@@ -144,7 +142,7 @@ class FDdPdaTensorCalculator(dobject):
                 M = M.reshape(((6, 3 )))
             return M
 
-        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix)
+        self.dm.polmatrix = check_dimension(self.dm.polmatrix)
 
         return
     
@@ -202,7 +200,7 @@ class FDdPdaTensorCalculator(dobject):
         factor = 1 # self.dm.ensemble.cell.V / Constants.e
         #self.dm.Epolmatrix[step] = factor * ( Eplus - Eminus ) / Delta_a
         #self.dm.Ipolmatrix[step] = factor * ( Iplus - Iminus ) / Delta_a
-        self.dm.Tpolmatrix[step] = factor * ( Tplus - Tminus ) / Delta_a
+        self.dm.polmatrix[step] = factor * ( Tplus - Tminus ) / Delta_a
 
         return
 
@@ -211,7 +209,7 @@ class FDdPdaTensorCalculator(dobject):
     #     # reshape
     #     #self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
     #     #self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
-    #     #self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
+    #     #self.dm.polmatrix = self.dm.polmatrix.reshape((self.dm.beads.natoms,3,3))
 
     #     return
         

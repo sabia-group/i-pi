@@ -576,7 +576,13 @@ class ElectricField(dobject):
         dself.Efreq  = depend_value(name="Efreq" ,value=Efreq  if Efreq  is not None else 0.0 )
         dself.Ephase = depend_value(name="Ephase",value=Ephase if Ephase is not None else 0.0 )
         dself.Epeak  = depend_value(name="Epeak" ,value=Epeak  if Epeak  is not None else 0.0)
-        dself.Esigma = depend_value(name="Esigma",value=Esigma if Esigma is not None else np.inf)       
+        dself.Esigma = depend_value(name="Esigma",value=Esigma if Esigma is not None else np.inf)     
+
+        # these will be overwritten
+        dself.Eenvelope      = depend_value(name="Eenvelope" ,value=1.0,func=self._get_Eenvelope)
+        dself.TderEenvelope  = depend_value(name="TderEenvelope" ,value=0.0,func=self._get_TderEenvelope)  
+        dself.Efield         = depend_array(name="Efield",    value=np.zeros(3, float),func=self._get_Efield)
+        dself.TderEfield     = depend_array(name="TderEfield",value=np.zeros(3, float),func=self._get_TderEfield)
 
     def bind(self,eda,enstype):
 
@@ -623,7 +629,11 @@ class ElectricField(dobject):
         """Get the value of the external electric field (cartesian axes)"""
         if time is None :
             raise ValueError("Hey man! Don't you think it's better to specify the time you want to evaluate the electric field?")
-        return self.Eamp * self._get_Ecos(time) * dd(self).Eenvelope(time)
+        if hasattr(time, "__len__"):
+            return np.outer ( self._get_Ecos(time) * dd(self).Eenvelope(time) , self.Eamp )
+        else :
+            return self._get_Ecos(time) * dd(self).Eenvelope(time) * self.Eamp
+         
     
     def _Eenvelope_is_on(self):
         return self.Epeak > 0.0 and self.Esigma != np.inf
@@ -632,7 +642,7 @@ class ElectricField(dobject):
         """Get the gaussian envelope function of the external electric field"""
         # https://en.wikipedia.org/wiki/Normal_distribution
         if self._Eenvelope_is_on() :
-            x = self.cptime # indipendent variable
+            x = self.cptime if time is None else time # indipendent variable
             u = self.Epeak  # mean value
             s = self.Esigma # standard deviation
             return np.exp( - 0.5 * ((x-u)/s)**2 ) # the returned maximum value is 1, when x = u

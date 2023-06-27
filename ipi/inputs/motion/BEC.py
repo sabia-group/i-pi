@@ -15,15 +15,15 @@ class InputBECTensorsCalculator(InputDictionary):
     """
 
     attribs = {
-        "mode": (
-            InputAttribute,
-            {
-                "dtype": str,
-                "default": "fd",
-                "help": "The algorithm to be used: only finite differences (fd) is currently implemented.",
-                "options": ["fd"],
-            },
-        )
+        # "mode": (
+        #     InputAttribute,
+        #     {
+        #         "dtype": str,
+        #         "default": "fd",
+        #         "help": "The algorithm to be used: only finite differences (fd) is currently implemented.",
+        #         "options": ["fd"],
+        #     },
+        # )
     }
     fields = {
         "pos_shift": (
@@ -47,23 +47,7 @@ class InputBECTensorsCalculator(InputDictionary):
                 "help": "Removes the zero frequency vibrational modes depending on the symmerty of the system.",
             },
         ),
-        # "Epolmatrix": (
-        #     InputArray,
-        #     {
-        #         "dtype": float,
-        #         "default": np.zeros(0, float),
-        #         "help": "Portion of the electronic polarization matrix known up to now.",
-        #     },
-        # ),
-        # "Ipolmatrix": (
-        #     InputArray,
-        #     {
-        #         "dtype": float,
-        #         "default": np.zeros(0, float),
-        #         "help": "Portion of the ionic polarization matrix known up to now.",
-        #     },
-        # ),
-        "Tpolmatrix": (
+        "polmatrix": (
             InputArray,
             {
                 "dtype": float,
@@ -71,14 +55,14 @@ class InputBECTensorsCalculator(InputDictionary):
                 "help": "Portion of the total polarization matrix known up to now.",
             },
         ),
-        # "refdynmat": (
-        #     InputArray,
-        #     {
-        #         "dtype": float,
-        #         "default": np.zeros(0, float),
-        #         "help": "Portion of the refined dynamical matrix known up to now.",
-        #     },
-        # ),
+        "atoms": (
+            InputArray,
+            {
+                "dtype": str,
+                "default": np.asarray(["all"]),
+                "help": "Atoms whose BEC tensor has to be computed. It can be 'all', a chemical species ('Li', 'Mg') or an atom index. List of the previous cases are accepted.",
+            },
+        ),
     }
 
     dynamic = {}
@@ -89,18 +73,14 @@ class InputBECTensorsCalculator(InputDictionary):
     def store(self, phonons):
         if phonons == {}:
             return
-        self.mode.store(phonons.mode)
+        # self.mode.store(phonons.mode)
         self.pos_shift.store(phonons.deltax)
-        #self.energy_shift.store(phonons.deltae)
-        #self.output_shift.store(phonons.deltaw)
         self.prefix.store(phonons.prefix)
         self.asr.store(phonons.asr)
-        self.Epolmatrix.store(phonons.Epolmatrix)
-        self.Ipolmatrix.store(phonons.Ipolmatrix)
-        self.Tpolmatrix.store(phonons.Tpolmatrix)
-        #self.refdynmat.store(phonons.refdynmatrix)
+        self.polmatrix.store(phonons.polmatrix)
+        self.atoms.store(phonons.atoms)
 
     def fetch(self):
         rv = super(InputBECTensorsCalculator, self).fetch()
-        rv["mode"] = self.mode.fetch()
+        # rv["mode"] = self.mode.fetch()
         return rv

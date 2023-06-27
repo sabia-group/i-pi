@@ -63,7 +63,7 @@ class InputdPdaTensorCalculator(InputDictionary):
         #         "help": "Portion of the ionic polarization matrix known up to now.",
         #     },
         # ),
-        "Tpolmatrix": (
+        "polmatrix": (
             InputArray,
             {
                 "dtype": float,
@@ -85,7 +85,7 @@ class InputdPdaTensorCalculator(InputDictionary):
         self.pos_shift.store(phonons.deltax)
         self.prefix.store(phonons.prefix)
         # self.asr.store(phonons.asr)
-        self.Tpolmatrix.store(phonons.Tpolmatrix)
+        self.polmatrix.store(phonons.polmatrix)
 
     def fetch(self):
         rv = super(InputdPdaTensorCalculator, self).fetch()

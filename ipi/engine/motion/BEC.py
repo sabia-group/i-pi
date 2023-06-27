@@ -8,7 +8,7 @@ from numpy.linalg import norm
 from ipi.engine.motion import Motion
 from ipi.utils.depend import *
 from ipi.utils.softexit import softexit
-from ipi.utils.messages import verbosity, info
+from ipi.utils.messages import verbosity, info, warning
 from ipi.utils.units import Constants
 
 
@@ -18,16 +18,10 @@ class BECTensorsCalculator(Motion):
 
     def __init__(
         self,
-        #fixcom=True,
-        #fixatoms=None,
-        mode="fd",
-        #energy_shift=0.0,
+        atoms=["all"],
+        # mode="fd",
         pos_shift=0.001,
-        #output_shift=0.000,
-        # Epolmatrix=np.zeros(0, float),
-        # Ipolmatrix=np.zeros(0, float),
-        Tpolmatrix=np.zeros(0, float),
-        #refdynmat=np.zeros(0, float),
+        polmatrix=np.zeros(0, float),
         prefix="",
         asr="none",
     ):
@@ -43,44 +37,29 @@ class BECTensorsCalculator(Motion):
         #     raise ValueError("fixcom=False is not implemented in BEC calculator")        
         # if len(fixatoms) > 0 :
         #     raise ValueError("fixatoms is not implemented in BEC calculator")
-        if mode != "fd" :
-            raise ValueError(mode, "mode is not implemented in BEC calculator (the only allowed one is 'fd')")
+        # if mode != "fd" :
+        #     raise ValueError(mode, "mode is not implemented in BEC calculator (the only allowed one is 'fd')")
         
         super(BECTensorsCalculator, self).__init__(fixcom=False, fixatoms=None)
 
-        # Finite difference option.
-        self.mode = mode
-        #if self.mode == "fd":
+        # self.mode = mode
         self.phcalc = FDBECTensorsCalculator()
-        # elif self.mode == "nmfd":
-        #     self.phcalc = NMFDPhononCalculator()
-        # elif self.mode == "enmfd":
-        #     self.phcalc = ENMFDPhononCalculator()
 
-        #self.deltaw = output_shift
         self.deltax = pos_shift
-        #self.deltae = energy_shift
-        # self.Epolmatrix = Epolmatrix.copy()
-        # self.Ipolmatrix = Ipolmatrix.copy()
-        self.Tpolmatrix = Tpolmatrix.copy()
-        # self.Ecorrection = np.zeros(0, float)
-        # self.Icorrection = np.zeros(0, float)
-        self.Tcorrection = np.zeros(0, float)
+        self.polmatrix = polmatrix.copy()
+        self.correction = np.zeros(0, float)
 
-        # self.frefine = False
-        # self.U = None
-        # self.V = None
         self.prefix = prefix
         self.asr = asr
+        self.atoms = atoms
 
         if self.prefix == "":
             self.prefix = "BEC"
 
-        # if len(fixatoms) > 0:
+        #self.fixdof = np.full(self.beads.natoms,None)
+        # if self.atoms in ["all",]:
         #     fixdof = np.concatenate((3 * fixatoms, 3 * fixatoms + 1, 3 * fixatoms + 2))
         #     self.fixdof = np.sort(fixdof)
-        #     # if self.mode == "enmfd" or self.mode == "nmfd":
-        #     #     raise ValueError("Fixatoms is not implemented for the selected mode.")
         # else:
         #     self.fixdof = np.array([])
 
@@ -96,6 +75,28 @@ class BECTensorsCalculator(Motion):
 
         #self.ism = 1 / np.sqrt(dstrip(self.beads.m3[-1]))
         #self.m = dstrip(self.beads.m)
+        self.tomove = np.full(3*self.beads[0].natoms,False)
+        if len(self.atoms) == 0 :
+            self.tomove = np.full(3*self.beads[0].natoms,False)
+        elif len(self.atoms) == 1 and self.atoms[0].lower() ==  "all":
+            self.tomove = np.full(3*self.beads[0].natoms,True)
+        else:
+            for i in self.atoms:
+                if i.isdigit():
+                    i = int(i)
+                    self.tomove[i*3:(i+1)*3] = True
+                else:
+                    if i not in list(self.beads[0].names):
+                        raise ValueError("wrong input")
+                    else:
+                        index = list(self.beads[0].names).index(i)
+                    if not hasattr(index,'__len__'):
+                        index = [index]
+                    for j in index:
+                        j = int(j)
+                        self.tomove[j*3:(j+1)*3] = True
+                
+
         self.phcalc.bind(self)
 
         #self.dbeads = self.beads.copy()
@@ -119,18 +120,11 @@ class BECTensorsCalculator(Motion):
     def printall(self):
         """Prints matrices to file"""
 
-        for contr,M in zip(["electrons","ions","total"],[self.Tpolmatrix]): # self.Epolmatrix,self.Ipolmatrix,
-            file = "{:s}.BEC.{:s}.txt".format(self.prefix,contr)
-            header = "BEC for {:s} polarization.\n".format(contr)+\
-                "The polarization (row indices of the BEC tensors) are expressed w.r.t. the (normalized) lattice vectors.\n"+\
-                "The displacements (column indices of the BEC tensors) are expressed (and have been performed) along the (normalized) lattice vectors.\n"+\
-                "The BEC tensors of each ions are printed consecutively."
-            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f")#,header=header)
+        file = "{:s}.txt".format(self.prefix,)
+        np.savetxt(file,self.polmatrix.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
 
-        for contr,M in zip(["electrons","ions","total"],[self.Ecorrection,self.Icorrection,self.Tcorrection]):
-            file = "{:s}.BEC.correction.{:s}.txt".format(self.prefix,contr)
-            header = "correction to the BEC tensors for {:s} computed imposing the Translational Sum Rule".format(contr)
-            np.savetxt(file,M.reshape((-1,3)),delimiter=" ",fmt="%15.10f")#,header=header)
+        file = "{:s}.correction.txt".format(self.prefix)
+        np.savetxt(file,self.correction.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
 
         return 
 
@@ -152,16 +146,15 @@ class BECTensorsCalculator(Motion):
         # and self.correction has the shape (3,3) 
         #
 
-        # self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
-        # self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
-        self.Tcorrection = self.Tpolmatrix.sum(axis=0)/self.beads.natoms
+        if self.asr == "lin" :                       
+            
+            if np.all(self.tomove):
+                warning("Sum Ruls can not be applied because some dofs were kept fixed")
 
-        if self.asr == "lin" :            
-            # self.Epolmatrix -= self.Ecorrection            
-            # self.Ipolmatrix -= self.Icorrection            
-            self.Tpolmatrix -= self.Tcorrection
+            self.correction = self.polmatrix.sum(axis=0)/self.beads.natoms
+            self.polmatrix -= self.correction
 
-        elif self.asr == "nonr" :
+        elif self.asr == "none" :
             return 
 
         # We should add the Rotational Sum Rule(s)
@@ -181,95 +174,86 @@ class FDBECTensorsCalculator(dobject):
     def bind(self, dm):
         """Reference all the variables for simpler access."""
         
-        #super(FDBECTensorsCalculator, self).bind(dm)
         self.dm = dm
         self.original = np.asarray(dstrip(self.dm.beads.q[0]).copy()) 
+        self.atoms = dm.atoms
 
-        #print(type(self.dm.ensemble.ElecPol))
-        #dd(self.dm.ensemble).ElecPol.add_dependency(dd(self.dm.dbeads).q)
 
-        def check_dimension(M,name):
+        def check_dimension(M):
             if M.size != ( 3 * self.dm.beads.q.size ):
                 if M.size == 0:
                     M = np.full((self.dm.beads.q.size, 3 ),np.nan,dtype=float)
                 else:
-                    raise ValueError("{:s} polarization matrix constant matrix size does not match system size".format(name))
+                    raise ValueError("matrix size does not match system size")
             else:
                 M = M.reshape(((self.dm.beads.q.size, 3 )))
             return M
 
         # Initialises a 3*number of atoms X 3*number of atoms dynamic matrix.
-        # self.dm.Epolmatrix = check_dimension(self.dm.Epolmatrix,"Electronic")
-        # self.dm.Ipolmatrix = check_dimension(self.dm.Ipolmatrix,"Ionic")
-        self.dm.Tpolmatrix = check_dimension(self.dm.Tpolmatrix,"total")
+        self.dm.polmatrix = check_dimension(self.dm.polmatrix)
 
         return
 
     def step(self, step=None):
         """Computes one row of the BEC tensors"""
 
-        # initializes the finite deviation
-        dev = np.zeros(3 * self.dm.beads.natoms, float)
-        
-        # displacement in cartesian components
-        dev[step] = self.dm.deltax
+        if self.dm.tomove[step]:
 
-        # displaces kth d.o.f by delta.
-        self.dm.beads.q.set(self.original + dev)
-        # Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
-        # Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+            # initializes the finite deviation
+            dev = np.zeros(3 * self.dm.beads.natoms, float)
+            
+            # displacement in cartesian components
+            dev[step] = self.dm.deltax
 
-        # displaces kth d.o.f by -delta.
-        self.dm.beads.q.set(self.original - dev)
-        # Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
-        # Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+            # displaces kth d.o.f by delta.
+            self.dm.beads.q.set(self.original + dev)
+            Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
-        #
-        # the following line computes a component of a BEC tensor
-        # Z^I_ij = Omega/e (delta P_i / delta R_j_I)
-        # I : atom index
-        # i : polarization index, i.e. P_i is the component along 
-        #     the i-th reciprocal lattice vectors
-        # j : displacement index, i.e. R_j is the component of the 
-        #     displacement (of the atom I-th) along the j-th lattice vectors
-        # Omega : primitive unit cell volum
-        # 
-        # Pay attention: i-PI asks the driver to give the polarization expressed 
-        # w.r.t. the (normalized) reciprocal lattice vectors.
-        # This choide stems from the fact that in DFT codes the polarization 
-        # is usually computed along these directions.
-        #
-        # Then i-PI doesn't ask the cartesian components to the driver, 
-        # in order to avoid to implement some (bug prone) code in each driver.
-        #
-        # Moreover, the displacements are performed along the lattice vectors, and not along the cartesian axis!
-        # In this way, the output quantities (BEC) are indepenedent on the lattice orientation.
-        # If you need to change the lattice orientation for any reason, the BEC tensors expressed in this way do not change.
-        # so you can jusy copy and paste
-        #
-        # Have a nice day :)
-        #
+            # displaces kth d.o.f by -delta.
+            self.dm.beads.q.set(self.original - dev)
+            Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
 
-        # self.dm.Epolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Eplus - Eminus ) / ( 2 * self.dm.deltax )
-        # self.dm.Ipolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Iplus - Iminus ) / ( 2 * self.dm.deltax )
-        self.dm.Tpolmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
+            #
+            # the following line computes a component of a BEC tensor
+            # Z^I_ij = Omega/e (delta P_i / delta R_j_I)
+            # I : atom index
+            # i : polarization index, i.e. P_i is the component along 
+            #     the i-th reciprocal lattice vectors
+            # j : displacement index, i.e. R_j is the component of the 
+            #     displacement (of the atom I-th) along the j-th lattice vectors
+            # Omega : primitive unit cell volum
+            # 
+            # Pay attention: i-PI asks the driver to give the polarization expressed 
+            # w.r.t. the (normalized) reciprocal lattice vectors.
+            # This choide stems from the fact that in DFT codes the polarization 
+            # is usually computed along these directions.
+            #
+            # Then i-PI doesn't ask the cartesian components to the driver, 
+            # in order to avoid to implement some (bug prone) code in each driver.
+            #
+            # Moreover, the displacements are performed along the lattice vectors, and not along the cartesian axis!
+            # In this way, the output quantities (BEC) are indepenedent on the lattice orientation.
+            # If you need to change the lattice orientation for any reason, the BEC tensors expressed in this way do not change.
+            # so you can jusy copy and paste
+            #
+            # Have a nice day :)
+            #
+
+            self.dm.polmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
+
+        else:
+            info(" We have skipped the dof # {}.".format(step), verbosity.low)
 
         return
 
     def transform(self):
 
         # reshape
-        # self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
-        # self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
-        self.dm.Tpolmatrix = self.dm.Tpolmatrix.reshape((self.dm.beads.natoms,3,3))
+        self.dm.polmatrix = self.dm.polmatrix.reshape((self.dm.beads.natoms,3,3))
 
         # transpose
         # for i in range(self.dm.beads.natoms):
-        #     self.dm.Epolmatrix[i] = self.dm.Epolmatrix[i].T
-        #     self.dm.Ipolmatrix[i] = self.dm.Ipolmatrix[i].T
-        #     self.dm.Tpolmatrix[i] = self.dm.Tpolmatrix[i].T
+        #     self.dm.polmatrix[i] = self.dm.polmatrix[i].T
 
         return
         

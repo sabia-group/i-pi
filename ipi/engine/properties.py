@@ -2697,11 +2697,16 @@ class Trajectories(dobject):
             "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.system.ensemble.eda.bec ), # .flatten()
+                "func": (lambda: self.motion.integrator.EDAforces ), # .flatten()
             },
             "forces": {
                 "dimension": "force",
                 "help": "The force trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",
+                "func": (lambda: 1.0 * self.system.forces.f),
+            },
+            "Eforces": {
+                "dimension": "force",
+                "help": "The Electric field contribution to the forces (to be added to the 'forces' trajectories to get the total forces)",
                 "func": (lambda: 1.0 * self.system.forces.f),
             },
             "forces_sc": {
