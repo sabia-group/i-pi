@@ -12,7 +12,7 @@ import re
 from ipi.utils.messages import verbosity, info
 
 
-__all__ = ["Constants", "Elements", "unit_to_internal", "unit_to_user"]
+__all__ = ["Constants", "Elements", "unit_to_internal", "unit_to_user","UnitMap"]
 
 
 class Constants(object):
@@ -356,6 +356,7 @@ UnitMap = {
         "j/mol": 0.00000038087989,
         "cal/mol": 0.0000015946679,
         "kelvin": 3.1668152e-06,
+        "rydberg":0.5
     },
     "temperature": {
         "": 1.00,
