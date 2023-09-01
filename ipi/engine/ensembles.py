@@ -375,14 +375,29 @@ class BEC(dobject):
                 raise ValueError("Error in '_check_BEC': 'bead' is negative") 
             if bead >= self.nbeads :
                 raise ValueError("Error in '_check_BEC': 'bead' is greater than the number of beads") 
+        else :
+            if self.nbeads != 1 :
+                raise ValueError("Error in '_check_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
         
         # if self.first:
         #     return np.zeros((self.natoms,3,3))
 
-        Nb = self.nbeads # number of beads
+        # Nb = self.nbeads # number of beads
         Na = self.natoms # number of atoms
-        bec = [np.asarray(self.forces.extras["BEC"][i]).reshape((Na,3,3)) for i in range(Nb)]
-        return bec[0] if bead is None else bec[bead] 
+
+        bec = np.asarray(self.forces.extras["BEC"][0])
+        bec = bec.reshape((Na,3,3))
+        # Axis of bec :
+        #   1st: atoms index (0,1,2...)
+        #   2nd: atom coordinate (x,y,z)
+        #   3rd: polarization direction (x,y,z)
+        return bec
+
+        bec = self.forces.extras["BEC"][0]
+        bec = bec.reshape(Na,3,3)
+        return bec
+        #bec = [np.asarray(bec[i]).reshape((Na,3,3)) for i in range(Nb)]
+        #return bec[0] if bead is None else bec[bead] 
 
     def _get_static_BEC(self):
         """Return the BEC tensors (in cartesian coordinates).
@@ -427,31 +442,39 @@ class BEC(dobject):
 
     def _check_BEC(self):#,skip=False):
         """Check that the BEC tensors are correctly formatted."""
-        # check whether the driver returned to i-pi the polarization values
-        # if skip :
-        #     return True
+
+        if self.nbeads != 1 :
+            raise ValueError("Error in '_check_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
         
         msg = "Error in '_check_BEC'"
 
         if self.cbec :
             if "BEC" not in self.forces.extras :
-                raise warning(msg+": BEC tensors are not returned to i-PI (or at least not accessible in '_check_BEC').") 
-        else : # the polarization is not computed by the driver, then skip this check
+                raise ValueError(msg+": BEC tensors are not returned to i-PI (or at least not accessible in '_check_BEC').") 
+        else :
             return True
 
-        Nb = self.nbeads
-        # check whether the number of polarization values is correct, i.e. equal to the number of beads 
-        # this should be done in ForceComponents.extra_gather (/ipi/engine/forces.py)
-        if len(self.forces.extras["BEC"]) != Nb:
-            raise ValueError(msg+": wrong number of bead for the BEC tensors.")
+        bec = np.asarray(self.forces.extras["BEC"][0])
+
+        if bec.shape[0] != self.natoms :
+            raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
+        if bec.shape[1] != 9 :
+            raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
+
+        return True
+    
+        # if len(self.forces.extras["BEC"]) != Nb:
+        #     raise ValueError(msg+": wrong number of bead for the BEC tensors.")
         
-        # check whether the BEC tensors have the correct shape
+        # check whether the BEC tensors have the correct shape 
+        becs = self.forces.extras["BEC"]
         for i in range(Nb):
-            Na = len(self.forces.extras["BEC"][i])
+            Na = len(becs[i])
             if Na != self.natoms:
                 raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
+            bec = becs[i]
             for j in range(Na):
-                if len(self.forces.extras["BEC"][i][j]) != 9 :
+                if len(bec[j]) != 9 :
                     raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
         return True
 
@@ -536,7 +559,8 @@ class Polarization(dobject):
 
         if self.cpol :
             if "polarization" not in self.forces.extras :
-                raise warning(msg+": polarization is not returned to i-PI (or at least not accessible in '_check_pol').") 
+                raise ValueError(msg+": the polarization is not returned to i-PI (or at least not accessible in '_check_pol').") 
+                #return False
         else : # the polarization is not computed by the driver, then skip this check
             return True
 
@@ -545,16 +569,16 @@ class Polarization(dobject):
         if len(self.forces.extras["polarization"]) != self.nbeads:
             raise ValueError(msg+": wrong number of bead for the polarization.")
 
-        # check whether the total, electronic, and ionic polarizations are all available
-        for word in ["total","ions","elec"]:
-            if not np.all([word in self.forces.extras["polarization"][i] for i in range(self.nbeads)]):
-                raise ValueError(msg+": "+word+" polarization not present for all the beads.")
+        # # check whether the total, electronic, and ionic polarizations are all available
+        # for word in ["total","ions","elec"]:
+        #     if not np.all([word in self.forces.extras["polarization"][i] for i in range(self.nbeads)]):
+        #         raise ValueError(msg+": "+word+" polarization not present for all the beads.")
 
-        # check whether the polarizations (total, electronic, and ionic) are identically vanishing
-        from numpy import linalg as LA
-        for word in ["total","ions","elec"]:
-            if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(self.nbeads)]):
-                warning(word+" polarization is vanishing for all the beads.",verbosity.high)
+        # # check whether the polarizations (total, electronic, and ionic) are identically vanishing
+        # from numpy import linalg as LA
+        # for word in ["total","ions","elec"]:
+        #     if np.all([ LA.norm(self.forces.extras["polarization"][i][word]) == 0 for i in range(self.nbeads)]):
+        #         warning(word+" polarization is vanishing for all the beads.",verbosity.high)
         return True
 
 class ElectricField(dobject):
@@ -716,7 +740,7 @@ class EDA(dobject):
 
         # dpipe(dfrom=dd(self.electric_field).Efield,dto=dself.Efield)
         dpipe(dfrom=dd(self.born_charges).bec,     dto=dself.bec)
-        dpipe(dfrom=dd(self.polarization).polarization,dto=dself.polarization)  
+        #dpipe(dfrom=dd(self.polarization).polarization,dto=dself.polarization)  
 
         # experimental
         dpipe(dfrom=dself.time,dto=dself.cptime)

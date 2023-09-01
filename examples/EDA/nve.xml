@@ -13,7 +13,7 @@
   <output prefix='i-pi.LiNbO3'>
     <trajectory filename='velocities'>velocities</trajectory>
     <trajectory filename='positions'>positions{angstrom}</trajectory>
-    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, energy, potential, kinetic_md, totalpol ] </properties>
+    <properties filename='properties.out' > [ step, time{femtosecond}, conserved, energy, potential, kinetic_md, polarization ] </properties>
   </output>
 
   <prng>

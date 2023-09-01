@@ -412,7 +412,9 @@ class EDAIntegrator(DummyIntegrator):
     def _forces(self):
         """Compute the EDA contribution to the forces due to the polarization"""
         # ES: if 'nbeads' > 1, then we will have to fix something here
-        forces = Constants.e * self.ensemble.eda.bec @ dd(self.ensemble.eda).Efield(self.ensemble.eda.time)
+        Z = self.ensemble.eda.bec
+        E = dd(self.ensemble.eda).Efield(self.ensemble.eda.time)
+        forces = Constants.e * Z @ E
         return forces.flatten().reshape((self.beads.nbeads,-1))
     
     def _forces_component(self,xyz):

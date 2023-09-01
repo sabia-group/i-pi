@@ -108,6 +108,19 @@ class e3nn_pol(Dummy_driver):
         dipole = self.model.get(cell,pos,what="dipole")
         bec    = self.model.get(cell,pos,what="BEC")
 
+        # I should check if this shape is okay
+        # Axis of bec :
+        #   1st: atoms index (0,1,2...)
+        #   2nd: atom coordinate (x,y,z)
+        #   3rd: polarization direction (x,y,z)
+        bec = bec[0].T.reshape((-1,3,3)) 
+
+        # reshape again
+        bec = bec.reshape((-1,9)) 
+
+
+        dipole = dipole[0]
+
         # I will convert the batch_size to the beads numbers
         # bec -> bec = bec[0] (batch_size=1)
         # bec -> bec = [bec]  (nbeads=1)
@@ -117,13 +130,8 @@ class e3nn_pol(Dummy_driver):
         polarization = dipole / volume
 
         extras = {
-
-            "BEC" : bec,
-            "polarization" : {
-                "total" : polarization
-            }
+            "BEC" : bec.tolist(),
+            "polarization" : polarization.tolist()
         }
 
-        bec = [np.asarray(self.forces.extras["BEC"][i]).reshape((Na,3,3)) for i in range(Nb)]
-
-        return pot, force, vir, extras
+        return pot, force, vir, json.dumps(extras)

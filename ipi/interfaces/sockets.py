@@ -418,6 +418,7 @@ class Driver(DriverSocket):
         mxtradict = {}
         if mxtra:
             try:
+                # with open("test.json", "w") as file: file.write(mxtra)
                 mxtradict = json.loads(mxtra)
                 info("Extra string JSON has been loaded.", verbosity.debug)
             except:
