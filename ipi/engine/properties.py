@@ -283,11 +283,17 @@ class Properties(dobject):
             #     "size": 3,
             #     "func": (lambda: self.ensemble.EnsElecPol),
             # },
-            "totalpol": {
-                "dimension": "atomic_unit",
+            "polarization": {
+                "dimension": "polarization",
                 "help": "The (ensemble averaged) total polarization (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.eda.totalpol ),
+                "func": (lambda: self.ensemble.eda.polarization ),
+            },
+            "electric-dipole": {
+                "dimension": "electric-dipole",
+                "help": "The (ensemble averaged) electric dipole (cartesian axes).",
+                "size": 3,
+                "func": (lambda: self.ensemble.eda.polarization * self.cell.V ),
             },
             "Eenthalpy": {
                 "dimension": "energy",
@@ -2697,7 +2703,7 @@ class Trajectories(dobject):
             "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.motion.integrator.EDAforces ), # .flatten()
+                "func": (lambda: self.ensemble.eda.born_charges.bec.reshape((self.system.beads.natoms,9)) ), # .flatten()
             },
             "forces": {
                 "dimension": "force",
@@ -2707,7 +2713,14 @@ class Trajectories(dobject):
             "Eforces": {
                 "dimension": "force",
                 "help": "The Electric field contribution to the forces (to be added to the 'forces' trajectories to get the total forces)",
-                "func": (lambda: 1.0 * self.system.forces.f),
+                "func": (lambda: self.motion.integrator.EDAforces \
+                         if hasattr(self.motion.integrator,'EDAforces') else np.zeros((self.system.beads.natoms*3)) ),
+            },
+            "totforces": {
+                "dimension": "force",
+                "help": "Total forces (nuclear and external electric field contributions)",
+                "func": (lambda: self.system.forces.f + self.motion.integrator.EDAforces \
+                         if hasattr(self.motion.integrator,'EDAforces') else self.system.forces.f ),
             },
             "forces_sc": {
                 "dimension": "force",

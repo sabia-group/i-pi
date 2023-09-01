@@ -389,6 +389,12 @@ UnitMap = {
         "atomic_unit": 1.00,
         "c/m^2": 57.214766
     },
+    "electric-dipole": {  # electron charge/Bohr radius^2
+        "": 1.00,
+        "automatic": 1.00,
+        "atomic_unit": 1.00,
+        # "cm": still to be computed
+    },
     "ms-momentum": {  # TODO fill up units here (mass-scaled momentum)
         "": 1.00,
         "automatic": 1.00,

@@ -370,15 +370,15 @@ class EDAIntegrator(DummyIntegrator):
     # 1e    = 1.602176634×10−19 C
     # 1Bohr = 5.291772109×10−11 m
     # C/m^2 = (5.291772109×10−11)^2/1.602176634×10−19 = 1.7478E-2 
-    from_Cm2_to_atomic = 1.7478E-2 
-    from_atomic_to_Cm2 = 57.214766
+    # from_Cm2_to_atomic = 1.7478E-2 
+    # from_atomic_to_Cm2 = 57.214766
 
     # threshold for the comparison between the ionic polarization computed by the driven and the one computed by i-pi
     # pay attention that they could be numerically different but anyway equivalent due to a different branch mapping
-    thr_pol_comparison  = 1.0
+    # thr_pol_comparison  = 1.0
 
     # if true, _check = _check_pol, otherwise a check of the polarizations values is performed too
-    _check_flag = False
+    # _check_flag = False
 
     def __init__(self):
         super(EDAIntegrator,self).__init__()

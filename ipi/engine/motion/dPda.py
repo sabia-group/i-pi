@@ -186,7 +186,7 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
 
         # displaces kth d.o.f by -delta.
         self.new_geo(-dev)
@@ -194,7 +194,7 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
 
         Delta_a = 2 * self.dm.deltax
         factor = 1 # self.dm.ensemble.cell.V / Constants.e

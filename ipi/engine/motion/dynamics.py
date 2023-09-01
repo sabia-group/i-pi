@@ -17,7 +17,7 @@ from ipi.utils.depend import *
 from ipi.engine.thermostats import Thermostat
 from ipi.engine.barostats import Barostat
 from ipi.utils.softexit import softexit
-from ipi.engine.motion.polarization import *
+from engine.motion._polarization import *
 from ipi.engine.motion.integrators import *
 
 # __all__ = ['Dynamics', 'NVEIntegrator', 'NVTIntegrator', 'NPTIntegrator', 'NSTIntegrator', 'SCIntegrator`']

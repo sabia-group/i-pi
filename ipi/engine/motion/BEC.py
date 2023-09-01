@@ -207,11 +207,11 @@ class FDBECTensorsCalculator(dobject):
 
             # displaces kth d.o.f by delta.
             self.dm.beads.q.set(self.original + dev)
-            Tplus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+            Tplus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
 
             # displaces kth d.o.f by -delta.
             self.dm.beads.q.set(self.original - dev)
-            Tminus = np.asarray(dstrip(self.dm.ensemble.eda.totalpol).copy())
+            Tminus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
 
             #
             # the following line computes a component of a BEC tensor
