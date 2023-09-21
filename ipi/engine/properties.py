@@ -259,7 +259,7 @@ class Properties(dobject):
                 "dimension": "atomic_unit",
                 "help": "The time derivative of the external applied electric field (cartesian axes).",
                 "size": 3,
-                "func": (lambda: dd(self.ensemble.eda.electric_field).TderEfield(self.ensemble.time)),
+                "func": (lambda: dd(self.ensemble.eda.Electric_Field).TderEfield(self.ensemble.time)),
             },
             "Efieldmod": {
                 "dimension": "atomic_unit",
@@ -269,7 +269,7 @@ class Properties(dobject):
             "Eenvelope": {
                 "dimension": "atomic_unit",
                 "help": "The (gaussian) envelope function of the external applied electric field.",
-                "func": (lambda: dd(self.ensemble.eda.electric_field).Eenvelope(self.ensemble.time) ),
+                "func": (lambda: dd(self.ensemble.eda.Electric_Field).Eenvelope(self.ensemble.time) ),
             },
             # "ionspol": {
             #     "dimension": "atomic_unit",
@@ -289,7 +289,7 @@ class Properties(dobject):
                 "size": 3,
                 "func": (lambda: self.ensemble.eda.polarization ),
             },
-            "electric-dipole": {
+            "dipole": {
                 "dimension": "electric-dipole",
                 "help": "The (ensemble averaged) electric dipole (cartesian axes).",
                 "size": 3,
@@ -2703,7 +2703,12 @@ class Trajectories(dobject):
             "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.ensemble.eda.born_charges.bec.reshape((self.system.beads.natoms,9)) ), # .flatten()
+                "func": (lambda: self.system.ensemble.eda.Born_Charges.bec.flatten()), #((self.system.beads.natoms,9)) ), # .flatten()
+            },
+            "extra": {
+                "dimension": "number",
+                "help": "The extra string passed by the driver.",
+                "func": (lambda bead=0: self.system.forces.extras["raw"][bead]), #((self.system.beads.natoms,9)) ), # .flatten()
             },
             "forces": {
                 "dimension": "force",

@@ -435,6 +435,8 @@ class Driver(DriverSocket):
                 )
 
             mxtradict["raw"] = mxtra
+        else :
+            mxtradict["raw"] = ""
 
         return [mu, mf, mvir, mxtradict]
 

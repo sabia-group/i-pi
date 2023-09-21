@@ -21,7 +21,7 @@ class BECTensorsCalculator(Motion):
         atoms=["all"],
         # mode="fd",
         pos_shift=0.001,
-        polmatrix=np.zeros(0, float),
+        bec=np.zeros(0, float),
         prefix="",
         asr="none",
     ):
@@ -29,7 +29,7 @@ class BECTensorsCalculator(Motion):
         Args:
         fixcom  : An optional boolean which decides whether the centre of mass
                   motion will be constrained or not. Defaults to False.
-        polmatrix : A 3Nx3 array that stores the dynamic matrix.
+        bec : A 3Nx3 array that stores the dynamic matrix.
         refdynmatrix : A 3Nx3N array that stores the refined dynamic matrix.
         """
 
@@ -46,7 +46,7 @@ class BECTensorsCalculator(Motion):
         self.phcalc = FDBECTensorsCalculator()
 
         self.deltax = pos_shift
-        self.polmatrix = polmatrix.copy()
+        self.bec = bec.copy()
         self.correction = np.zeros(0, float)
 
         self.prefix = prefix
@@ -121,10 +121,11 @@ class BECTensorsCalculator(Motion):
         """Prints matrices to file"""
 
         file = "{:s}.txt".format(self.prefix,)
-        np.savetxt(file,self.polmatrix.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
+        np.savetxt(file,self.bec.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
 
-        file = "{:s}.correction.txt".format(self.prefix)
-        np.savetxt(file,self.correction.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
+        if self.correction.shape != (0,) :
+            file = "{:s}.correction.txt".format(self.prefix)
+            np.savetxt(file,self.correction.reshape((-1,3)),delimiter=" ",fmt="%15.10f")
 
         return 
 
@@ -142,7 +143,7 @@ class BECTensorsCalculator(Motion):
         # So we compute this sum, which should be zero, but it is not due to "numerical noise",
         # and then we subtract this amount (divided by the number of atoms) to each BEC.
         #
-        # Pay attention that in this case self.polmatrix has already the shape (natoms,3,3)
+        # Pay attention that in this case self.bec has already the shape (natoms,3,3)
         # and self.correction has the shape (3,3) 
         #
 
@@ -151,8 +152,8 @@ class BECTensorsCalculator(Motion):
             if np.all(self.tomove):
                 warning("Sum Ruls can not be applied because some dofs were kept fixed")
 
-            self.correction = self.polmatrix.sum(axis=0)/self.beads.natoms
-            self.polmatrix -= self.correction
+            self.correction = self.bec.sum(axis=0)/self.beads.natoms
+            self.bec -= self.correction
 
         elif self.asr == "none" :
             return 
@@ -190,7 +191,7 @@ class FDBECTensorsCalculator(dobject):
             return M
 
         # Initialises a 3*number of atoms X 3*number of atoms dynamic matrix.
-        self.dm.polmatrix = check_dimension(self.dm.polmatrix)
+        self.dm.bec = check_dimension(self.dm.bec)
 
         return
 
@@ -239,7 +240,7 @@ class FDBECTensorsCalculator(dobject):
             # Have a nice day :)
             #
 
-            self.dm.polmatrix[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
+            self.dm.bec[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
 
         else:
             info(" We have skipped the dof # {}.".format(step), verbosity.low)
@@ -249,11 +250,11 @@ class FDBECTensorsCalculator(dobject):
     def transform(self):
 
         # reshape
-        self.dm.polmatrix = self.dm.polmatrix.reshape((self.dm.beads.natoms,3,3))
+        self.dm.bec = self.dm.bec.reshape((self.dm.beads.natoms,3,3))
 
         # transpose
         # for i in range(self.dm.beads.natoms):
-        #     self.dm.polmatrix[i] = self.dm.polmatrix[i].T
+        #     self.dm.bec[i] = self.dm.bec[i].T
 
         return
         

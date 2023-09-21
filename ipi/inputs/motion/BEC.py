@@ -31,7 +31,8 @@ class InputBECTensorsCalculator(InputDictionary):
             {
                 "dtype": float,
                 "default": 0.01,
-                "help": "The finite displacement in position used to compute derivative of (electronic) polarization.",
+                "dimension":"length",
+                "help": "The finite displacement in position used to compute derivative of the polarization.",
             },
         ),
         "prefix": (
@@ -47,12 +48,13 @@ class InputBECTensorsCalculator(InputDictionary):
                 "help": "Removes the zero frequency vibrational modes depending on the symmerty of the system.",
             },
         ),
-        "polmatrix": (
+        "bec": (
             InputArray,
             {
                 "dtype": float,
                 "default": np.zeros(0, float),
-                "help": "Portion of the total polarization matrix known up to now.",
+                "dimension":"number",
+                "help": "Portion of the BECs known up to now.",
             },
         ),
         "atoms": (
@@ -77,7 +79,7 @@ class InputBECTensorsCalculator(InputDictionary):
         self.pos_shift.store(phonons.deltax)
         self.prefix.store(phonons.prefix)
         self.asr.store(phonons.asr)
-        self.polmatrix.store(phonons.polmatrix)
+        self.bec.store(phonons.bec)
         self.atoms.store(phonons.atoms)
 
     def fetch(self):

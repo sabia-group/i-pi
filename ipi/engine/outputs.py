@@ -531,6 +531,8 @@ class TrajectoryOutput(BaseOutput):
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names
             dd(fatom).q = data.reshape((self.system.beads.natoms,9)) # ES: pay attention!
+        elif key == "extra" :
+            fatom = data
         else:
             fatom = Atoms(self.system.beads.natoms)
             fatom.names[:] = self.system.beads.names

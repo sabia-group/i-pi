@@ -15,7 +15,7 @@ def prepare_parser():
     parser = argparse.ArgumentParser(description="Compute the Infra Red (IR) Raman intensities of the vibrational modes.")
 
     parser.add_argument(
-        "-z", "--born_charges", action="store", type=str,
+        "-z", "--Born_Charges", action="store", type=str,
         help="input file with the Born Effective Charges Z*", default=None
     )
     parser.add_argument(
@@ -51,7 +51,7 @@ def read_input(options):
     class Data: pass
     data = Data()
 
-    file = options.born_charges
+    file = options.Born_Charges
     if not os.path.exists(file):
         raise ValueError("'{:s}' does not exists".format(file))
     data.Z = np.loadtxt(file)
@@ -132,7 +132,7 @@ def main():
     options = prepare_parser()
 
     # read input argumfilesents
-    print("\tReading input files: '{:s}' and '{:s}'".format(options.born_charges,options.modes))
+    print("\tReading input files: '{:s}' and '{:s}'".format(options.Born_Charges,options.modes))
     data = read_input(options)
 
     # compute IR activity

@@ -41,14 +41,14 @@ class Sequence(Motion):
     def step(self, step=None):
         """Executes one step."""
         if self.positions is None :
-            positions = read(self.input,index=":")
-        if step >= len(positions) :
+            self.positions = read(self.input,index=":")
+        if step >= len(self.positions) :
             softexit.trigger(
                 status="success",
                 message="Finished sequence of configurations. Exiting simulation",
             )
         else :
-            q = positions[step].positions.flatten()
+            q = self.positions[step].positions.flatten()
             self.beads.q.set( q )
             fake = dstrip(self.ens.econs)
         pass

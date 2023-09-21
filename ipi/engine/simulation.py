@@ -103,7 +103,7 @@ class Simulation(dobject):
             print(" --- begin input file content ---")
             ifile = open(fn_input, "r")
             for line in ifile.readlines():
-                print(line, end=" ")
+                print(line) #, end=" ")
             print(" ---  end input file content  ---")
             ifile.close()
 

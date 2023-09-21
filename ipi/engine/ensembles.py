@@ -492,7 +492,7 @@ class Polarization(dobject):
 
         val = np.full(self.nbeads,np.zeros(3,dtype=float)) if self.nbeads > 1 else np.zeros(3,dtype=float)
         #dself.polarization = depend_array(name="polarization", func=lambda:self._get_pol(what="total",bead=0),value=val,dependencies=[dd(eda).time,dd(ensemble.beads).q])
-        dself.polarization = depend_array(name="polarization", func=lambda:self._get_pol(bead=0),value=val,dependencies=[dd(eda).time,dd(ensemble.beads).q])
+        dself.pol = depend_array(name="pol", func=lambda:self._get_pol(bead=0),value=val,dependencies=[dd(eda).time,dd(ensemble.beads).q])
 
         pass
 
@@ -701,9 +701,9 @@ class EDA(dobject):
 
     def __init__(self,tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cpol,cbec,bec,**kwargv):
         super(EDA,self).__init__(**kwargv)
-        self.electric_field = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
-        self.polarization   = Polarization(cpol)
-        self.born_charges   = BEC(cbec,bec)
+        self.Electric_Field = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
+        self.Polarization   = Polarization(cpol)
+        self.Born_Charges   = BEC(cbec,bec)
         self.tacc           = depend_value(name="tacc" ,value=tacc)
         pass
 
@@ -721,26 +721,26 @@ class EDA(dobject):
         dpipe(dfrom=dd(ensemble).econs, dto=dself.econs)
         dpipe(dfrom=dd(ensemble).time,  dto=dself.time)
 
-        self.electric_field.bind(self,enstype)
-        self.polarization.bind(self,ensemble)
-        self.born_charges.bind(self,ensemble,enstype)  
+        self.Electric_Field.bind(self,enstype)
+        self.Polarization.bind(self,ensemble)
+        self.Born_Charges.bind(self,ensemble,enstype)  
         
         # for easier access
-        # dself.Efield   = dd(self.electric_field).Efield
-        # dself.bec      = dd(self.born_charges).bec
+        # dself.Efield   = dd(self.Electric_Field).Efield
+        # dself.bec      = dd(self.Born_Charges).bec
         # dself.polarization = dd(self.polarization).polarization
 
         # for easier access
-        dself.Efield   = depend_array(name="Efield",  value=np.full(dd(self.electric_field).Efield.shape,np.nan),func=lambda time=None: dd(self.electric_field).Efield(time))
-        # dself.bec      = depend_array(name="bec",     value=np.full(dd(self.born_charges).bec.shape,     np.nan),func=lambda: self.born_charges.bec)
+        dself.Efield   = depend_array(name="Efield",  value=np.full(dd(self.Electric_Field).Efield.shape,np.nan),func=lambda time=None: dd(self.Electric_Field).Efield(time))
+        # dself.bec      = depend_array(name="bec",     value=np.full(dd(self.Born_Charges).bec.shape,     np.nan),func=lambda: self.Born_Charges.bec)
         # dself.polarization = depend_array(name="polarization",value=np.full(dd(self.polarization).polarization.shape,np.nan),func=lambda: self.polarization.polarization)
 
-        dself.bec      = depend_array(name="bec",     value=np.full(dd(self.born_charges).bec.shape,     np.nan))
-        dself.polarization = depend_array(name="polarization",value=np.full(dd(self.polarization).polarization.shape,np.nan))
+        dself.bec      = depend_array(name="bec",     value=np.full(dd(self.Born_Charges).bec.shape,     np.nan))
+        dself.polarization = depend_array(name="polarization",value=np.full(dd(self.Polarization).pol.shape,np.nan))
 
-        # dpipe(dfrom=dd(self.electric_field).Efield,dto=dself.Efield)
-        dpipe(dfrom=dd(self.born_charges).bec,     dto=dself.bec)
-        #dpipe(dfrom=dd(self.polarization).polarization,dto=dself.polarization)  
+        # dpipe(dfrom=dd(self.Electric_Field).Efield,dto=dself.Efield)
+        dpipe(dfrom=dd(self.Born_Charges).bec,     dto=dself.bec)
+        dpipe(dfrom=dd(self.Polarization).pol,dto=dself.polarization)  
 
         # experimental
         dpipe(dfrom=dself.time,dto=dself.cptime)
@@ -756,20 +756,20 @@ class EDA(dobject):
 
     def store(self,eda):
         super(EDA, self).store(eda)
-        self.electric_field.store(eda.electric_field)
-        self.polarization.store(eda.polarization)
-        self.bec.store(eda.bec)
+        self.Electric_Field.store(eda.Electric_Field)
+        self.Polarization.store(eda.Polarization)
+        self.Born_Charges.store(eda.bec)
         self.tacc.store(eda.tacc)
         pass        
 
     def _get_EDAenergy(self,time=None):
         """EDA contribution to the enthalpy"""
-        return float(self.volume * np.dot( self.polarization , dd(self.electric_field).Efield(time) ))
+        return float(self.volume * np.dot( self.polarization , dd(self.Electric_Field).Efield(time) ))
     
     def _get_TderEDAenergy(self,time=None): # ES: to be modified
         """Time derivative of EDAenergy"""
         #self._check_time(msg="calling")
-        return float(self.volume * np.dot( self.polarization , dd(self.electric_field).TderEfield(time) ))
+        return float(self.volume * np.dot( self.polarization , dd(self.Electric_Field).TderEfield(time) ))
 
     def _get_Eenthalpy(self,time=None):
         """Electric enthalpy"""
