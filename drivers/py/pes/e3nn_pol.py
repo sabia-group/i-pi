@@ -131,8 +131,8 @@ class e3nn_pol(Dummy_driver):
         extras = {}
 
         # get 'dipole' and 'BEC' tensors
-        with torch.no_grad():
-            dipole,X = self.model.get(cell=cell,pos=pos,what="dipole",detach=True)
+        #with torch.no_grad():
+        dipole,X = self.model.get(cell=cell,pos=pos,what="dipole",detach=False)
         dipole = dipole[0] # remove the 'batch_size' axis
 
         # Compute the polarization
@@ -143,9 +143,21 @@ class e3nn_pol(Dummy_driver):
 
         if self._compute_bec :
 
-            # dipole[0].backward(retain_graph=True).flatten() -> row 1 of BEC.txt
-            # dipole[1].backward(retain_graph=True).flatten() -> row 2 of BEC.txt
-            # dipole[2].backward(retain_graph=True).flatten() -> row 3 of BEC.txt
+            dipole[0].backward(retain_graph=True)#.flatten() # -> row 1 of BEC.txt
+            # #print(X.pos.grad)
+            print(X.pos.grad.flatten())
+            X.pos.grad.data.zero_()
+            #
+
+            dipole[1].backward(retain_graph=True)#.flatten() # -> row 2 of BEC.txt
+            #print(X.pos.grad)
+            print(X.pos.grad.flatten())
+            X.pos.grad.data.zero_()
+
+            dipole[2].backward(retain_graph=True)#.flatten() # -> row 3 of BEC.txt
+            # #print(X.pos.grad)
+            print(X.pos.grad.flatten())
+            X.pos.grad.data.zero_()
 
             bec    = self.model.get(cell,pos,what="BEC")
             bec    = bec[0] # remove the 'batch_size' axis

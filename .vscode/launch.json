@@ -12,7 +12,7 @@
             //"program": "/home/stoccoel/google-personal/miscellaneous/miscellaneous/elia/nn/water/water.py",
             //"program":"/home/stoccoel/google-personal/miscellaneous/miscellaneous/elia/nn/tests/autograd.py",
             //"cwd": "/home/stoccoel/google-personal/miscellaneous/miscellaneous/elia/nn/water/LiNbO3/MD",
-            "cwd": "/home/stoccoel/google-personal/works/new/BEC/",
+            "cwd": "/home/stoccoel/google-personal/works/train-water-nk=4/BEC/",
             "args": ["input.xml"], // ["RESTART"],
             "env": {"PYTHONPATH": "/home/stoccoel/google-personal/miscellaneous/"},
             //"cwd":"/home/elia/Google-Drive/google-personal/works/anharmonic-couplings/",
