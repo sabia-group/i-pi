@@ -138,7 +138,7 @@ class BECTensorsCalculator(Motion):
         # Translational Sum Rule :
         # \sum_I Z^I_ij = 0 
         #
-        # This means that the translation of all the ions does not lead to any change in the polarization.
+        # This means that the translation of all the ions does not lead to any change in the dipole.
         #
         # So we compute this sum, which should be zero, but it is not due to "numerical noise",
         # and then we subtract this amount (divided by the number of atoms) to each BEC.
@@ -208,39 +208,20 @@ class FDBECTensorsCalculator(dobject):
 
             # displaces kth d.o.f by delta.
             self.dm.beads.q.set(self.original + dev)
-            Tplus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
+            # Tplus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
+
+            # get the dipole, which is defined also for isolated systems
+            Dplus = np.asarray(dstrip(self.dm.ensemble.eda.dipole).copy())
 
             # displaces kth d.o.f by -delta.
             self.dm.beads.q.set(self.original - dev)
-            Tminus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
+            # Tminus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
 
-            #
-            # the following line computes a component of a BEC tensor
-            # Z^I_ij = Omega/e (delta P_i / delta R_j_I)
-            # I : atom index
-            # i : polarization index, i.e. P_i is the component along 
-            #     the i-th reciprocal lattice vectors
-            # j : displacement index, i.e. R_j is the component of the 
-            #     displacement (of the atom I-th) along the j-th lattice vectors
-            # Omega : primitive unit cell volum
-            # 
-            # Pay attention: i-PI asks the driver to give the polarization expressed 
-            # w.r.t. the (normalized) reciprocal lattice vectors.
-            # This choide stems from the fact that in DFT codes the polarization 
-            # is usually computed along these directions.
-            #
-            # Then i-PI doesn't ask the cartesian components to the driver, 
-            # in order to avoid to implement some (bug prone) code in each driver.
-            #
-            # Moreover, the displacements are performed along the lattice vectors, and not along the cartesian axis!
-            # In this way, the output quantities (BEC) are indepenedent on the lattice orientation.
-            # If you need to change the lattice orientation for any reason, the BEC tensors expressed in this way do not change.
-            # so you can jusy copy and paste
-            #
-            # Have a nice day :)
-            #
+            # get the dipole, which is defined also for isolated systems
+            Dminus = np.asarray(dstrip(self.dm.ensemble.eda.dipole).copy())
 
-            self.dm.bec[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
+            # self.dm.bec[step] = ( self.dm.ensemble.cell.V / Constants.e ) * ( Tplus - Tminus ) / ( 2 * self.dm.deltax )
+            self.dm.bec[step] = ( 1.0 / Constants.e ) * ( Dplus - Dminus ) / ( 2 * self.dm.deltax )
 
         else:
             info(" We have skipped the dof # {}.".format(step), verbosity.low)
