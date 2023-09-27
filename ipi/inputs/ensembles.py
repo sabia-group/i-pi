@@ -151,12 +151,12 @@ class InputEnsemble(Input):
                 "dimension": "time",
             },
         ),
-        "cpol": (
+        "cdip": (
             InputValue,
             {
                 "dtype": bool,
                 "default": True,
-                "help": "Wheter the polarization is returned by the driver",
+                "help": "Wheter the dipole is returned by the driver",
             },
         ),
         "cbec": (

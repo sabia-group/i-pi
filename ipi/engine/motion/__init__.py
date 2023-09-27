@@ -25,5 +25,5 @@ from .atomswap import AtomSwap
 from .ramp import TemperatureRamp, PressureRamp
 from .al6xxx_kmc import AlKMC
 from .BEC import BECTensorsCalculator
-from .dPda import dPdaTensorCalculator
+from .dDda import dDdaTensorCalculator
 from .sequence import Sequence

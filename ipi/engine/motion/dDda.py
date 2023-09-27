@@ -1,5 +1,5 @@
 
-__all__ = ["dPdaTensorCalculator"]
+__all__ = ["dDdaTensorCalculator"]
 
 import numpy as np
 from numpy.linalg import norm
@@ -11,7 +11,7 @@ from ipi.utils.softexit import softexit
 from ipi import ipi_global_settings
 
 
-class dPdaTensorCalculator(Motion):
+class dDdaTensorCalculator(Motion):
 
     """dP/da tensors calculator."""
 
@@ -19,28 +19,28 @@ class dPdaTensorCalculator(Motion):
         self,
         mode="fd",
         pos_shift=0.01,
-        polmatrix=np.zeros((6,3), float),
+        matrix=np.zeros((6,3), float),
         prefix="",
         # asr="none",
     ):
-        """Initialises dPdaTensorCalculator.
+        """Initialises dDdaTensorCalculator.
         Args:
         fixcom  : An optional boolean which decides whether the centre of mass
                   motion will be constrained or not. Defaults to False.
-        polmatrix : A 3Nx3 array that stores the dynamic matrix.
+        matrix : A 3Nx3 array that stores the dynamic matrix.
         refdynmatrix : A 3Nx3N array that stores the refined dynamic matrix.
         """
 
         if mode != "fd" :
-            raise ValueError(mode, "mode is not implemented in dPda calculator (the only allowed one is 'fd')")
+            raise ValueError(mode, "mode is not implemented in dDda calculator (the only allowed one is 'fd')")
         
-        super(dPdaTensorCalculator, self).__init__(fixcom=False, fixatoms=None)
+        super(dDdaTensorCalculator, self).__init__(fixcom=False, fixatoms=None)
 
         self.mode = mode
-        self.phcalc = FDdPdaTensorCalculator()
+        self.phcalc = FDdDdaTensorCalculator()
 
         self.deltax = pos_shift
-        self.polmatrix = polmatrix.copy()
+        self.matrix = matrix.copy()
         #self.Ecorrection = np.zeros(0, float)
         #self.Icorrection = np.zeros(0, float)
         #self.Tcorrection = np.zeros(0, float)
@@ -49,11 +49,11 @@ class dPdaTensorCalculator(Motion):
         # self.asr = asr
 
         # if self.prefix == "":
-        #     self.prefix = "dPda"
+        #     self.prefix = "dDda"
 
     def bind(self, ens, beads, nm, cell, bforce, prng, omaker):
 
-        super(dPdaTensorCalculator, self).bind(ens, beads, nm, cell, bforce, prng, omaker)
+        super(dDdaTensorCalculator, self).bind(ens, beads, nm, cell, bforce, prng, omaker)
 
         # Raises error for nbeads not equal to 1.
         if self.beads.nbeads > 1:
@@ -64,7 +64,7 @@ class dPdaTensorCalculator(Motion):
         self.phcalc.bind(self)
 
     def step(self, step=None):
-        """Executes one step of dPda computation."""
+        """Executes one step of dDda computation."""
         if step < 6:
             self.phcalc.step(step)
         else:
@@ -73,15 +73,15 @@ class dPdaTensorCalculator(Motion):
             self.printall()
             softexit.trigger(
                 status="success",
-                message="dPda tensors have been calculated. Exiting simulation",
+                message="dDda tensors have been calculated. Exiting simulation",
             )
 
     def printall(self):
         """Prints matrices to file"""
 
-        M = self.polmatrix
+        M = self.matrix
         fmt = ipi_global_settings["floatformat"] 
-        file = "{:s}.dPda.txt".format(self.prefix) if len(self.prefix) > 0 else "dPda.txt".format(self.prefix) 
+        file = "{:s}.dDda.txt".format(self.prefix) if len(self.prefix) > 0 else "dDda.txt".format(self.prefix) 
         np.savetxt(file,M,delimiter=" ",fmt=fmt)
 
         return 
@@ -91,14 +91,14 @@ class dPdaTensorCalculator(Motion):
     #     Removes the translations and/or rotations depending on the asr mode.
     #     """
 
-    #     #self.Ecorrection = self.Epolmatrix.sum(axis=0)/self.beads.natoms
-    #     #self.Icorrection = self.Ipolmatrix.sum(axis=0)/self.beads.natoms
-    #     #self.Tcorrection = self.polmatrix.sum(axis=0)/self.beads.natoms
+    #     #self.Ecorrection = self.Ematrix.sum(axis=0)/self.beads.natoms
+    #     #self.Icorrection = self.Imatrix.sum(axis=0)/self.beads.natoms
+    #     #self.Tcorrection = self.matrix.sum(axis=0)/self.beads.natoms
 
     #     # if self.asr == "lin" :            
-    #     #     self.Epolmatrix -= self.Ecorrection            
-    #     #     self.Ipolmatrix -= self.Icorrection            
-    #     #     self.polmatrix -= self.Tcorrection
+    #     #     self.Ematrix -= self.Ecorrection            
+    #     #     self.Imatrix -= self.Icorrection            
+    #     #     self.matrix -= self.Tcorrection
 
     #     if self.asr == "none" :
     #         return 
@@ -107,7 +107,7 @@ class dPdaTensorCalculator(Motion):
 
     #     # We should add the Rotational Sum Rule(s)
 
-class FDdPdaTensorCalculator(dobject):
+class FDdDdaTensorCalculator(dobject):
 
     """dP/da tensors calculator using finite differences."""
 
@@ -122,7 +122,7 @@ class FDdPdaTensorCalculator(dobject):
     def bind(self, dm):
         """Reference all the variables for simpler access."""
         
-        #super(FDdPdaTensorCalculator, self).bind(dm)
+        #super(FDdDdaTensorCalculator, self).bind(dm)
         self.dm = dm
         self.h_original = dstrip(self.dm.cell.h).copy().flatten()
         self.ih_original = dstrip(self.dm.cell.ih).copy()
@@ -137,12 +137,12 @@ class FDdPdaTensorCalculator(dobject):
                 if M.size == 0:
                     M = np.full((6, 3),np.nan,dtype=float)
                 else:
-                    raise ValueError("polarization matrix constant matrix size does not match system size")
+                    raise ValueError("dipole matrix constant matrix size does not match system size")
             else:
                 M = M.reshape(((6, 3 )))
             return M
 
-        self.dm.polmatrix = check_dimension(self.dm.polmatrix)
+        self.dm.matrix = check_dimension(self.dm.matrix)
 
         return
     
@@ -159,7 +159,7 @@ class FDdPdaTensorCalculator(dobject):
         pass
 
     def step(self, step=None):
-        """Computes one row of the dPda tensors"""
+        """Computes one row of the dDda tensors"""
 
         # initializes the finite deviation
         dev = np.zeros(9, float)
@@ -186,7 +186,7 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eplus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iplus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tplus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
+        Dplus = np.asarray(dstrip(self.dm.ensemble.eda.dipole).copy())
 
         # displaces kth d.o.f by -delta.
         self.new_geo(-dev)
@@ -194,22 +194,22 @@ class FDdPdaTensorCalculator(dobject):
         # ES: FIX HERE
         #Eminus = np.asarray(dstrip(self.dm.ensemble.ElecPol).copy())
         #Iminus = np.asarray(dstrip(self.dm.ensemble.IonsPol).copy())
-        Tminus = np.asarray(dstrip(self.dm.ensemble.eda.polarization).copy())
+        Dminus = np.asarray(dstrip(self.dm.ensemble.eda.dipole).copy())
 
         Delta_a = 2 * self.dm.deltax
         factor = 1 # self.dm.ensemble.cell.V / Constants.e
-        #self.dm.Epolmatrix[step] = factor * ( Eplus - Eminus ) / Delta_a
-        #self.dm.Ipolmatrix[step] = factor * ( Iplus - Iminus ) / Delta_a
-        self.dm.polmatrix[step] = factor * ( Tplus - Tminus ) / Delta_a
+        #self.dm.Ematrix[step] = factor * ( Eplus - Eminus ) / Delta_a
+        #self.dm.Imatrix[step] = factor * ( Iplus - Iminus ) / Delta_a
+        self.dm.matrix[step] = factor * ( Dplus - Dminus ) / Delta_a
 
         return
 
     # def transform(self):
 
     #     # reshape
-    #     #self.dm.Epolmatrix = self.dm.Epolmatrix.reshape((self.dm.beads.natoms,3,3))
-    #     #self.dm.Ipolmatrix = self.dm.Ipolmatrix.reshape((self.dm.beads.natoms,3,3))
-    #     #self.dm.polmatrix = self.dm.polmatrix.reshape((self.dm.beads.natoms,3,3))
+    #     #self.dm.Ematrix = self.dm.Ematrix.reshape((self.dm.beads.natoms,3,3))
+    #     #self.dm.Imatrix = self.dm.Imatrix.reshape((self.dm.beads.natoms,3,3))
+    #     #self.dm.matrix = self.dm.matrix.reshape((self.dm.beads.natoms,3,3))
 
     #     return
         

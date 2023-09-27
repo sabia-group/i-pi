@@ -271,29 +271,17 @@ class Properties(dobject):
                 "help": "The (gaussian) envelope function of the external applied electric field.",
                 "func": (lambda: dd(self.ensemble.eda.Electric_Field).Eenvelope(self.ensemble.time) ),
             },
-            # "ionspol": {
-            #     "dimension": "atomic_unit",
-            #     "help": "The (ensemble averaged) ionic polarization (cartesian axes).",
-            #     "size": 3,
-            #     "func": (lambda: self.ensemble.EnsIonsPol),
-            # },
-            # "elecpol": {
-            #     "dimension": "atomic_unit",
-            #     "help": "The (ensemble averaged) electronic polarization (cartesian axes).",
-            #     "size": 3,
-            #     "func": (lambda: self.ensemble.EnsElecPol),
-            # },
             "polarization": {
                 "dimension": "polarization",
-                "help": "The (ensemble averaged) total polarization (cartesian axes).",
+                "help": "The polarization of the system (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.eda.polarization ),
+                "func": (lambda: self.ensemble.eda.dipole / self.cell.V ),
             },
             "dipole": {
                 "dimension": "electric-dipole",
-                "help": "The (ensemble averaged) electric dipole (cartesian axes).",
+                "help": "The electric dipole of the system (cartesian axes).",
                 "size": 3,
-                "func": (lambda: self.ensemble.eda.polarization * self.cell.V ),
+                "func": (lambda: self.ensemble.eda.dipole ),
             },
             "Eenthalpy": {
                 "dimension": "energy",
@@ -303,7 +291,7 @@ class Properties(dobject):
             "EDAenergy": {
                 "dimension": "energy",
                 "help": "The EDA energy contribution.",
-                "longhelp":"""The EDA contribution to the energy is given by the total polarization of the system, multiplied by the external electric field, times the volume""",
+                "longhelp":"""The EDA contribution to the energy is given by the dipole of the system multiplied by the external electric field.""",
                 "func": (lambda: dd(self.ensemble.eda).EDAenergy(self.ensemble.time) ),
             },
             "tacc": {

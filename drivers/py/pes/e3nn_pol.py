@@ -135,11 +135,7 @@ class e3nn_pol(Dummy_driver):
         dipole,X = self.model.get(cell=cell,pos=pos,what="dipole",detach=False)
         dipole = dipole[0] # remove the 'batch_size' axis
 
-        # Compute the polarization
-        volume = np.linalg.det(cell)
-        polarization = dipole / volume
-
-        extras["polarization"] = polarization.tolist()
+        extras["dipole"] = dipole.tolist()
 
         if self._compute_bec :
 
@@ -165,7 +161,7 @@ class e3nn_pol(Dummy_driver):
             # Axis of bec :
             #   1st: atoms index (0,1,2...)
             #   2nd: atom coordinate (x,y,z)
-            #   3rd: polarization direction (x,y,z)
+            #   3rd: dipole direction (x,y,z)
             # bec = bec.T.reshape((-1,3,3)) 
             bec = bec.T.reshape((-1,9)) 
 

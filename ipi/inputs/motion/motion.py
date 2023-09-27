@@ -46,7 +46,7 @@ from ipi.engine.motion import (
     SCPhononsMover,
     NormalModeMover,
     BECTensorsCalculator,
-    dPdaTensorCalculator,
+    dDdaTensorCalculator,
     Sequence
 )
 from ipi.utils.inputvalue import *
@@ -67,7 +67,7 @@ from .planetary import InputPlanetary
 from .ramp import InputTemperatureRamp, InputPressureRamp
 from .al6xxx_kmc import InputAlKMC
 from .BEC import InputBECTensorsCalculator
-from .dPda import InputdPdaTensorCalculator
+from .dDda import InputdDdaTensorCalculator
 from .sequence import InputSequence
 
 from ipi.utils.units import *
@@ -116,7 +116,7 @@ class InputMotionBase(Input):
                     "scp",
                     "normalmodes",
                     "BEC",
-                    "dPda",
+                    "dDda",
                     "seq"
                 ],
             },
@@ -190,8 +190,8 @@ class InputMotionBase(Input):
             InputBECTensorsCalculator,
             {"default": {}, "help": "Option for BEC computation"},
         ),
-        "dPda": (
-            InputdPdaTensorCalculator,
+        "dDda": (
+            InputdDdaTensorCalculator,
             {"default": {}, "help": "Option for dP/da computation"},
         ),
         "seq": (
@@ -282,9 +282,9 @@ class InputMotionBase(Input):
             self.mode.store("BEC")
             self.BEC.store(sc)
             tsc = 1
-        elif type(sc) is dPdaTensorCalculator:
-            self.mode.store("dPda")
-            self.dPda.store(sc)
+        elif type(sc) is dDdaTensorCalculator:
+            self.mode.store("dDda")
+            self.dDda.store(sc)
             tsc = 1
         elif type(sc) is Sequence:
             self.mode.store("seq")
@@ -412,11 +412,11 @@ class InputMotionBase(Input):
                 #fixatoms=self.fixatoms.fetch(),
                 **self.BEC.fetch()
             )
-        elif mode == "dPda":
-            sc = dPdaTensorCalculator(
+        elif mode == "dDda":
+            sc = dDdaTensorCalculator(
                 #fixcom=self.fixcom.fetch(),
                 #fixatoms=self.fixatoms.fetch(),
-                **self.dPda.fetch()
+                **self.dDda.fetch()
             )
         elif mode == "seq":
             sc = Sequence(
