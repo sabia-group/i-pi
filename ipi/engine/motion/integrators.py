@@ -377,7 +377,7 @@ class EDAIntegrator(DummyIntegrator):
     # pay attention that they could be numerically different but anyway equivalent due to a different branch mapping
     # thr_pol_comparison  = 1.0
 
-    # if true, _check = _check_pol, otherwise a check of the polarizations values is performed too
+    # if true, _check = _check_dipole, otherwise a check of the polarizations values is performed too
     # _check_flag = False
 
     def __init__(self):

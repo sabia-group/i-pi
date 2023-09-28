@@ -16,11 +16,12 @@ from numpy import linalg
 
 from ipi.utils.messages import warning,verbosity
 from ipi.utils.depend import dd
-from ipi.utils.units import Constants
+from ipi.utils.units import Constants, UnitMap
 from ipi.engine.thermostats import *
 from ipi.engine.barostats import *
 from ipi.engine.motion.alchemy import *
 from ipi.engine.forces import Forces, ScaledForceComponent
+import re
 
 __all__ = ["Ensemble", "ensemble_swap"]
 
@@ -490,49 +491,82 @@ class Dipole(dobject):
         self.forces = ensemble.forces # is this a weakref??
 
         val = np.full(self.nbeads,np.zeros(3,dtype=float)) if self.nbeads > 1 else np.zeros(3,dtype=float)
-        dself.pol = depend_array(name="pol", func=lambda:self._get_pol(bead=0),value=val,dependencies=[dd(eda).time,dd(ensemble.beads).q])
+        dself._dipole_ = depend_array(name="_dipole_", func=lambda:self._get_dipole(bead=0),value=val,dependencies=[dd(eda).time,dd(ensemble.beads).q])
 
         pass
 
-    def store(self,pol):
-        super(Dipole, self).store(pol)
-        self.cdip.store(pol.cdip)
+    def store(self,dipole):
+        super(Dipole, self).store(dipole)
+        self.cdip.store(dipole.cdip)
         pass
 
     def _get_dipole(self,bead=None):
         """Return the electric dipole of all the beads as a list of np.array"""
-        self._check_pol()
+        self._check_dipole()
 
         # check that bead is a correct value
         # N = self.beads.nbeads
         if bead is not None:
             if bead < 0:
-                raise ValueError("Error in '_get_dipole': 'beads' is negative") 
+                raise ValueError("Error in '_get_dipole': 'beads' is negative.") 
             if bead >= self.nbeads :
-                raise ValueError("Error in '_get_dipole': 'beads' is greater than the number of beads") 
+                raise ValueError("Error in '_get_dipole': 'beads' is greater than the number of beads.") 
             
         if not self.cdip:
             return np.asarray([0,0,0])
         else :
-            pol = [ self.forces.extras["dipole"][i] for i in range(self.nbeads)]
-            return pol[0] if bead is None else pol[bead] 
+            if "dipole" in self.forces.extras :
+                dipole = [ self.forces.extras["dipole"][i] for i in range(self.nbeads)]
+                return dipole[0] if bead is None else dipole[bead] 
+            elif np.all( [ "Total dipole moment" in s for s in self.forces.extras["raw"] ] )  :
+                raw = [ self.forces.extras["raw"][i] for i in range(self.nbeads)]
+                raw = raw[0] if bead is None else raw[bead] 
+                factor = 1.
+                if "[eAng]" in raw : 
+                    factor = UnitMap["length"]["angstrom"]
 
+                dipole = np.full(3,np.nan)
+                pattern = "[-+]?\d*\.\d+(?:[eE][-+]?\d+)?|\b[-+]?\d+\b"
+                matches = re.findall(pattern, raw)
+                if len(matches) != 3 :
+                    raise ValueError("wrong number of extracted values from the extra string: they should be 3.")
+                else :
+                    for n in range(3):
+                        dipole[n] = float(matches[n])
+                return float(factor) * dipole
+            else :
+                raise ValueError("Error in '_get_dipole': can not extract dipole from the extra string.") 
+               
         
     def _check_dipole(self):
         """Check that the electric dipole is correctly formatted."""
 
+        # print("\n EXTRAS:",type(self.forces.extras),"\n")
+        # print("\n EXTRAS:",self.forces.extras,"\n")
+
         msg = "Error in '_check_dipole'"
+        error = ValueError(msg+": the dipole is not returned to i-PI (or at least not accessible in '_check_dipole').")
 
         if self.cdip :
-            if "dipole" not in self.forces.extras :
-                raise ValueError(msg+": the dipole is not returned to i-PI (or at least not accessible in '_check_pol').") 
+            if "dipole" in self.forces.extras :
+                if len(self.forces.extras["dipole"]) != self.nbeads:
+                    raise ValueError(msg+": wrong number of bead for the dipole.")
+
+            else :
+                if "raw" not in self.forces.extras :
+                    raise error
+                else :
+                    if len(self.forces.extras["raw"]) != self.nbeads:
+                        raise ValueError(msg+": wrong number of bead for extra strings.")
+                    
+                    if not np.all( [ "Total dipole moment" in s for s in self.forces.extras["raw"] ] ) :
+                        raise error
+                return True
+
+
         else :
-            return True
+            return True       
 
-        if len(self.forces.extras["dipole"]) != self.nbeads:
-            raise ValueError(msg+": wrong number of bead for the dipole.")
-
-        return True
 
 class ElectricField(dobject):
 
@@ -655,7 +689,7 @@ class EDA(dobject):
     def __init__(self,tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cdip,cbec,bec,**kwargv):
         super(EDA,self).__init__(**kwargv)
         self.Electric_Field = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
-        self.Dipole   = Dipole(cdip)
+        self.Dipole         = Dipole(cdip)
         self.Born_Charges   = BEC(cbec,bec)
         self.tacc           = depend_value(name="tacc" ,value=tacc)
         pass
@@ -677,12 +711,12 @@ class EDA(dobject):
         self.Born_Charges.bind(self,ensemble,enstype)  
         
         # for easier access
-        dself.Efield   = depend_array(name="Efield",  value=np.full(dd(self.Electric_Field).Efield.shape,np.nan),func=lambda time=None: dd(self.Electric_Field).Efield(time))
-        dself.bec      = depend_array(name="bec",     value=np.full(dd(self.Born_Charges).bec.shape,     np.nan))
-        dself.dipole   = depend_array(name="dipole",value=np.full(dd(self.Dipole).pol.shape,np.nan))
+        dself.Efield   = depend_array(name="Efield",value=np.full(dd(self.Electric_Field).Efield.shape,np.nan),func=lambda time=None: dd(self.Electric_Field).Efield(time))
+        dself.bec      = depend_array(name="bec",   value=np.full(dd(self.Born_Charges).bec.shape,     np.nan))
+        dself.dipole   = depend_array(name="dipole",value=np.full(dd(self.Dipole)._dipole_.shape,np.nan))
 
         dpipe(dfrom=dd(self.Born_Charges).bec,     dto=dself.bec)
-        dpipe(dfrom=dd(self.Dipole).pol,dto=dself.dipole)  
+        dpipe(dfrom=dd(self.Dipole)._dipole_,dto=dself.dipole)  
 
         # experimental
         dpipe(dfrom=dself.time,dto=dself.cptime)
