@@ -3,6 +3,8 @@ i-PI: a Universal Force Engine
 
 ## (EDA-int branch)
 
+little test
+
 A Python interface for ab initio path integral molecular dynamics simulations.
 i-PI is composed of a Python server (i-pi itself, that does not need to be
 compiled but only requires a relatively recent version of Python and Numpy)
