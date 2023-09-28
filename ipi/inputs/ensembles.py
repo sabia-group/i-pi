@@ -216,7 +216,7 @@ class InputEnsemble(Input):
         self.Epeak.store(ens.Epeak)
         self.Esigma.store(ens.Esigma)
         self.bec.store(ens.bec)
-        self.cpol.store(ens.cpol)
+        self.cdip.store(ens.cdip)
         self.cbec.store(ens.cbec)
         # self.eda.store(ens.eda)
 
@@ -246,7 +246,7 @@ class InputEnsemble(Input):
             Epeak=self.Epeak.fetch(),
             Esigma=self.Esigma.fetch(),
             bec=self.bec.fetch(),
-            cpol=self.cpol.fetch(),
+            cdip=self.cdip.fetch(),
             tacc=self.tacc.fetch(),
             cbec=self.cbec.fetch()
         )

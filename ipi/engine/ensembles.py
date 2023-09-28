@@ -89,7 +89,7 @@ class Ensemble(dobject):
         Epeak=None,
         Esigma=None,
         bec=None,
-        cpol=True,
+        cdip=True,
         tacc=0.0,
         cbec=False,
     ):
@@ -165,17 +165,17 @@ class Ensemble(dobject):
         dself.Esigma = depend_value(name="Esigma",value=Esigma if Esigma is not None else np.inf)
         dself.bec    = depend_array(name="bec"   ,value=bec    if bec    is not None else np.zeros(0))
         dself.cbec   = depend_array(name="cbec"   ,value=cbec)
-        dself.cpol   = depend_array(name="cpol"   ,value=cpol)
+        dself.cdip   = depend_array(name="cdip"   ,value=cdip)
         dself.tacc   = depend_array(name="tacc"   ,value=tacc)
 
-        # self.cpol = cpol
+        # self.cdip = cdip
         # self.cBEC = cBEC
         # self.tacc = tacc
 
         # test
         # self.ElectricField = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
 
-        self.eda = EDA(tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cpol,cbec,bec)
+        self.eda = EDA(tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cdip,cbec,bec)
 
     def copy(self):
         return Ensemble(
@@ -195,7 +195,7 @@ class Ensemble(dobject):
             Epeak=self.Epeak,
             Esigma=self.Esigma,
             bec=self.bec,
-            cpol=self.cpol,
+            cdip=self.cdip,
             tacc=self.tacc,
             cBEC=self.cBEC,
             )
@@ -479,8 +479,8 @@ class BEC(dobject):
 
 class Dipole(dobject):
 
-    def __init__(self,cpol):
-        self.cpol = cpol
+    def __init__(self,cdip):
+        self.cdip = cdip
         pass
 
     def bind(self,eda,ensemble):        
@@ -496,7 +496,7 @@ class Dipole(dobject):
 
     def store(self,pol):
         super(Dipole, self).store(pol)
-        self.cpol.store(pol.cpol)
+        self.cdip.store(pol.cdip)
         pass
 
     def _get_dipole(self,bead=None):
@@ -511,7 +511,7 @@ class Dipole(dobject):
             if bead >= self.nbeads :
                 raise ValueError("Error in '_get_dipole': 'beads' is greater than the number of beads") 
             
-        if not self.cpol:
+        if not self.cdip:
             return np.asarray([0,0,0])
         else :
             pol = [ self.forces.extras["dipole"][i] for i in range(self.nbeads)]
@@ -523,7 +523,7 @@ class Dipole(dobject):
 
         msg = "Error in '_check_dipole'"
 
-        if self.cpol :
+        if self.cdip :
             if "dipole" not in self.forces.extras :
                 raise ValueError(msg+": the dipole is not returned to i-PI (or at least not accessible in '_check_pol').") 
         else :
@@ -652,10 +652,10 @@ class EDA(dobject):
 
     integrators = ["eda-nve","eda-nvt"]
 
-    def __init__(self,tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cpol,cbec,bec,**kwargv):
+    def __init__(self,tacc,Eamp,Efreq,Ephase,Epeak,Esigma,cdip,cbec,bec,**kwargv):
         super(EDA,self).__init__(**kwargv)
         self.Electric_Field = ElectricField(Eamp,Efreq,Ephase,Epeak,Esigma)
-        self.Dipole   = Dipole(cpol)
+        self.Dipole   = Dipole(cdip)
         self.Born_Charges   = BEC(cbec,bec)
         self.tacc           = depend_value(name="tacc" ,value=tacc)
         pass
