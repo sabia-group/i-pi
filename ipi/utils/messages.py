@@ -7,7 +7,7 @@
 
 import traceback
 import sys
-
+from datetime import datetime
 
 __all__ = ["Verbosity", "verbosity", "banner", "info", "warning"]
 
@@ -120,6 +120,12 @@ def banner():
 
     """
     )
+
+    # https://www.programiz.com/python-programming/datetime/current-datetime
+    # datetime object containing current date and time
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("\n # Date and time: {:s}\n".format(dt_string))
 
 
 def info(text="", show=True):

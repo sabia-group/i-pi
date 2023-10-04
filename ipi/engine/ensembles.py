@@ -502,7 +502,7 @@ class Dipole(dobject):
 
     def _get_dipole(self,bead=None):
         """Return the electric dipole of all the beads as a list of np.array"""
-        self._check_dipole()
+        # self._check_dipole()
 
         # check that bead is a correct value
         # N = self.beads.nbeads
@@ -511,13 +511,24 @@ class Dipole(dobject):
                 raise ValueError("Error in '_get_dipole': 'beads' is negative.") 
             if bead >= self.nbeads :
                 raise ValueError("Error in '_get_dipole': 'beads' is greater than the number of beads.") 
+            if bead > 1 :
+                raise ValueError("The case with 'beads' != 0 has not been implemeted yet") 
             
         if not self.cdip:
             return np.asarray([0,0,0])
         else :
             if "dipole" in self.forces.extras :
-                dipole = [ self.forces.extras["dipole"][i] for i in range(self.nbeads)]
-                return dipole[0] if bead is None else dipole[bead] 
+                dipole = np.asarray(self.forces.extras["dipole"]).flatten()
+                if len(dipole) != 3 :
+                    print("dipole:",dipole)
+                    raise ValueError("'dipole' has not length 3")
+                return dipole
+                # dipole = [ self.forces.extras["dipole"][i] for i in range(self.nbeads)]
+                # return dipole[0] if bead is None else dipole[bead] 
+
+            elif "raw" not in self.forces.extras :
+                raise ValueError("'raw' has to be in 'forces.extras'")
+
             elif np.all( [ "Total dipole moment" in s for s in self.forces.extras["raw"] ] )  :
                 raw = [ self.forces.extras["raw"][i] for i in range(self.nbeads)]
                 raw = raw[0] if bead is None else raw[bead] 
@@ -538,34 +549,39 @@ class Dipole(dobject):
                 raise ValueError("Error in '_get_dipole': can not extract dipole from the extra string.") 
                
         
-    def _check_dipole(self):
-        """Check that the electric dipole is correctly formatted."""
+    # def _check_dipole(self):
+    #     """Check that the electric dipole is correctly formatted."""
 
-        # print("\n EXTRAS:",type(self.forces.extras),"\n")
-        # print("\n EXTRAS:",self.forces.extras,"\n")
+    #     print("ELIA ->           type(self.forces.extras): ",type(self.forces.extras))
+    #     print("ELIA ->                 self.forces.extras: ",self.forces.extras)
+    #     print("ELIA ->          self.forces.extras.keys(): ",self.forces.extras.keys())
+    #     print("ELIA -> self.forces.extras[\'raw\']: ",self.forces.extras["raw"])
+        
+    #     msg = "Error in '_check_dipole'"
+    #     error = ValueError(msg+": the dipole is not returned to i-PI (or at least not accessible in '_check_dipole').")
 
-        msg = "Error in '_check_dipole'"
-        error = ValueError(msg+": the dipole is not returned to i-PI (or at least not accessible in '_check_dipole').")
+    #     if self.cdip :
 
-        if self.cdip :
-            if "dipole" in self.forces.extras :
-                if len(self.forces.extras["dipole"]) != self.nbeads:
-                    raise ValueError(msg+": wrong number of bead for the dipole.")
+    #         if "dipole" in self.forces.extras :
+    #             arr = np.asrray(self.forces.extras["dipole"])
+    #             print("ELIA -> dipole.shape :",arr.shape)
+    #             if len(self.forces.extras["dipole"]) != self.nbeads:
+    #                 raise ValueError(msg+": wrong number of bead for the dipole.")
 
-            else :
-                if "raw" not in self.forces.extras :
-                    raise error
-                else :
-                    if len(self.forces.extras["raw"]) != self.nbeads:
-                        raise ValueError(msg+": wrong number of bead for extra strings.")
+    #         else :
+    #             if "raw" not in self.forces.extras :
+    #                 raise error
+    #             else :
+    #                 if len(self.forces.extras["raw"]) != self.nbeads:
+    #                     raise ValueError(msg+": wrong number of bead for extra strings.")
                     
-                    if not np.all( [ "Total dipole moment" in s for s in self.forces.extras["raw"] ] ) :
-                        raise error
-                return True
+    #                 if not np.all( [ "Total dipole moment" in s for s in self.forces.extras["raw"] ] ) :
+    #                     raise error
+    #             return True
 
 
-        else :
-            return True       
+    #     else :
+    #         return True       
 
 
 class ElectricField(dobject):
