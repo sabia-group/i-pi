@@ -367,37 +367,42 @@ class BEC(dobject):
 
     def _get_otf_BEC(self,bead=None):
         """Return the BEC tensors (in cartesian coordinates), when computed on the fly (otf) by the driver"""
-        self._check_BEC()#skip=self.first)
+        # self._check_BEC()#skip=self.first)
+
+        # print("using '_get_otf_BEC'")
+
+        msg = "Error in '_get_otf_BEC'"
 
         # check that bead is a correct value
         if bead is not None:
             if bead < 0:
-                raise ValueError("Error in '_check_BEC': 'bead' is negative") 
+                raise ValueError("Error in '_get_otf_BEC': 'bead' is negative") 
             if bead >= self.nbeads :
-                raise ValueError("Error in '_check_BEC': 'bead' is greater than the number of beads") 
+                raise ValueError("Error in '_get_otf_BEC': 'bead' is greater than the number of beads") 
         else :
             if self.nbeads != 1 :
-                raise ValueError("Error in '_check_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
+                raise ValueError("Error in '_get_otf_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
+
+        if self.cbec :
+            if "BEC" not in self.forces.extras :
+                raise ValueError(msg+": BEC tensors are not returned to i-PI (or at least not accessible in '_get_otf_BEC').") 
+        else :
+            raise ValueError(msg+": you should not get into this functon if 'cbec' is False.") 
         
-        # if self.first:
-        #     return np.zeros((self.natoms,3,3))
-
-        # Nb = self.nbeads # number of beads
-        Na = self.natoms # number of atoms
-
         bec = np.asarray(self.forces.extras["BEC"][0])
+
+        if bec.shape[0] != self.natoms :
+            raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
+        if bec.shape[1] != 9 :
+            raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
+        
+        Na = self.natoms
         bec = bec.reshape((Na,3,3))
         # Axis of bec :
         #   1st: atoms index (0,1,2...)
         #   2nd: atom coordinate (x,y,z)
         #   3rd: dipole direction (x,y,z)
         return bec
-
-        bec = self.forces.extras["BEC"][0]
-        bec = bec.reshape(Na,3,3)
-        return bec
-        #bec = [np.asarray(bec[i]).reshape((Na,3,3)) for i in range(Nb)]
-        #return bec[0] if bead is None else bec[bead] 
 
     def _get_static_BEC(self):
         """Return the BEC tensors (in cartesian coordinates).
