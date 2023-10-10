@@ -160,50 +160,59 @@ class e3nn_pol(Dummy_driver):
         pot, force, vir, extras = super().__call__(cell,pos)
         extras = {}
 
-        # get 'dipole' and 'BEC' tensors
-        #with torch.no_grad():
-        dipole,X = self.model.get(cell=cell,pos=pos,what="dipole",detach=not self.opts["compute-BEC"])
-        dipole = dipole[0] # remove the 'batch_size' axis
+        if self.opts["compute-BEC"] : 
+            dipole, bec, X = self.model.get_value_and_jac(cell=cell,pos=pos)
+            bec = bec.T.reshape((-1,9)) 
+            extras["BEC"] = bec.tolist()
+        else :
+            dipole, X = self.model.get(cell=cell,pos=pos)
+
         extras["dipole"] = dipole.tolist()
 
-        # file = self.opts["save"]["dipole"]
-        # if file is not None and str_to_bool(file):
-        #     with open(file, 'a') as f:
-        #         line = "{:d} : {:s}\n".format(self.count,dipole.detach().numpy().tostring())
-        #         f.write(line)
-        #         #np.savetxt(f, dipole.detach().numpy(),delimiter=" ")        
+        # # get 'dipole' and 'BEC' tensors
+        # #with torch.no_grad():
+        # dipole,X = self.model.get(cell=cell,pos=pos,what="dipole",detach=not self.opts["compute-BEC"])
+        # dipole = dipole[0] # remove the 'batch_size' axis
+        # extras["dipole"] = dipole.tolist()
 
-        if self.opts["compute-BEC"] :
+        # # file = self.opts["save"]["dipole"]
+        # # if file is not None and str_to_bool(file):
+        # #     with open(file, 'a') as f:
+        # #         line = "{:d} : {:s}\n".format(self.count,dipole.detach().numpy().tostring())
+        # #         f.write(line)
+        # #         #np.savetxt(f, dipole.detach().numpy(),delimiter=" ")        
 
-            N = len(X.pos.flatten())
-            bec = np.full((N,3),np.nan)
+        # if self.opts["compute-BEC"] :
 
-            dipole[0].backward(retain_graph=True)#.flatten() # -> row 1 of BEC.txt
-            bec[:,0] = X.pos.grad.flatten().detach().detach().numpy()
-            X.pos.grad.data.zero_()
+        #     N = len(X.pos.flatten())
+        #     bec = np.full((N,3),np.nan)
 
-            dipole[1].backward(retain_graph=True)#.flatten() # -> row 2 of BEC.txt
-            bec[:,1] = X.pos.grad.flatten().detach().detach().numpy()
-            X.pos.grad.data.zero_()
+        #     dipole[0].backward(retain_graph=True)#.flatten() # -> row 1 of BEC.txt
+        #     bec[:,0] = X.pos.grad.flatten().detach().detach().numpy()
+        #     X.pos.grad.data.zero_()
 
-            dipole[2].backward(retain_graph=True)#.flatten() # -> row 3 of BEC.txt
-            bec[:,2] = X.pos.grad.flatten().detach().detach().numpy()
-            X.pos.grad.data.zero_()
+        #     dipole[1].backward(retain_graph=True)#.flatten() # -> row 2 of BEC.txt
+        #     bec[:,1] = X.pos.grad.flatten().detach().detach().numpy()
+        #     X.pos.grad.data.zero_()
 
-            # Axis of bec :
-            #   1st: atoms index (0,1,2...)
-            #   2nd: atom coordinate (x,y,z)
-            #   3rd: dipole direction (x,y,z)
-            # bec = bec.T.reshape((-1,3,3)) 
-            bec = bec.T.reshape((-1,9)) 
+        #     dipole[2].backward(retain_graph=True)#.flatten() # -> row 3 of BEC.txt
+        #     bec[:,2] = X.pos.grad.flatten().detach().detach().numpy()
+        #     X.pos.grad.data.zero_()
 
-            extras["BEC"] = bec.tolist()
+        #     # Axis of bec :
+        #     #   1st: atoms index (0,1,2...)
+        #     #   2nd: atom coordinate (x,y,z)
+        #     #   3rd: dipole direction (x,y,z)
+        #     # bec = bec.T.reshape((-1,3,3)) 
+        #     bec = bec.T.reshape((-1,9)) 
 
-            # file = self.opts["save"]["BEC"]
-            # if file is not None :
-            #     with open(file, 'a') as f:
-            #         line = "{:d} : {:s}\n".format(self.count,bec.flatten().tostring())
-            #         f.write(line)
-            #         # np.savetxt(f, bec.flatten(),delimiter=" ")
+        #     extras["BEC"] = bec.tolist()
+
+        #     # file = self.opts["save"]["BEC"]
+        #     # if file is not None :
+        #     #     with open(file, 'a') as f:
+        #     #         line = "{:d} : {:s}\n".format(self.count,bec.flatten().tostring())
+        #     #         f.write(line)
+        #     #         # np.savetxt(f, bec.flatten(),delimiter=" ")
 
         return pot, force, vir, json.dumps(extras)
