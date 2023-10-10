@@ -2706,15 +2706,15 @@ class Trajectories(dobject):
             "Eforces": {
                 "dimension": "force",
                 "help": "The Electric field contribution to the forces (to be added to the 'forces' trajectories to get the total forces)",
-                "func": (lambda: self.motion.integrator.EDAforces \
-                         if hasattr(self.motion.integrator,'EDAforces') else np.zeros((self.system.beads.natoms*3)) ),
+                "func": (lambda: self.system.motion.integrator.EDAforces \
+                         if hasattr(self.system.motion.integrator,'EDAforces') else np.zeros((self.system.beads.natoms*3)) ),
             },
-            "totforces": {
-                "dimension": "force",
-                "help": "Total forces (nuclear and external electric field contributions)",
-                "func": (lambda: self.system.forces.f + self.motion.integrator.EDAforces \
-                         if hasattr(self.motion.integrator,'EDAforces') else self.system.forces.f ),
-            },
+            # "totforces": {
+            #     "dimension": "force",
+            #     "help": "Total forces (nuclear and external electric field contributions)",
+            #     "func": (lambda: self.system.forces.f + self.motion.integrator.EDAforces \
+            #              if hasattr(self.motion.integrator,'EDAforces') else self.system.forces.f ),
+            # },
             "forces_sc": {
                 "dimension": "force",
                 "help": "The Suzuki-Chin component of force trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",
