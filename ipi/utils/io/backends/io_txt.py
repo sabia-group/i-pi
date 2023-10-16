@@ -73,11 +73,20 @@ def print_txt(
     # )
     # filedesc.write(fmt_header % (natoms, a, b, c, alpha, beta, gamma, title))
     # direct access to avoid unnecessary slow-down
-    qs = dstrip(atoms.q) * atoms_conv
-    lab = dstrip(atoms.names)
-    string=""
-    for i in range(natoms):
-        for j in range(qs.shape[1]):
-            string += ipi_global_settings["floatformat"]%(qs[i,j])
-    string += "\n"
+
+    string="# n. rows: {:d}\n".format(natoms)
     filedesc.write(string)
+    data = dstrip(atoms.q) * atoms_conv
+    np.savetxt(filedesc, data)
+    filedesc.write("\n")
+    pass
+    
+    # qs = dstrip(atoms.q) * atoms_conv
+    # lab = dstrip(atoms.names)
+    # string="# n. rows: {:d}\n\n".format(natoms)
+    # for i in range(natoms):
+    #     for j in range(qs.shape[1]):
+    #         string += ipi_global_settings["floatformat"]%(qs[i,j])
+    #     string += "\n"
+    # string += "\n"
+    # filedesc.write(string)

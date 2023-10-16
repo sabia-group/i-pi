@@ -349,14 +349,16 @@ class BEC(dobject):
         dself = dd(self)        
         if self.cbec: 
             dself.bec = depend_array(name="bec",\
-                                     value=np.full((self.natoms,3,3),np.nan),\
+                                     value=np.full((self.nbeads,3*self.natoms,3),np.nan),\
+                                     # value=np.full((self.natoms,3,3),np.nan),\
                                      func=self._get_otf_BEC,\
                                      dependencies=[dd(eda).time,dd(ensemble.beads).q]) 
         elif self.enstype in EDA.integrators :
             temp = self._get_static_BEC() # reshape the BEC once and for all
             dself.bec = depend_array(name="bec",value=temp)
         else :
-            dself.bec = depend_array(name="bec",value=np.full((self.natoms,3,3),np.nan)) 
+            # dself.bec = depend_array(name="bec",value=np.full((self.natoms,3,3),np.nan)) 
+            dself.bec = depend_array(name="bec",value=np.full((self.nbeads,3*self.natoms,3),np.nan)) 
 
         # self.first = False
         pass
@@ -389,20 +391,24 @@ class BEC(dobject):
         else :
             raise ValueError(msg+": you should not get into this functon if 'cbec' is False.") 
         
-        bec = np.asarray(self.forces.extras["BEC"][0])
+        BEC = np.full((self.nbeads,3*self.natoms,3),np.nan)
+        for n in range(self.nbeads):
+            bec = np.asarray(self.forces.extras["BEC"][n])
 
-        if bec.shape[0] != self.natoms :
-            raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
-        if bec.shape[1] != 9 :
-            raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
-        
-        Na = self.natoms
-        bec = bec.reshape((Na,3,3))
-        # Axis of bec :
-        #   1st: atoms index (0,1,2...)
-        #   2nd: atom coordinate (x,y,z)
-        #   3rd: dipole direction (x,y,z)
-        return bec
+            if bec.shape[0] != 3 * self.natoms :
+                raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms x 3.")
+            if bec.shape[1] != 3 :
+                raise ValueError(msg+": BEC tensors with wrong shape. They should have 3 components.")
+            
+            BEC[n,:,:] = np.copy(bec)
+            
+            # Na = self.natoms
+            # bec = bec.reshape((Na,3,3))
+            # Axis of bec :
+            #   1st: atoms index (0,1,2...)
+            #   2nd: atom coordinate (x,y,z)
+            #   3rd: dipole direction (x,y,z)
+        return BEC
 
     def _get_static_BEC(self):
         """Return the BEC tensors (in cartesian coordinates).
@@ -410,6 +416,8 @@ class BEC(dobject):
         This method trasform the BEC tensors into another data structure, suitable for computation.
         A lambda function is also returned to perform fast matrix multiplication.
         """
+
+        raise ValueError("This function has to be re-written")
         # self.first = True 
 
         N = len(self.bec)      # lenght of the BEC array
@@ -445,43 +453,43 @@ class BEC(dobject):
         else :
             raise ValueError("BEC tensor with wrong size!")
 
-    def _check_BEC(self):#,skip=False):
-        """Check that the BEC tensors are correctly formatted."""
+    # def _check_BEC(self):#,skip=False):
+    #     """Check that the BEC tensors are correctly formatted."""
 
-        if self.nbeads != 1 :
-            raise ValueError("Error in '_check_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
+    #     if self.nbeads != 1 :
+    #         raise ValueError("Error in '_check_BEC': EDA integration has not implemented yet for 'nbeads' > 1")
         
-        msg = "Error in '_check_BEC'"
+    #     msg = "Error in '_check_BEC'"
 
-        if self.cbec :
-            if "BEC" not in self.forces.extras :
-                raise ValueError(msg+": BEC tensors are not returned to i-PI (or at least not accessible in '_check_BEC').") 
-        else :
-            return True
+    #     if self.cbec :
+    #         if "BEC" not in self.forces.extras :
+    #             raise ValueError(msg+": BEC tensors are not returned to i-PI (or at least not accessible in '_check_BEC').") 
+    #     else :
+    #         return True
 
-        bec = np.asarray(self.forces.extras["BEC"][0])
+    #     bec = np.asarray(self.forces.extras["BEC"][0])
 
-        if bec.shape[0] != self.natoms :
-            raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
-        if bec.shape[1] != 9 :
-            raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
+    #     if bec.shape[0] != self.natoms :
+    #         raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
+    #     if bec.shape[1] != 9 :
+    #         raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
 
-        return True
+    #     return True
     
-        # if len(self.forces.extras["BEC"]) != Nb:
-        #     raise ValueError(msg+": wrong number of bead for the BEC tensors.")
+    #     # if len(self.forces.extras["BEC"]) != Nb:
+    #     #     raise ValueError(msg+": wrong number of bead for the BEC tensors.")
         
-        # check whether the BEC tensors have the correct shape 
-        becs = self.forces.extras["BEC"]
-        for i in range(Nb):
-            Na = len(becs[i])
-            if Na != self.natoms:
-                raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
-            bec = becs[i]
-            for j in range(Na):
-                if len(bec[j]) != 9 :
-                    raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
-        return True
+    #     # check whether the BEC tensors have the correct shape 
+    #     becs = self.forces.extras["BEC"]
+    #     for i in range(Nb):
+    #         Na = len(becs[i])
+    #         if Na != self.natoms:
+    #             raise ValueError(msg+": number of BEC tensors is not equal to the number fo atoms.")
+    #         bec = becs[i]
+    #         for j in range(Na):
+    #             if len(bec[j]) != 9 :
+    #                 raise ValueError(msg+": BEC tensors with wrong shape. They should have 9 components.")
+    #     return True
 
 class Dipole(dobject):
 

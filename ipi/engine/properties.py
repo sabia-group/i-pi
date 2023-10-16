@@ -19,6 +19,7 @@ from ipi.engine.atoms import *
 from ipi.engine.cell import *
 from ipi.engine.ensembles import *
 from ipi.engine.forces import *
+from ipi.utils.softexit import softexit
 
 
 __all__ = ["Properties", "Trajectories", "getkey", "getall", "help_latex"]
@@ -211,6 +212,11 @@ class Properties(dobject):
                 "dimension": "time",
                 "help": "The elapsed simulation time.",
                 "func": (lambda: self.ensemble.time),
+            },
+            "elapsed_time": {
+                "dimension": "time",
+                "help": "The elapsed real time (machine time).",
+                "func": (lambda: softexit.elapsed_time),
             },
             "temperature": {
                 "dimension": "temperature",
@@ -2691,7 +2697,7 @@ class Trajectories(dobject):
             "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.system.ensemble.eda.Born_Charges.bec.flatten()), #((self.system.beads.natoms,9)) ), # .flatten()
+                "func": (lambda: self.system.ensemble.eda.Born_Charges.bec), #((self.system.beads.natoms,9)) ), # .flatten()
             },
             "extra": {
                 "dimension": "number",

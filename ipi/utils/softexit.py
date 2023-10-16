@@ -133,6 +133,8 @@ class Softexit(object):
         self.timeout = -1.0
         if timeout > 0.0:
             self.timeout = time.time() + timeout
+            self.starting_time = time.time() 
+            self.elapsed_time = 0
 
         self._thread = threading.Thread(target=self._softexit_monitor, name="softexit")
         self._thread.daemon = True
@@ -177,7 +179,8 @@ class Softexit(object):
                     status="restartable", message=" @SOFTEXIT: EXIT file detected."
                 )
                 break
-
+            
+            self.elapsed_time = time.time() - self.starting_time
             if self.timeout > 0 and self.timeout < time.time():
                 self.trigger(
                     status="restartable",

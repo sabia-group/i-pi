@@ -108,6 +108,7 @@ class e3nn_pol(Dummy_driver):
                 with open(opts_file, "r") as json_file:
                     # Parse the JSON data and save it to a variable
                     self.opts = json.load(json_file)
+                self.opts = add_default(self.opts,self.opts_default)
             except :
                 print("\tError reading the options file '{:s}'".format(opts_file))
                 print("\tThe default values will be used")
@@ -162,8 +163,8 @@ class e3nn_pol(Dummy_driver):
 
         if self.opts["compute-BEC"] : 
             dipole, bec, X = self.model.get_value_and_jac(cell=cell,pos=pos)
-            bec = bec.T.reshape((-1,9)) 
             extras["BEC"] = bec.tolist()
+            print("sum rule:",bec.sum(dim=0))
         else :
             dipole, X = self.model.get(cell=cell,pos=pos)
 
