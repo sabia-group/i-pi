@@ -415,7 +415,8 @@ class EDAIntegrator(DummyIntegrator):
         Z = self.ensemble.eda.bec
         E = dd(self.ensemble.eda).Efield(self.ensemble.eda.time)
         forces = Constants.e * Z @ E
-        return forces.flatten().reshape((self.beads.nbeads,-1))
+        return forces 
+        # return forces.reshape((self.beads.nbeads,-1))
     
     def _forces_component(self,xyz):
         """Get a component of the EDA contribution to the forces"""

@@ -528,9 +528,9 @@ class TrajectoryOutput(BaseOutput):
         elif key == "bec":
             if b != 0 :
                 raise ValueError("printing of BEC implemented only for 'nbeads' = 0")
-            fatom = Atoms(self.system.beads.natoms)
-            fatom.names[:] = self.system.beads.names
-            dd(fatom).q = data.reshape((self.system.beads.natoms,9)) # ES: pay attention!
+            fatom = Atoms(3*self.system.beads.natoms)
+            # fatom.names[:] = self.system.beads.names
+            dd(fatom).q = data[b] #.reshape((self.system.beads.natoms,9)) # ES: pay attention!
         elif key == "extra" :
             fatom = data
         else:

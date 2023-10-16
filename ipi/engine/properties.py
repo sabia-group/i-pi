@@ -19,6 +19,7 @@ from ipi.engine.atoms import *
 from ipi.engine.cell import *
 from ipi.engine.ensembles import *
 from ipi.engine.forces import *
+from ipi.utils.softexit import softexit
 
 
 __all__ = ["Properties", "Trajectories", "getkey", "getall", "help_latex"]
@@ -211,6 +212,11 @@ class Properties(dobject):
                 "dimension": "time",
                 "help": "The elapsed simulation time.",
                 "func": (lambda: self.ensemble.time),
+            },
+            "elapsed_time": {
+                "dimension": "time",
+                "help": "The elapsed real time (machine time).",
+                "func": (lambda: softexit.elapsed_time),
             },
             "temperature": {
                 "dimension": "temperature",
@@ -2691,7 +2697,7 @@ class Trajectories(dobject):
             "bec": {
                 "dimension": "number",
                 "help": "The BEC tensors in cartesian coordinates.",
-                "func": (lambda: self.system.ensemble.eda.Born_Charges.bec.flatten()), #((self.system.beads.natoms,9)) ), # .flatten()
+                "func": (lambda: self.system.ensemble.eda.Born_Charges.bec), #((self.system.beads.natoms,9)) ), # .flatten()
             },
             "extra": {
                 "dimension": "number",
@@ -2706,15 +2712,15 @@ class Trajectories(dobject):
             "Eforces": {
                 "dimension": "force",
                 "help": "The Electric field contribution to the forces (to be added to the 'forces' trajectories to get the total forces)",
-                "func": (lambda: self.motion.integrator.EDAforces \
-                         if hasattr(self.motion.integrator,'EDAforces') else np.zeros((self.system.beads.natoms*3)) ),
+                "func": (lambda: self.system.motion.integrator.EDAforces \
+                         if hasattr(self.system.motion.integrator,'EDAforces') else np.zeros((self.system.beads.natoms*3)) ),
             },
-            "totforces": {
-                "dimension": "force",
-                "help": "Total forces (nuclear and external electric field contributions)",
-                "func": (lambda: self.system.forces.f + self.motion.integrator.EDAforces \
-                         if hasattr(self.motion.integrator,'EDAforces') else self.system.forces.f ),
-            },
+            # "totforces": {
+            #     "dimension": "force",
+            #     "help": "Total forces (nuclear and external electric field contributions)",
+            #     "func": (lambda: self.system.forces.f + self.motion.integrator.EDAforces \
+            #              if hasattr(self.motion.integrator,'EDAforces') else self.system.forces.f ),
+            # },
             "forces_sc": {
                 "dimension": "force",
                 "help": "The Suzuki-Chin component of force trajectories. Will print out one file per bead, unless the bead attribute is set by the user.",
