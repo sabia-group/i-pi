@@ -573,6 +573,24 @@ class Properties(dobject):
                     )
                 ),
             },
+            "oamo" : {
+                "dimension": "oam",
+                "help": "The Orbital Angular Momentum (w.r.t. the Origin)",
+                "size": 3,
+                "func": (lambda: self.get_oam("origin")), 
+            },
+            "oamcom" : {
+                "dimension": "oam",
+                "help": "The Orbital Angular Momentum (w.r.t. the Center Of Mass)",
+                "size": 3,
+                "func": (lambda: self.get_oam("com")), 
+            },
+            "com" : {
+                "dimension": "com",
+                "help": "The Center Of Mass of the system ",
+                "size": 3,
+                "func": self.get_com, 
+            },
             "vcom": {
                 "dimension": "velocity",
                 "help": "The COM velocity (x,y,z) of the system or a chosen species.",
@@ -1535,6 +1553,37 @@ class Properties(dobject):
             )
 
         return tkcv
+
+    def get_oam(self,wrt="origin"):
+        """Computes the Orbital Argular Momentum w.r.t. the Origin or the Center of Mass"""
+        # https://en.wikipedia.org/wiki/Angular_momentum#:~:text=The%20three%2Ddimensional%20angular%20momentum,p%20%3D%20mv%20in%20Newtonian%20mechanics.
+        p = dstrip(self.beads.p) # / dstrip(self.beads.m3)
+        q = dstrip(self.beads.q)
+
+        p = p.reshape((-1,3))
+        q = q.reshape((-1,3))
+
+        l = np.cross(p,q,1,1).sum(axis=0)
+
+        if wrt == "origin" : 
+            return l
+        elif wrt == "com" :
+            L = np.cross(self.get_com(),self.get_vcom()) / dstrip(self.beads.m3) 
+            return l + L
+        else :
+            raise ValueError("The orbital angular momentum can be computed only w.r.t. the origin ('origin') of the center of mass ('com')")
+
+
+    def get_com(self):
+        """Computes the center of mass of the system"""
+        # if bead < 0:
+        #     q = dstrip(self.beads.q)
+        # else:
+        #     q = dstrip(self.beads[bead])
+        q = dstrip(self.beads.q)
+        com = np.zeros(3)
+        com = q * self.beads.m3
+        return com
 
     def get_vcom(self, latom="", bead=-1):
         """Computes the center of mass velocity for the system or for a specified species"""
