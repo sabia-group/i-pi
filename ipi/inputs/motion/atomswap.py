@@ -31,7 +31,20 @@ class InputAtomSwap(InputDictionary):
     attribs = {
         "mode": (
             InputAttribute,
+<<<<<<< HEAD
             {"dtype": str, "default": "dummy", "help": " ", "options": ["dummy"]},
+=======
+<<<<<<< HEAD
+            {"dtype": str, "default": "dummy", "help": " ", "options": ["dummy"]},
+=======
+            {
+                "dtype": str,
+                "default": "dummy",
+                "help": "Dummy attribute, does nothing.",
+                "options": ["dummy"],
+            },
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
         )
     }
 

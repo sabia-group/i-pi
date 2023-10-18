@@ -174,7 +174,15 @@ class InputMotionBase(Input):
                 ),
                 "help": "This describes the location to read a trajectory file from. "
                 "Replay syntax allows using some POSIX wildcards in the filename "
+<<<<<<< HEAD
                 "of trajectory files. If symbols *?[] are found in a filename, "
+=======
+<<<<<<< HEAD
+                "of trajectory files. If symbols *?[] are found in a filename, "
+=======
+                "of trajectory files. If symbols ?*[] are found in a filename, "
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
                 "the code expects to find exactly Nbeads files that match "
                 "the provided pattern. Bead indices will be read from the files, "
                 "and the files will be ordered ascendingly by their bead indices. "

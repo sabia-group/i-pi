@@ -609,11 +609,12 @@ class SCPhononator(DummyPhononator):
                 w = 1.0
 
                 while True:
+<<<<<<< HEAD
 
                     # Calculates the force, the error and the
+=======
+>>>>>>> master
                     # batch weights.
-                    f, f_err, batch_w = self.weighted_force()
-
                     # Saves the change in the weight associated with
                     # last batch.
                     w_old = w

@@ -216,7 +216,15 @@ class InputNormalMode(InputDictionary):
             {
                 "dtype": bool,
                 "default": False,
+<<<<<<< HEAD
                 "help": "Flag determining whether the vibrational density (|psi|^2) are printed to file.",
+=======
+<<<<<<< HEAD
+                "help": "Flag determining whether the vibrational density (|psi|^2) are printed to file.",
+=======
+                "help": "Flag determining whether the vibrational density (psi**2) are printed to file.",
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
             },
         ),
         "threebody": (

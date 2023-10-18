@@ -29,6 +29,10 @@ def auto_units(
     cell_units="automatic",
     mode="xyz",
 ):
+<<<<<<< HEAD
+
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     """Processes comment line and requested units to determine how to interpret the I/O conversion."""
     # heuristics to detect units
     if mode in ("pdb", "ase"):  # these are the default units

@@ -500,7 +500,7 @@ class InputInitializer(Input):
 
         super(InputInitializer, self).fetch()
         initlist = []
-        for k, v in self.extra:
+        for (k, v) in self.extra:
             if v.mode.fetch() == "chk" and not v.fetch(
                 initclass=ei.InitIndexed
             ).units in ["", "automatic"]:

@@ -416,6 +416,39 @@ class InputFFdmd(InputForceField):
 
 class InputFFDebye(InputForceField):
 
+    fields.update(InputForceField.fields)
+
+    attribs = {}
+    attribs.update(InputForceField.attribs)
+
+    default_help = """Simple, internal DMD evaluator without without neighbor lists, but with PBC.
+                   Expects coupling elements (n*(n-1)/2 of them), oscillating frequency and time step. """
+    default_label = "FFDMD"
+
+    def store(self, ff):
+        super(InputFFdmd, self).store(ff)
+        self.dmd_coupling.store(ff.coupling)
+        self.dmd_freq.store(ff.freq)
+        self.dmd_dt.store(ff.dtdmd)
+        self.dmd_step.store(ff.dmdstep)
+
+    def fetch(self):
+        super(InputFFdmd, self).fetch()
+
+        return FFdmd(
+            coupling=self.dmd_coupling.fetch(),
+            freq=self.dmd_freq.fetch(),
+            dtdmd=self.dmd_dt.fetch(),
+            dmdstep=self.dmd_step.fetch(),
+            pars=self.parameters.fetch(),
+            name=self.name.fetch(),
+            latency=self.latency.fetch(),
+            dopbc=self.pbc.fetch(),
+            threaded=self.threaded.fetch(),
+        )
+
+
+class InputFFDebye(InputForceField):
     fields = {
         "hessian": (
             InputArray,

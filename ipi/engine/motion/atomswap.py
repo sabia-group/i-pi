@@ -82,7 +82,14 @@ class AtomSwap(Motion):
         return np.asarray(atomexchangelist)
 
     def step(self, step=None):
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
         # picks number of attempted exchanges
         ntries = self.prng.rng.poisson(self.nxc)
         if ntries == 0:
@@ -112,6 +119,16 @@ class AtomSwap(Motion):
             while self.beads.names[axlist[i]] == self.beads.names[axlist[j]]:
                 j = self.prng.rng.randint(lenlist)  # makes sure we pick a real exchange
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+            # map the "subset" indices back to the "absolute" atom indices
+            i = axlist[i]
+            j = axlist[j]
+
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
             old_energy = self.forces.pot
             # swap the atom positions
             self.dbeads.q[:] = self.beads.q[:]

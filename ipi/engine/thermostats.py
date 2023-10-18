@@ -919,6 +919,7 @@ class ThermoNMGLEG(ThermoNMGLE):
     def __init__(self, temp=1.0, dt=1.0, A=None, C=None, tau=1.0, ethermo=0.0):
 
         super(ThermoNMGLEG, self).__init__(temp, dt, A, C, ethermo)
+        dself = dd(self)
         dself.tau = depend_value(value=tau, name="tau")
 
     def bind(self, beads=None, atoms=None, pm=None, nm=None, prng=None, fixdof=None):
@@ -948,6 +949,7 @@ class ThermoNMGLEG(ThermoNMGLE):
         )  # bind global thermostat to centroid
 
         # pipes temp and dt
+        dself = dd(self)
         dpipe(dself.temp, dd(t).temp)
         dpipe(dself.dt, dd(t).dt)
         dpipe(dself.tau, dd(t).tau)

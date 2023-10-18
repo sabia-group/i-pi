@@ -42,7 +42,27 @@ class InputMetaDyn(InputDictionary):
                 "default": input_default(factory=np.zeros, args=(0,)),
                 "help": "List of names of forcefields that should do metadynamics.",
             },
+<<<<<<< HEAD
         )
+=======
+<<<<<<< HEAD
+        )
+=======
+        ),
+        "use_energy": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": False,
+                "help": """ 
+Transfer the potential energy value to PLUMED to use as a collective variable. 
+Can only be used with classical simulations because it requires a rather hacky 
+mechanism to transfer the energy of the system to the forcefield.
+""",
+            },
+        ),
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
+>>>>>>> master
     }
 
     default_help = "MetaDynamics"

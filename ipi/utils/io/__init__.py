@@ -392,6 +392,10 @@ def open_backup(filename, mode="r", buffering=-1):
     """
 
     if mode.startswith("w"):
+<<<<<<< HEAD
+
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         # If writing, make sure nothing is overwritten.
 
         i = 0

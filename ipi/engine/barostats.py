@@ -1098,7 +1098,6 @@ class BaroRGB(Barostat):
             sinh = halfdt * np.dot(
                 eigvecs, np.dot(np.diag(sinch(halfdt * eigvals)), ieigvecs)
             )
-
         expq, expp = (matrix_exp(v * halfdt), matrix_exp(-v * halfdt))
         # oldsinh = np.dot(invert_ut3x3(v), (expq - expp) / (2.0))
 

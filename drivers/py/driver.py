@@ -175,12 +175,6 @@ def run_driver(unix=False, address="", port=12345, driver=Dummy_driver()):
 
 
 if __name__ == "__main__":
-
-    print("\n @You have called 'driver.py'")
-    now = datetime.now()
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-    print("\n @Date and time: {:s}\n".format(dt_string))
-
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(

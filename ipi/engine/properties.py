@@ -158,6 +158,11 @@ def help_latex(idict, standalone=True):
     rstr = rstr.replace("[", "$[$")
     rstr = rstr.replace("]", "$]$")
 
+    if len(xstr) > 0:
+        rstr += f"\n\n*{xstr.strip()}*"
+    rstr += "\n\n"
+    return rstr
+
     return rstr
 
 
