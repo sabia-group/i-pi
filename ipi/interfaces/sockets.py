@@ -748,6 +748,8 @@ class InterfaceSocket(object):
             match_seq = ["match", "none", "free", "any"]
         elif self.match_mode == "any":
             match_seq = ["any"]
+        elif self.match_mode == "lock":
+            match_seq = ["match", "none"]
 
         # first: dispatches jobs to free clients (if any!)
         # tries first to match previous replica<>driver association, then to get new clients, and only finally send the a new replica to old drivers

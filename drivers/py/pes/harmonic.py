@@ -6,7 +6,10 @@ from .dummy import Dummy_driver
 
 class Harmonic_driver(Dummy_driver):
     def __init__(self, args=None):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         self.error_msg = """\nHarmonic driver requires specification of force constant.\nExample: python driver.py -m harmonic -u -o 1.3\n"""
         super(Harmonic_driver, self).__init__(args)
 

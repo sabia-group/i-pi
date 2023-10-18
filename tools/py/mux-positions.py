@@ -21,7 +21,10 @@ of beads is given by the number of input files.
 
 
 def main(fns_in, fn_out, begin, end, stride, wrap, unwrap):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     verbosity.level = "low"
     print("Multiplexing {:d} beads into one trajectory.".format(len(fns_in)))
     print()
@@ -45,12 +48,19 @@ def main(fns_in, fn_out, begin, end, stride, wrap, unwrap):
     # Loop over all frames.
     i_frame = 0
     i_frame_saved = 0
+<<<<<<< HEAD
 
     # There can be multiple trajectories, so we store a frame_last for each trajectory
     frame_last = [None] * len(fns_in)
 
     while True:
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
+    # There can be multiple trajectories, so we store a frame_last for each trajectory
+    frame_last = [None] * len(fns_in)
+
+    while True:
         # Check the endpoint index, exit if we're done.
         if (end > -1) and (i_frame >= end):
             break
@@ -133,6 +143,17 @@ def unwrap_positions(frame, framelast):
     pos.shape = (len(pos) / 3, 3)
 
     d = pos - poslast_uwr
+<<<<<<< HEAD
+
+    cell = frame["cell"].h
+    cell_inv = np.linalg.inv(cell)
+    s = np.dot(cell_inv, d.T)
+    s -= np.round(s)
+    d = np.dot(cell, s).T
+    frame["atoms"].q = (poslast_uwr + d).flatten()
+    return frame
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
     cell = frame["cell"].h
     cell_inv = np.linalg.inv(cell)
@@ -142,9 +163,12 @@ def unwrap_positions(frame, framelast):
     frame["atoms"].q = (poslast_uwr + d).flatten()
     return frame
 
+<<<<<<< HEAD
+if __name__ == "__main__":
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(

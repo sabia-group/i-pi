@@ -47,7 +47,11 @@ class AlKMC(Motion):
     def __init__(
         self,
         mode,
+<<<<<<< HEAD
         geop,
+=======
+        optimizer,
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         nstep,
         a0,
         ncell,
@@ -167,6 +171,7 @@ class AlKMC(Motion):
         dd(self).dt = depend_value(name="dt", value=0.0)
         self.fixatoms = np.asarray([])
         self.fixcom = True
+<<<<<<< HEAD
         self.geop = [None] * self.neval
         # geop should not trigger exit if there is early convergence, but just carry on.
         # we hard-code this option to avoid early-termination that would be hard to debug for a user
@@ -175,6 +180,16 @@ class AlKMC(Motion):
             # geometry optimizer should not have *any* hystory dependence
             self.geop[i] = GeopMotion(
                 fixcom=fixcom, fixatoms=fixatoms, **geop
+=======
+        self.optimizer = [None] * self.neval
+        # geop should not trigger exit if there is early convergence, but just carry on.
+        # we hard-code this option to avoid early-termination that would be hard to debug for a user
+        optimizer["exit_on_convergence"] = False
+        for i in range(self.neval):
+            # geometry optimizer should not have *any* hystory dependence
+            self.optimizer[i] = GeopMotion(
+                fixcom=fixcom, fixatoms=fixatoms, **optimizer
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
             )  # mode="cg", ls_options={"tolerance": 1, "iter": 20,  "step": 1e-3, "adaptive": 0.0}, tolerances={"energy": 1e-7, "force": 1e-2, "position": 1e-4}, ) #!TODO: set the geop parameters properly
 
         # dictionary of previous energy evaluations - kind of tricky to use this with the omaker thingie
@@ -306,7 +321,11 @@ class AlKMC(Motion):
                 self.dbias[i],
                 output_maker=self.output_maker,
             )
+<<<<<<< HEAD
             self.geop[i].bind(
+=======
+            self.optimizer[i].bind(
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
                 self.dens[i],
                 self.dbeads[i],
                 self.dnm[i],
@@ -320,13 +339,21 @@ class AlKMC(Motion):
 
     # threaded geometry optimization
     def geop_thread(self, ieval, nstr, nevent, ostr=None):
+<<<<<<< HEAD
         self.geop[ieval].reset()
+=======
+        self.optimizer[ieval].reset()
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         ipot = self.dforces[ieval].pot
 
         for i in range(self.nstep):
             # print "geop ", i, self.dforces[ieval].pot
+<<<<<<< HEAD
             self.geop[ieval].step(i)
             # if self.geop[ieval].converged[0]: break
+=======
+            self.optimizer[ieval].step(i)
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         newq = dstrip(self.dbeads[ieval].q[0]).copy()
         newpot = self.dforces[ieval].pot
 
@@ -501,7 +528,10 @@ class AlKMC(Motion):
         return iu12
 
     def step(self, step=None):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         kT = Constants.kb * self.ensemble.temp
         # computes current energy (if not already stored)
         ostr = "".join(

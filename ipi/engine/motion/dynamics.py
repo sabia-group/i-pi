@@ -531,7 +531,6 @@ class NVTIntegrator(NVEIntegrator):
             self.pconstraints()
 
         elif self.splitting == "baoab":
-
             self.mtsprop_ba(0)
             # thermostat is applied for dt
             self.tstep()
@@ -700,7 +699,6 @@ class SCIntegrator(NVTIntegrator):
         )
 
     def step(self, step=None):
-
         # the |f|^2 term is considered to be slowest (for large enough P) and is integrated outside everything.
         # if nmts is not specified, this is just the same as doing the full SC integration
 
@@ -719,7 +717,6 @@ class SCIntegrator(NVTIntegrator):
             self.pconstraints()
 
         elif self.splitting == "baoab":
-
             self.beads.p += dstrip(self.forces.fsc_part_2) * self.dt * 0.5
             self.mtsprop_ba(0)
             # thermostat is applied for dt
@@ -762,7 +759,6 @@ class SCNPTIntegrator(SCIntegrator):
         self.barostat.thermostat.step()
 
     def step(self, step=None):
-
         # the |f|^2 term is considered to be slowest (for large enough P) and is integrated outside everything.
         # if nmts is not specified, this is just the same as doing the full SC integration
 
@@ -783,7 +779,6 @@ class SCNPTIntegrator(SCIntegrator):
             self.pconstraints()
 
         elif self.splitting == "baoab":
-
             self.barostat.pscstep()
             self.beads.p += dstrip(self.forces.fsc_part_2) * self.dt * 0.5
             self.mtsprop_ba(0)

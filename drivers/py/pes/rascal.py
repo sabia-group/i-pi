@@ -14,7 +14,10 @@ except:
 
 class Rascal_driver(Dummy_driver):
     def __init__(self, args=None):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         self.error_msg = """Rascal driver requires specification of a .json model file fitted with librascal, 
                             and a template file that describes the chemical makeup of the structure. 
                             Example: python driver.py -m rascal -u -o model.json,template.xyz"""

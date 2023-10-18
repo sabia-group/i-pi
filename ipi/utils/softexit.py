@@ -109,7 +109,7 @@ class Softexit(object):
 
             self.exiting = False  # emergency is over, signal we can be relaxed
 
-            for (t, dl) in self.tlist:  # set thread exit flag
+            for t, dl in self.tlist:  # set thread exit flag
                 dl[0] = False
 
         # wait for all (other) threads to finish

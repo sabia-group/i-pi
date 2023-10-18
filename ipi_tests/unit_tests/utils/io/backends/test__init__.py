@@ -71,7 +71,10 @@ test_read_file_prms = [
 
 @pytest.fixture(params=test_read_file_prms)
 def prepare_read_file(request):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     (
         natoms,
         nframes,
@@ -105,7 +108,10 @@ def prepare_read_file(request):
 
 @pytest.mark.skip(reason="This needs to be updated to match current code.")
 def test_read_file(prepare_read_file):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     (
         file_type,
         filedesc,

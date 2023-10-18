@@ -23,6 +23,7 @@ from ipi.interfaces.sockets import InterfaceSocket
 import ipi.engine.initializer
 from ipi.inputs.initializer import *
 from ipi.utils.inputvalue import *
+from ipi.utils.messages import verbosity, warning
 
 __all__ = [
     "InputFFSocket",
@@ -315,7 +316,6 @@ class InputFFSocket(InputForceField):
 
 
 class InputFFLennardJones(InputForceField):
-
     attribs = {}
     attribs.update(InputForceField.attribs)
 
@@ -348,7 +348,6 @@ class InputFFLennardJones(InputForceField):
 
 
 class InputFFdmd(InputForceField):
-
     fields = {
         "dmd_coupling": (
             InputArray,
@@ -416,6 +415,39 @@ class InputFFdmd(InputForceField):
 
 class InputFFDebye(InputForceField):
 
+    fields.update(InputForceField.fields)
+
+    attribs = {}
+    attribs.update(InputForceField.attribs)
+
+    default_help = """Simple, internal DMD evaluator without without neighbor lists, but with PBC.
+                   Expects coupling elements (n*(n-1)/2 of them), oscillating frequency and time step. """
+    default_label = "FFDMD"
+
+    def store(self, ff):
+        super(InputFFdmd, self).store(ff)
+        self.dmd_coupling.store(ff.coupling)
+        self.dmd_freq.store(ff.freq)
+        self.dmd_dt.store(ff.dtdmd)
+        self.dmd_step.store(ff.dmdstep)
+
+    def fetch(self):
+        super(InputFFdmd, self).fetch()
+
+        return FFdmd(
+            coupling=self.dmd_coupling.fetch(),
+            freq=self.dmd_freq.fetch(),
+            dtdmd=self.dmd_dt.fetch(),
+            dmdstep=self.dmd_step.fetch(),
+            pars=self.parameters.fetch(),
+            name=self.name.fetch(),
+            latency=self.latency.fetch(),
+            dopbc=self.pbc.fetch(),
+            threaded=self.threaded.fetch(),
+        )
+
+
+class InputFFDebye(InputForceField):
     fields = {
         "hessian": (
             InputArray,
@@ -477,7 +509,6 @@ class InputFFDebye(InputForceField):
 
 
 class InputFFPlumed(InputForceField):
-
     fields = {
         "init_file": (
             InputInitFile,
@@ -517,7 +548,7 @@ class InputFFPlumed(InputForceField):
         # if pstep > 0: pstep -= 1 # roll back plumed step before writing a restart
         # self.plumedstep.store(pstep)
         self.plumedstep.store(ff.plumedstep)
-        self.init_file.store(ff.init_file)
+        self.file.store(ff.init_file)
 
     def fetch(self):
         super(InputFFPlumed, self).fetch()
@@ -534,7 +565,6 @@ class InputFFPlumed(InputForceField):
 
 
 class InputFFYaff(InputForceField):
-
     fields = {
         "yaffpara": (
             InputValue,
@@ -651,7 +681,6 @@ class InputFFYaff(InputForceField):
 
 
 class InputFFsGDML(InputForceField):
-
     fields = {
         "sGDML_model": (
             InputValue,

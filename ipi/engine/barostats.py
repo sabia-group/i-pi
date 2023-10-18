@@ -1056,7 +1056,6 @@ class BaroRGB(Barostat):
 
         # integerates the kinetic part of the stress with the force at the inner-most level.
         if level == self.nmtslevels - 1:
-
             self.p += dt * (
                 self.cell.V * np.triu(-self.beads.nbeads * pi_ext)
                 + Constants.kb * self.temp * self.L
@@ -1098,7 +1097,6 @@ class BaroRGB(Barostat):
             sinh = halfdt * np.dot(
                 eigvecs, np.dot(np.diag(sinch(halfdt * eigvals)), ieigvecs)
             )
-
         expq, expp = (matrix_exp(v * halfdt), matrix_exp(-v * halfdt))
         # oldsinh = np.dot(invert_ut3x3(v), (expq - expp) / (2.0))
 

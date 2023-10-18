@@ -202,6 +202,13 @@ class ConstraintSolverBase(dobject):
         dd(self).dt = depend_value(name="dt", value=dt)
 
     def bind(self, beads):
+<<<<<<< HEAD
+=======
+        if beads.nbeads > 1:
+            raise ValueError(
+                "Constrained dynamics is only implemented for the case of classical MD (nbeads=1)"
+            )
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
         self.beads = beads
         # Sets the initial value of the constraint positions

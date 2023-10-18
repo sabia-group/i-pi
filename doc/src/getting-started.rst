@@ -440,6 +440,7 @@ test the installation with ‘nose‘
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are several test cases included, that can be run automatically
+<<<<<<< HEAD
 with ‘nosetests‘ from the root directory.
 
 .. code-block::
@@ -505,3 +506,20 @@ cp2k:
    Contains the tests for the CP2K client code. Holds input files to run
    the high-pressure water calculations presented in [cpc publication
    citation].
+=======
+with ‘i-pi-tests‘ from the root directory.
+
+.. code-block::
+
+   > i-pi-tests
+
+test cases and examples
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The `examples/` folder contain a multitude of examples for i-PI, covering
+most of the existing functionalities, and including also simple tests that
+can be run with different client codes. 
+
+All the input files are contained in the directory “examples”, which is
+subdivided into subfolder that cover different classes of simulations, and/or different client codes. 
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540

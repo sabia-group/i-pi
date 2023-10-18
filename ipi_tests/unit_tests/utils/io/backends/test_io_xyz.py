@@ -99,7 +99,10 @@ tests_read_xyz = [
 
 @pytest.fixture(params=tests_read_xyz)
 def create_random_xyz_traj_to_read(request):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     natoms, frames, comment, expected_cell, precision = request.param
 
     filedesc, xyz, atom_names = xyz_gen.xyz_traj_filedesc(natoms, frames, comment)
@@ -132,7 +135,10 @@ def create_random_xyz_traj_to_read(request):
 
 @pytest.mark.skip(reason="This needs to be updated to match current code.")
 def test_read_xyz(create_random_xyz_traj_to_read):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     (
         filedesc,
         xyz,
@@ -145,7 +151,10 @@ def test_read_xyz(create_random_xyz_traj_to_read):
     ) = create_random_xyz_traj_to_read
 
     for _fr in range(frames):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         tcomment, tcell, tqatoms, tnames, tmasses = io_xyz.read_xyz(filedesc)
 
         assert tcomment.strip() == comment
@@ -232,7 +241,10 @@ write_test_xyz = [
 
 @pytest.fixture(params=write_test_xyz)
 def create_random_xyz_traj_to_write(request):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     natoms, frames, comment, expected_cell, precision = request.param
 
     a, b, c, alpha, beta, gamma = mt.h2abc_deg(expected_cell)
@@ -262,7 +274,10 @@ def create_random_xyz_traj_to_write(request):
 
 
 def test_print_xyz(create_random_xyz_traj_to_write):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
     filedesc, atoms_list, cell_list, title, precision = create_random_xyz_traj_to_write
 
     filedesc_orig = tmp.NamedTemporaryFile(

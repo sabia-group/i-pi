@@ -17,5 +17,11 @@ in alphabetical order, possibly followed by their attributes.
 underlined. *Other supplementary information* will be in small font and
 italicized.
 
+<<<<<<< HEAD
+=======
+
+.. include:: input_ref_idx.inc
+
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 .. todo::
     port create_man to output rst instead of latex

@@ -22,8 +22,16 @@ copyright = "2021, The i-PI developers"
 author = "The i-PI developers"
 
 # The full version, including alpha/beta/rc tags
+<<<<<<< HEAD
 release = "TODO VERSION"
 
+=======
+import configparser
+
+config = configparser.ConfigParser()
+config.read("../../setup.cfg")
+release = config["metadata"]["version"]
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 # -- General configuration ---------------------------------------------------
 needs_sphinx = "3.2"
@@ -39,7 +47,11 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
+<<<<<<< HEAD
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+=======
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/input_ref_sections/*"]
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 
 bibtex_bibfiles = ["references.bib"]

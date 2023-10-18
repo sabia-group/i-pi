@@ -9,7 +9,11 @@
 all: manual.pdf
 
 aux:
+<<<<<<< HEAD
 	PYTHONPATH=..:$(PYTHONPATH) python3 create_man.py
+=======
+	PYTHONPATH=../../:../scripts/:$(PYTHONPATH) python3 ../scripts/create_latex_manual.py
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 	rm -f *.pyc
 
 manual.pdf: aux

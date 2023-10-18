@@ -22,7 +22,11 @@ neighbor	2.0 bin
 
 timestep	0.0001
 
+<<<<<<< HEAD
 fix 1 all ipi ice-nst 32345 unix
+=======
+fix 1 all ipi lammps_ice 32345 unix
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 run		100000000
 

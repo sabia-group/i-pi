@@ -170,7 +170,11 @@ Initialization from checkpoint files
 
 i-PI gives the option to output the entire state of the simulation at a
 particular timestep as an xml input file, called a checkpoint file (see
+<<<<<<< HEAD
 `3.2.3 <#checkpoint>`__ for details). As well as being a valid input for
+=======
+`3.2.3 <#checkpoints>`__ for details). As well as being a valid input for
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 i-PI, a checkpoint can also be used inside an tag to specify the
 configuration of the system, discarding other parameters of the
 simulation such as the current time step or the chosen ensemble. Input
@@ -292,7 +296,14 @@ different parts:
    arguments are specified, then the defaults as defined in the
    properties.py module will be used.
 
+<<<<<<< HEAD
 The different available properties are:
+=======
+List of available properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: input_ref_sections/property_list.inc
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 .. _trajectories:
 
@@ -323,9 +334,18 @@ automatically determined by appending the bead index to the specified
 also possible to output the quantity computed for a single bead by
 specifying its (zero-based) index in the “bead” attribute.
 
+<<<<<<< HEAD
 The quantities that can be output in trajectory files are:
 
 .. _checkpoint:
+=======
+List of available trajectory files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: input_ref_sections/trajectory_list.inc
+
+.. _checkpoints:
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
 
 Checkpoint files
 ~~~~~~~~~~~~~~~~

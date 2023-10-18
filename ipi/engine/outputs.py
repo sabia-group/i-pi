@@ -349,7 +349,6 @@ class TrajectoryOutput(BaseOutput):
             "forces_sc",
             "momenta",
         ]:
-
             # must write out trajectories for each bead, so must create b streams
 
             # prepare format string for file name

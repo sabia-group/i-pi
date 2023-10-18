@@ -274,7 +274,10 @@ def get_np(qpath_file, fpath_file, prefix, bsize, P, m, T, s, ns, skip, der):
         exit()
 
     for x in range(n_blocks):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         if der is False:
             qpath_block = qpath[x * bsize : (x + 1) * bsize]
             # fpath_block = fpath[x*bsize : (x+1)*bsize]

@@ -156,6 +156,9 @@ def help_latex(idict, standalone=True):
     rstr = rstr.replace("[", "$[$")
     rstr = rstr.replace("]", "$]$")
 
+    if len(xstr) > 0:
+        rstr += f"\n\n*{xstr.strip()}*"
+    rstr += "\n\n"
     return rstr
 
 
@@ -1769,6 +1772,9 @@ class Properties(dobject):
            computing finite-difference quantities. If it is negative, will be
            scaled down automatically to avoid discontinuities in the potential.
         """
+        # Ugly but works
+        if type(fd_delta) == str:
+            fd_delta = np.float(fd_delta)
 
         dbeta = abs(float(fd_delta))
         beta = 1.0 / (Constants.kb * self.ensemble.temp)
@@ -2483,7 +2489,6 @@ class Properties(dobject):
         )
 
     def get_chin_correction(self):
-
         f = dstrip(self.forces.f)
         m3 = dstrip(self.beads.m3)
         pots = self.forces.pots
@@ -2507,7 +2512,6 @@ class Properties(dobject):
         return np.asarray([chin, chin2, chinexp])
 
     def get_ti_correction(self):
-
         f = dstrip(self.forces.f)
         m3 = dstrip(self.beads.m3)
         #        pots = self.forces.pots    #

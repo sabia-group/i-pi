@@ -26,7 +26,7 @@ class InputThermoBase(Input):
     """Thermostat input class.
 
     Handles generating the appropriate thermostat class from the xml input file,
-    and generating the xml checkpoiunt tags and data from an instance of the
+    and generating the xml checkpoint tags and data from an instance of the
     object.
 
     Attributes:
@@ -38,6 +38,7 @@ class InputThermoBase(Input):
           to the bath. Defaults to 0.0.
        tau: An optional float giving the damping time scale. Defaults to 1.0.
        pile_lambda: Scaling for the PILE damping relative to the critical damping.
+       pile_centroid_t: Option to set a different temperature to the centroid in PILE thermostats.
        A: An optional array of floats giving the drift matrix. Defaults to 0.0.
        C: An optional array of floats giving the static covariance matrix.
           Defaults to 0.0.
@@ -188,10 +189,12 @@ class InputThermoBase(Input):
             self.mode.store("pile_l")
             self.tau.store(thermo.tau)
             self.pile_lambda.store(thermo.pilescale)
+            self.pile_centroid_t.store(thermo.pilect)
         elif type(thermo) is ethermostats.ThermoPILE_G:
             self.mode.store("pile_g")
             self.tau.store(thermo.tau)
             self.pile_lambda.store(thermo.pilescale)
+            self.pile_centroid_t.store(thermo.pilect)
         elif type(thermo) is ethermostats.ThermoGLE:
             self.mode.store("gle")
             self.A.store(thermo.A)
@@ -321,6 +324,7 @@ class InputThermoBase(Input):
                 )
         if mode in ["gle", "nm_gle", "nm_gle_g"]:
             pass  # PERHAPS DO CHECKS THAT MATRICES SATISFY REASONABLE CONDITIONS (POSITIVE-DEFINITENESS, ETC)
+        # MR Check that pilect is not less than 0.0
 
 
 class InputThermo(InputThermoBase):
@@ -360,10 +364,9 @@ class InputThermo(InputThermoBase):
             super(InputThermo, self).store(thermo)
 
     def fetch(self):
-
         if self.mode.fetch() == "multi":
             tlist = []
-            for (k, t) in self.extra:
+            for k, t in self.extra:
                 tlist.append(t.fetch())
             thermo = ethermostats.MultiThermo(thermolist=tlist)
             thermo.ethermo = self.ethermo.fetch()

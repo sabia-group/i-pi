@@ -77,6 +77,7 @@ class DynMatrixMover(Motion):
 
         if self.prefix == "":
             self.prefix = "phonons"
+<<<<<<< HEAD
 
         if len(fixatoms) > 0:
             fixdof = np.concatenate((3 * fixatoms, 3 * fixatoms + 1, 3 * fixatoms + 2))
@@ -88,6 +89,18 @@ class DynMatrixMover(Motion):
 
     def bind(self, ens, beads, nm, cell, bforce, prng, omaker):
 
+=======
+
+        if len(fixatoms) > 0:
+            fixdof = np.concatenate((3 * fixatoms, 3 * fixatoms + 1, 3 * fixatoms + 2))
+            self.fixdof = np.sort(fixdof)
+            if self.mode == "enmfd" or self.mode == "nmfd":
+                raise ValueError("Fixatoms is not implemented for the selected mode.")
+        else:
+            self.fixdof = np.array([])
+
+    def bind(self, ens, beads, nm, cell, bforce, prng, omaker):
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
         super(DynMatrixMover, self).bind(ens, beads, nm, cell, bforce, prng, omaker)
 
         # Raises error for nbeads not equal to 1.

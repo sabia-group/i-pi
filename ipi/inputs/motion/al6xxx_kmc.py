@@ -56,7 +56,11 @@ class InputAlKMC(InputDictionary):
 
     # options of the method nstep, a0, ncell, nvac, nsi, nmg, state="",
     fields = {
+<<<<<<< HEAD
         "geop": (
+=======
+        "optimizer": (
+>>>>>>> 116dc11aeab92e3a5f290a3eca4dc3c91fcb2540
             InputGeop,
             {"default": {}, "help": "Option for geometry optimization step"},
         ),

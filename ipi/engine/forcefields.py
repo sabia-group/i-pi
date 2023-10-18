@@ -723,6 +723,7 @@ class FFPlumed(ForceField):
         self.charges = dstrip(myatoms.q) * 0.0
         self.masses = dstrip(myatoms.m)
         self.lastq = np.zeros(3 * self.natoms)
+        self.system_force = None  # reference to physical force calculator
 
     def poll(self):
         """Polls the forcefield checking if there are requests that should
@@ -748,7 +749,7 @@ class FFPlumed(ForceField):
             )
 
         v = 0.0
-        f = np.zeros(3 * self.natoms)
+        f = np.zeros((self.natoms, 3))
         vir = np.zeros((3, 3))
 
         self.lastq[:] = r["pos"]
@@ -782,7 +783,7 @@ class FFPlumed(ForceField):
         upon completion of a time step."""
 
         self.plumedstep += 1
-        f = np.zeros(3 * self.natoms)
+        f = np.zeros((self.natoms, 3))
         vir = np.zeros((3, 3))
 
         self.plumed.cmd("setStep", self.plumedstep)
@@ -1051,7 +1052,6 @@ class FFCommittee(ForceField):
         active_thresh=0.0,
         active_out=None,
     ):
-
         # force threaded mode as otherwise it cannot have threaded children
         super(FFCommittee, self).__init__(
             latency=latency,
@@ -1087,7 +1087,6 @@ class FFCommittee(ForceField):
         self.active_out = active_out
 
     def bind(self, output_maker):
-
         super(FFCommittee, self).bind(output_maker)
         if self.active_thresh > 0:
             if self.active_out is None:
@@ -1103,7 +1102,6 @@ class FFCommittee(ForceField):
         super(FFCommittee, self).start()
 
     def queue(self, atoms, cell, reqid=-1):
-
         # launches requests for all of the committee FF objects
         ffh = []
         for ff in self.fflist:
