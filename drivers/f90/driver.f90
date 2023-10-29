@@ -161,6 +161,8 @@
                   vstyle = 26
                ELSEIF (trim(cmdbuffer) == "qtip4pf-sr") THEN
                   vstyle = 27
+               ELSEIF (trim(cmdbuffer) == "ljmod") THEN
+                  vstyle = 28
                ELSEIF (trim(cmdbuffer) == "gas") THEN
                   vstyle = 0  ! ideal gas
                ELSEIF (trim(cmdbuffer) == "dummy") THEN
@@ -524,6 +526,12 @@
                    STOP "ENDED"
                ENDIF
                CALL getmorsedia(vpars(1), vpars(2), vpars(3), atoms, pot, forces)
+            ELSEIF (vstyle == 28) THEN ! Morse potential with 2 atoms.
+               IF (MOD(nat,2) .eq. 1) THEN
+                   WRITE(*,*) "Expecting even number of atoms for this potential - check input. "
+                   STOP "ENDED"
+               ENDIF
+               CALL getljh2ag(atoms, pot, forces, nat) ! MR: NEED parameter that sets the surface height.... 
             ELSEIF (vstyle == 5) THEN ! Zundel potential.
                IF (nat/=7) THEN
                   WRITE(*,*) "Expecting 7 atoms for Zundel potential, O O H H H H H "
