@@ -10,7 +10,7 @@
          c = 5.87553087e+00
          force(:,:)=0.d0
          ! Very non-general. Assumes that pairs of H atoms are connected and accepts only H atoms
-         zsurf=13.095154 ! this has to become a parameter that is passed in. Correspnds to 6.929656887500001 angstrom
+         zsurf=13.088243 ! this has to become a parameter that is passed in. Correspnds to 6.926 angstrom
          do i=1, nat-1, 2
             com(:) = (q(i,:)+q(i+1,:))/2.d0
             zcom = com(3)-zsurf
