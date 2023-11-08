@@ -5,9 +5,9 @@
          real*8  :: q(nat,3), pot, force(nat,3)
          real*8  :: a, b, c, fcom, zsurf, zcom, com(3)
          integer :: i
-         a = 0.03892383 !1.02524232e-03
-         b = 0.77567293 !7.60164990e-01
-         c = 5.46533689 !5.87553087e+00
+         a = 2.41808209e-03 !1.02524232e-03
+         b = 7.62206977e-01 !7.60164990e-01
+         c = 5.46997694 !5.87553087e+00
          force(:,:)=0.d0
          ! Very non-general. Assumes that pairs of H atoms are connected and accepts only H atoms
          zsurf=13.088243 ! this has to become a parameter that is passed in. Correspnds to 6.926 angstrom
