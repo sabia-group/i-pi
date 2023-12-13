@@ -22,7 +22,7 @@ from ipi.engine.beads import Beads
 
 np.set_printoptions(threshold=10000, linewidth=1000)  # Remove in cleanup
 
-__all__ = ["NEBGradientMapper", "NEBClimbGrMapper", "NEBMover"]
+__all__ = ["NEBGradientMapper", "NEBMover"]
 
 
 class NEBGradientMapper(object):
