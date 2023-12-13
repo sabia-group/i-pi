@@ -68,7 +68,7 @@ class NEBGradientMapper(object):
         self.rbeads.q[:] = ens.beads.q[1:-1]
         self.rforces = ens.forces.copy(self.rbeads, self.dcell)
 
-    def __call__(self, x):
+    def __call__(self, x, stage='neb', cl_indx=None):
         """Returns the potential for all beads and the gradient."""
 
         # Bead positions
@@ -179,10 +179,6 @@ class NEBGradientMapper(object):
         # Array of spring constants; all are equal
         kappa.fill(self.kappa)
 
-        # Get perpendicular forces
-        for ii in range(1, nimg - 1):
-            rbf[ii - 1] -= np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
-
         for ii in range(1, nimg):
             print(
                 "Bead %2i, distance to previous bead:   %f"
@@ -198,13 +194,23 @@ class NEBGradientMapper(object):
             #     * np.dot(btau[ii], (bq[ii + 1] + bq[ii - 1] - 2 * bq[ii]))
             # )
 
+             # Get perpendicular forces
+
             # Improved tangent implementation
             # Eq. 12 in J. Chem. Phys. 113, 9978 (2000):
-            rbf[ii - 1] += (
-                kappa[ii]
-                * (npnorm(bq[ii + 1] - bq[ii]) - npnorm(bq[ii] - bq[ii - 1]))
-                * btau[ii]
-            )
+            if stage == 'climb' and ii == cl_indx:
+                info(" @CI-NEB : using climbing forces", verbosity.debug)
+                # No spring forces, force component along MEP is inverted
+                rbf[ii - 1] -= 2*np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
+            else:
+                # Remove force component along the MEP
+                rbf[ii - 1] -= np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
+                # Add the parallel (spring) forces
+                rbf[ii - 1] += (
+                    kappa[ii]
+                    * (npnorm(bq[ii + 1] - bq[ii]) - npnorm(bq[ii] - bq[ii - 1]))
+                    * btau[ii]
+                )
 
         # Including spring energy into potential (experimental)
         # The reason for having such term is that many optimization algorithms
@@ -218,87 +224,6 @@ class NEBGradientMapper(object):
         g = -rbf
         return e, g
 
-
-class NEBClimbGrMapper(object):
-    """Creation of the multi-dimensional function that will be minimized.
-    Functional analog of a GradientMapper in geop.py
-
-    Constructs climbing forces for a single node.
-    Node index is determined inside bind()
-    Fixed atoms are excluded via boolean mask. 1 = moving, 0 = fixed.
-    """
-
-    def __init__(self):
-        pass
-
-    def bind(self, ens):
-        """Creates reduced Beads object in order to calculate forces
-        only for the climbing bead, and binds it to beads
-        """
-        self.fixatoms = ens.fixatoms.copy()
-        # A mask to exclude fixed atoms from 3N-arrays
-        self.fixatoms_mask = np.ones(3 * ens.beads.natoms, dtype=bool)
-        if len(ens.fixatoms) > 0:
-            self.fixatoms_mask[3 * ens.fixatoms] = 0
-            self.fixatoms_mask[3 * ens.fixatoms + 1] = 0
-            self.fixatoms_mask[3 * ens.fixatoms + 2] = 0
-
-        # Reduced Beads object is needed to calculate only required beads.
-        self.rbeads = Beads(ens.beads.natoms, 1)
-        self.rcell = ens.cell.copy()
-        # Coords of the bead before and after the climbing one.
-        self.q_prev = np.zeros(3 * (ens.beads.natoms - len(ens.fixatoms)))
-        self.q_next = np.zeros(3 * (ens.beads.natoms - len(ens.fixatoms)))
-        # Make reduced forces dependent on reduced beads
-        self.rforces = ens.forces.copy(self.rbeads, self.rcell)
-
-    def __call__(self, x):
-        """Returns climbing force for a climbing image."""
-        if self.q_prev is None or self.q_next is None:
-            raise RuntimeError("NEBClimbGrMapper.q_prev or q_next is None.")
-
-        info("@NEB_CLIMB: NEBClimbGrMapper.x.shape: %s" % str(x.shape), verbosity.debug)
-        # Touch positions only if they have changed (to avoid triggering forces)
-        if (self.rbeads.q[:, self.fixatoms_mask] != x).any():
-            self.rbeads.q[:, self.fixatoms_mask] = x
-        # Compared to NEBGradientMapper, I need to flatten here,
-        # otherwise it's (1, 3N) instead of just 3N.
-        rbq = self.rbeads.q[:, self.fixatoms_mask].flatten()
-
-        # Reduced forces
-        # We don't need copy() because flatten() implies copying.
-        rbf = dstrip(self.rforces.f)[:, self.fixatoms_mask].flatten()
-
-        # I think here it's better to use plain tangents.
-        # Then we don't need energies of the neighboring beads.
-        d1 = rbq - self.q_prev  # tau minus
-        d2 = self.q_next - rbq  # tau plus
-        tau = d1 / npnorm(d1) + d2 / npnorm(d2)
-        tau /= npnorm(tau)
-
-        # Inverting the force component along the path
-        rbf -= 2 * np.dot(rbf, tau) * tau
-
-        # Return the potential energy and gradient of the climbing bead
-        e = dstrip(self.rforces.pot.copy())
-        g = -rbf
-        info("@NEB_CLIMB: NEBClimbGrMapper finished.", verbosity.debug)
-        return e, g
-
-
-# TODO
-# class NEB_GPR(object):
-#    """KF: I strongly suggest that someone implements and this method:
-#    J. A. G. Torres et al, PRL 122, 156001 (2019),
-#    https://doi.org/10.1103/PhysRevLett.122.156001
-#
-#    Given that the stability of NEB is so far quite bad
-#    and small step size is desired, it sounds very promising, and the examples
-#    shown in the SI of that paper are really practical.
-#
-#    Also, it would be nice to build a unified framework
-#    for NEB, String and probably Instanton methods to work with GPR.
-#    """
 
 
 class NEBMover(Motion):
@@ -409,7 +334,6 @@ class NEBMover(Motion):
         self.dtmax = dtmax_fire  # maximum dt for FIRE
 
         self.nebgm = NEBGradientMapper(tangent=self.tangent)
-        self.climbgm = NEBClimbGrMapper()
 
     def bind(self, ens, beads, nm, cell, bforce, prng, omaker):
         super(NEBMover, self).bind(ens, beads, nm, cell, bforce, prng, omaker)
@@ -418,7 +342,7 @@ class NEBMover(Motion):
         # existing hessian of the full system.
         if self.mode == "damped_bfgs":
             n_activedim = beads.q[0].size - len(self.fixatoms) * 3
-            if self.stage == "neb":
+            if self.stage in {"neb", "climb"}:
                 if self.hessian.size == (n_activedim * (beads.nbeads - 2)) ** 2:
                     # Desired dimension
                     info(
@@ -454,35 +378,7 @@ class NEBMover(Motion):
                     )
                 else:
                     raise ValueError("Hessian size does not match system size.")
-            # In climb stage, hessian has only 1 bead.
-            # Not sure whether fixatoms should be handled here or not, let's see...
-            elif self.stage == "climb":
-                if self.hessian.size == n_activedim * n_activedim:
-                    # desired dimension
-                    info(
-                        " @NEBMover: NEB climbing Hessian is treated as masked one,"
-                        " according to its size.",
-                        verbosity.high,
-                    )
-                elif self.hessian.size == (beads.q[0].size * beads.q[0].size):
-                    info(
-                        " @NEBMover: NEB climbing Hessian has size (3natoms x 3natoms), "
-                        "will be masked by fixatoms.",
-                        verbosity.high,
-                    )
-                    self.hessian = self.hessian[
-                        np.ix_(self.climbgm.fixatoms_mask, self.climbgm.fixatoms_mask)
-                    ]
-                if self.hessian.size == 0:
-                    info(
-                        " @NEBMover: No climbing Hessian provided, "
-                        "starting from unity matrix",
-                        verbosity.high,
-                    )
-                    self.hessian = np.eye(n_activedim, dtype=float)
-                else:
-                    raise ValueError("Hessian size does not match system size.")
-
+            
         if len(self.fixatoms) == len(self.beads[0]):
             softexit.trigger(
                 status="bad",
@@ -490,7 +386,6 @@ class NEBMover(Motion):
             )
 
         self.nebgm.bind(self)
-        self.climbgm.bind(self)
 
     def init_climb(self):
         """Operations to resize hessian for the climbing bead(s),
@@ -507,46 +402,7 @@ class NEBMover(Motion):
             softexit.trigger(
                 status="bad", message="ERROR: climbing bead is the endpoint."
             )
-        self.climbgm.rbeads.q[:] = self.beads.q[cl_indx]
-        self.climbgm.q_prev[:] = self.beads.q[cl_indx - 1, self.climbgm.fixatoms_mask]
-        self.climbgm.q_next[:] = self.beads.q[cl_indx + 1, self.climbgm.fixatoms_mask]
-        info(
-            "q_prev.shape: %s,    q_next.shape: %s"
-            % (str(self.climbgm.q_prev.shape), str(self.climbgm.q_next.shape)),
-            verbosity.debug,
-        )
-        n_activedim = self.beads.q[0].size - len(self.fixatoms) * 3
-        if self.hessian.shape != (n_activedim, n_activedim):
-            self.hessian = np.eye(n_activedim)
-
-        info(" @NEB_CLIMB: calling NEBClimbGrMapper first time.", verbosity.debug)
-        self.nebpot, self.nebgrad = self.climbgm(
-            self.beads.q[cl_indx, self.climbgm.fixatoms_mask]
-        )
-
-        # If climbing is launched from geometries rather than i-pi restart,
-        # these need to be initialized
-        if self.full_f.shape == (0,) or self.full_v.shape == (0,):
-            self.full_f = dstrip(self.nebgm.dforces.f).copy()
-            self.full_v = dstrip(self.nebgm.dforces.pots).copy()
-            info(
-                " @NEB_CLIMB: full_f and full_v are initialized in init_climb()."
-                "\n\tself.full_f.shape: %s"
-                "\n\tself.full_v.shape: %s"
-                % (str(self.full_f.shape), str(self.full_v.shape)),
-                verbosity.debug,
-            )
-
-        # Initialize FIRE parameters
-        self.v = -self.a * self.nebgrad
-        self.a = 0.1
-        self.N_dn = 0
-        self.N_up = 0
-        self.dt_fire = 0.1
-
-        self.old_x = dstrip(self.beads.q[cl_indx, self.climbgm.fixatoms_mask]).copy()
-        self.stage = "climb"
-        return cl_indx
+        self.cl_indx = cl_indx
 
     def adjust_big_step(self, quality):
         """We try to make big_step brave enough, but if relaxation goes wrong,
@@ -606,7 +462,7 @@ class NEBMover(Motion):
             )
 
         # Endpoints are optimized or optimization is not required
-        elif self.stage == "neb":
+        elif self.stage in {"neb", "climb"}:
             # Fetch spring constants
             if self.spring["varsprings"] == True:
                 softexit.trigger(
@@ -618,15 +474,22 @@ class NEBMover(Motion):
             self.ptime = self.ttime = 0
             self.qtime = -time.time()
 
+            reset = (self.stage == "climb" and self.cl_indx == -1)
+            if reset:
+                self.init_climb()
+                reset = True
+
             if self.mode == "damped_bfgs":
                 # All BFGS-family algorithms would have similar structure, but currently
                 # BFGS, LBFGS and BFGSTRM are not suited for NEB because they use energy,
                 # which is ill-defined in NEB.
-                if step == 0:  # TODO add a condition when after the endpoints.
+                if step == 0 or reset:  # TODO add a condition when after the endpoints.
+                    # TODO: check if anything special need to be done for climb
                     # Initialize direction to the steepest descent direction
                     info(" @NEB: calling NEBGradientMapper at step 0.", verbosity.debug)
                     self.nebpot, self.nebgrad = self.nebgm(
-                        self.beads.q[1:-1, self.nebgm.fixatoms_mask]
+                        self.beads.q[1:-1, self.nebgm.fixatoms_mask], 
+                        self.stage, self.cl_indx
                     )
                     info(
                         " @NEB: NEBGradientMapper returned nebpot and nebgrad.",
@@ -666,7 +529,7 @@ class NEBMover(Motion):
                 print("self.hessian.shape: %s" % str(self.hessian.shape))
                 quality = Damped_BFGS(
                     x0=self.old_x.copy(),
-                    fdf=self.nebgm,
+                    fdf=lambda q: self.nebgm(q, self.stage, self.cl_indx),
                     fdf0=(self.nebpot, self.nebgrad),
                     hessian=self.hessian,
                     big_step=self.big_step,
@@ -684,13 +547,14 @@ class NEBMover(Motion):
 
             elif self.mode == "fire":
                 # Only initialize velocity for fresh start, not for RESTART
-                if step == 0 and self.v.size == 0:
+                if (step == 0 and self.v.size == 0) or reset:
                     info(
                         " @NEB: calling NEBGradientMapper at step 0 by FIRE",
                         verbosity.debug,
                     )
                     self.nebpot, self.nebgrad = self.nebgm(
-                        self.beads.q[1:-1, self.nebgm.fixatoms_mask]
+                        self.beads.q[1:-1, self.nebgm.fixatoms_mask],
+                        self.stage, self.cl_indx
                     )
                     self.old_x = dstrip(
                         self.beads.q[1:-1, self.nebgm.fixatoms_mask].copy()
@@ -713,7 +577,7 @@ class NEBMover(Motion):
                 info(" @FIRE dt: %s" % str(self.dt_fire), verbosity.debug)
                 self.v, self.a, self.N_dn, self.N_up, self.dt_fire = FIRE(
                     x0=self.old_x.copy(),
-                    fdf=self.nebgm,
+                    fdf=lambda q: self.nebgm(q, self.stage, self.cl_indx),
                     fdf0=(self.nebpot, self.nebgrad),
                     v=self.v,
                     a=self.a,
@@ -804,8 +668,9 @@ class NEBMover(Motion):
                 )
 
                 # Set climbing stage indicator after convergence of the path
-                if self.use_climb:
+                if self.use_climb and self.stage != "climb":
                     self.stage = "climb"
+                    self.cl_indx = -1
                 else:
                     self.stage = "converged"
                     softexit.trigger(
