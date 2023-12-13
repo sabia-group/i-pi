@@ -1,5 +1,5 @@
 <simulation mode='static' verbosity='low'>
-  <total_steps> 10 </total_steps> <!--the calculation converges in  208 steps-->
+  <total_steps>  10 </total_steps> <!--the calculation converges in  157 steps-->
   <ffsocket mode='unix' name='zundel'>
     <latency> 1.0e-2 </latency>
     <slots> 4 </slots>
@@ -24,6 +24,9 @@
       <neb_optimizer mode='damped_bfgs'>
         <use_climb> True </use_climb>
         <stage> neb </stage>
+        <spring>
+          <kappa units="ev/ang^2"> 0.1 </kappa>
+        </spring>
         <tolerances>
           <energy units="electronvolt"> 1.e-4 </energy>
           <force units="ev/ang"> 1.e-2 </force>
