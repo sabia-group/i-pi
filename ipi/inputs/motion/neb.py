@@ -245,7 +245,7 @@ class InputNEB(InputDictionary):
             {
                 "dtype": [bool, float, float, float],
                 "options": ["varsprings", "kappa", "kappamax", "kappamin"],
-                "dimension": ["undefined"] + 3*["hessian"],
+                "dimension": ["undefined"] + 3 * ["hessian"],
                 "default": [False, 1.0, 1.5, 0.5],
                 "help": "Uniform or variable spring constants along the elastic band",
             },

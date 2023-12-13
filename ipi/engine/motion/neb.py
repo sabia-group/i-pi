@@ -68,7 +68,7 @@ class NEBGradientMapper(object):
         self.rbeads.q[:] = ens.beads.q[1:-1]
         self.rforces = ens.forces.copy(self.rbeads, self.dcell)
 
-    def __call__(self, x, stage='neb', cl_indx=None):
+    def __call__(self, x, stage="neb", cl_indx=None):
         """Returns the potential for all beads and the gradient."""
 
         # Bead positions
@@ -194,14 +194,14 @@ class NEBGradientMapper(object):
             #     * np.dot(btau[ii], (bq[ii + 1] + bq[ii - 1] - 2 * bq[ii]))
             # )
 
-             # Get perpendicular forces
+            # Get perpendicular forces
 
             # Improved tangent implementation
             # Eq. 12 in J. Chem. Phys. 113, 9978 (2000):
-            if stage == 'climb' and ii == cl_indx:
+            if stage == "climb" and ii == cl_indx:
                 info(" @CI-NEB : using climbing forces", verbosity.debug)
                 # No spring forces, force component along MEP is inverted
-                rbf[ii - 1] -= 2*np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
+                rbf[ii - 1] -= 2 * np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
             else:
                 # Remove force component along the MEP
                 rbf[ii - 1] -= np.dot(rbf[ii - 1], btau[ii]) * btau[ii]
@@ -223,7 +223,6 @@ class NEBGradientMapper(object):
         e = be.sum()
         g = -rbf
         return e, g
-
 
 
 class NEBMover(Motion):
@@ -378,7 +377,7 @@ class NEBMover(Motion):
                     )
                 else:
                     raise ValueError("Hessian size does not match system size.")
-            
+
         if len(self.fixatoms) == len(self.beads[0]):
             softexit.trigger(
                 status="bad",
@@ -474,7 +473,7 @@ class NEBMover(Motion):
             self.ptime = self.ttime = 0
             self.qtime = -time.time()
 
-            reset = (self.stage == "climb" and self.cl_indx == -1)
+            reset = self.stage == "climb" and self.cl_indx == -1
             if reset:
                 self.init_climb()
                 reset = True
@@ -488,8 +487,9 @@ class NEBMover(Motion):
                     # Initialize direction to the steepest descent direction
                     info(" @NEB: calling NEBGradientMapper at step 0.", verbosity.debug)
                     self.nebpot, self.nebgrad = self.nebgm(
-                        self.beads.q[1:-1, self.nebgm.fixatoms_mask], 
-                        self.stage, self.cl_indx
+                        self.beads.q[1:-1, self.nebgm.fixatoms_mask],
+                        self.stage,
+                        self.cl_indx,
                     )
                     info(
                         " @NEB: NEBGradientMapper returned nebpot and nebgrad.",
@@ -554,7 +554,8 @@ class NEBMover(Motion):
                     )
                     self.nebpot, self.nebgrad = self.nebgm(
                         self.beads.q[1:-1, self.nebgm.fixatoms_mask],
-                        self.stage, self.cl_indx
+                        self.stage,
+                        self.cl_indx,
                     )
                     self.old_x = dstrip(
                         self.beads.q[1:-1, self.nebgm.fixatoms_mask].copy()
