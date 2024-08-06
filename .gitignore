@@ -17,3 +17,6 @@ regtest-ref
 /build
 /dist
 *.egg-info/
+*.code-workspace
+*.cpython-*-linux-gnu.so
+
