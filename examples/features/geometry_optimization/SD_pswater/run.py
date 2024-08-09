@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*-coding:utf-8 -*-
+# -*-coding:utf-8 -*-open(filename, "r")
 '''
 @File    :   run.py
 @Time    :   2024/06/07 17:05:46

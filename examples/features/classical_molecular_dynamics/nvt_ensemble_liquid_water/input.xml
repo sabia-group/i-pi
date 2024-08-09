@@ -10,7 +10,6 @@
   </prng>
   <ffsocket name='driver-qtip4pf' mode='unix' pbc='false'>
       <address>h2o-md.1</address>
-      <offset>-2.2017482</offset> <!-- removes constant value from energy -->
   </ffsocket>
   <system>
     <initialize nbeads='1'>
