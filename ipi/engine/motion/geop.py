@@ -57,20 +57,20 @@ class GeopMotion(Motion):
         mode="sd",
         optimizer=None,
         exit_on_convergence=True,
-        #biggest_step=100.0,
-        #old_pos=np.zeros(0, float),
-        #old_pot=np.zeros(0, float),
-        #old_force=np.zeros(0, float),
-        #old_direction=np.zeros(0, float),
-        #invhessian_bfgs=np.eye(0, 0, 0, float),
-        #hessian_trm=np.eye(0, 0, 0, float),
-        #tr_trm=np.zeros(0, float),
-        #ls_options={"tolerance": 1e-4, "iter": 100, "step": 1e-3, "adaptive": 1.0},
+        # biggest_step=100.0,
+        # old_pos=np.zeros(0, float),
+        # old_pot=np.zeros(0, float),
+        # old_force=np.zeros(0, float),
+        # old_direction=np.zeros(0, float),
+        # invhessian_bfgs=np.eye(0, 0, 0, float),
+        # hessian_trm=np.eye(0, 0, 0, float),
+        # tr_trm=np.zeros(0, float),
+        # ls_options={"tolerance": 1e-4, "iter": 100, "step": 1e-3, "adaptive": 1.0},
         tolerances={"energy": 1e-7, "force": 1e-4, "position": 1e-4},
-        #corrections_lbfgs=6,  # changed to 6 because it's 6 in inputs/motion/geop.py, which overrides it anyways
-        #scale_lbfgs=1,
-        #qlist_lbfgs=np.zeros(0, float),
-        #glist_lbfgs=np.zeros(0, float),
+        # corrections_lbfgs=6,  # changed to 6 because it's 6 in inputs/motion/geop.py, which overrides it anyways
+        # scale_lbfgs=1,
+        # qlist_lbfgs=np.zeros(0, float),
+        # glist_lbfgs=np.zeros(0, float),
     ):
         """Initialises GeopMotion.
 
@@ -89,18 +89,18 @@ class GeopMotion(Motion):
         self.mode = mode
         self.optimizer = optimizer
         self.conv_exit = exit_on_convergence
-        #self.big_step = biggest_step
+        # self.big_step = biggest_step
         self.tolerances = tolerances
-        #self.ls_options = ls_options
+        # self.ls_options = ls_options
 
         #
-        #self.old_x = old_pos
-        #self.old_u = old_pot
-        #self.old_f = old_force
-        #self.d = old_direction
+        # self.old_x = old_pos
+        # self.old_u = old_pot
+        # self.old_f = old_force
+        # self.d = old_direction
 
         # Classes for minimization routines and specific attributes
-        '''
+        """
         if self.mode == "bfgs":
             self.invhessian = invhessian_bfgs
             self.optimizer = BFGSOptimizer()
@@ -123,7 +123,7 @@ class GeopMotion(Motion):
             self.optimizer = Damped_BFGSOptimizer()
         else:
             self.optimizer = DummyOptimizer()
-        '''
+        """
 
     def reset(self):  # necessary for Al6xxx-kmc
         # zeroes out all memory of previous steps
@@ -326,7 +326,7 @@ class DummyOptimizer:
             )
 
         # The resize action must be done before the bind
-        '''
+        """
         if geop.old_x.size != self.beads.q.size:
             if geop.old_x.size == 0:
                 geop.old_x = np.zeros((self.beads.nbeads, 3 * self.beads.natoms), float)
@@ -357,7 +357,7 @@ class DummyOptimizer:
         self.old_x = geop.old_x
         self.old_u = geop.old_u
         self.old_f = geop.old_f
-        self.d = geop.d'''
+        self.d = geop.d"""
 
     def exitstep(self, fx, u0, x):
         """Exits the simulation step. Computes time, checks for convergence."""
@@ -486,9 +486,9 @@ class BFGSOptimizer(DummyOptimizer):
 
             # Restore dimensionality of d and invhessian
             self.d[:, self.gm.fixatoms_mask] = masked_d
-            self.invhessian[np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)] = (
-                masked_invhessian
-            )
+            self.invhessian[
+                np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)
+            ] = masked_invhessian
 
         else:
             fdf0 = (self.old_u, -self.old_f)
@@ -581,9 +581,9 @@ class BFGSTRMOptimizer(DummyOptimizer):
             )
 
             # Restore dimensionality of the hessian
-            self.hessian[np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)] = (
-                masked_hessian
-            )
+            self.hessian[
+                np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)
+            ] = masked_hessian
         else:
             # Make one step. ( A step is finished when a movement is accepted)
             BFGSTRM(
@@ -799,9 +799,9 @@ class Damped_BFGSOptimizer(DummyOptimizer):
             )
 
             # Restore dimensionality of the invhessian
-            self.invhessian[np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)] = (
-                masked_invhessian
-            )
+            self.invhessian[
+                np.ix_(self.gm.fixatoms_mask, self.gm.fixatoms_mask)
+            ] = masked_invhessian
 
         else:
             fdf0 = (self.old_u, -self.old_f)
@@ -842,7 +842,7 @@ class SDOptimizer(DummyOptimizer):
         # call bind function from DummyOptimizer
         super(SDOptimizer, self).bind(geop)
         self.lm.bind(self)
-        #self.ls_options = geop.ls_options
+        # self.ls_options = geop.ls_options
 
     def step(self, step=None):
         """Does one simulation time step

@@ -46,7 +46,7 @@ class InputOptimizer(Input):
                     "",
                     "sd",
                 ],
-                #"default": "sd",
+                # "default": "sd",
                 "help": "The type of optimizer",
             },
         )
@@ -68,7 +68,6 @@ class InputOptimizer(Input):
             },
         ),
     }
-
 
     default_help = "Simulates geometry optimiztion."
     default_label = "Optimizers"
@@ -122,7 +121,8 @@ class InputOptimizer(Input):
         if mode in ["sd", ""]:
             pass  # maybe implement some checks later
 
-'''
+
+"""
 class InputOptimizer(InputOptimizerBase):
 
 
@@ -144,4 +144,4 @@ class InputOptimizer(InputOptimizerBase):
 
     def fetch(self):
         optimizer = super(InputOptimizer, self).fetch()
-        return optimizer'''
+        return optimizer"""

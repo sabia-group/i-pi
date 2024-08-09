@@ -66,7 +66,7 @@ class InputGeop(InputDictionary):
 
     # options of the method (mostly tolerances)
     fields = {
-        "optimizer":(
+        "optimizer": (
             InputOptimizer,
             {
                 "default": input_default(factory=ipi.engine.motion.geop.GeopMotion),
@@ -109,7 +109,7 @@ class InputGeop(InputDictionary):
         self.exit_on_convergence.store(geop.conv_exit)
         self.optimizer.store(geop.optimizer)
 
-        '''if geop.mode == "bfgs":
+        """if geop.mode == "bfgs":
             self.old_direction.store(geop.d)
             self.invhessian_bfgs.store(geop.invhessian)
             self.biggest_step.store(geop.big_step)
@@ -133,7 +133,7 @@ class InputGeop(InputDictionary):
         if geop.mode == "damped_bfgs":
             self.old_direction.store(geop.d)
             self.invhessian_bfgs.store(geop.invhessian)
-            self.biggest_step.store(geop.big_step)'''
+            self.biggest_step.store(geop.big_step)"""
 
     def fetch(self):
         rv = super(InputGeop, self).fetch()
