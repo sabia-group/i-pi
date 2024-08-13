@@ -16,6 +16,7 @@ __all__ = [
     "properties",
     "thermostats",
     "barostats",
+    "optimizers",
     "beads",
     "outputs",
     "normalmodes",

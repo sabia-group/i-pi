@@ -31,13 +31,10 @@ from ipi.engine.motion import (
     Dynamics,
     ConstrainedDynamics,
     Replay,
-    GeopMotion,
-    NEBMover,
-    StringMover,
+    #Optimization,
     DynMatrixMover,
     MultiMotion,
     AlchemyMC,
-    InstantonMotion,
     TemperatureRamp,
     PressureRamp,
     AtomSwap,
@@ -47,10 +44,11 @@ from ipi.engine.motion import (
     NormalModeMover,
     DrivenDynamics,
 )
+from ipi.engine.motion.optimization import Optimization
 from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
 from ipi.inputs.initializer import *
-from .geop import InputGeop
+from .optimization import InputOptimization
 from .instanton import InputInst
 from .neb import InputNEB
 from .stringmep import InputStringMEP
@@ -93,10 +91,8 @@ class InputMotionBase(Input):
                 "help": "How atoms should be moved at each step in the simulatio. 'replay' means that a simulation is replayed from trajectories provided to i-PI.",
                 "options": [
                     "vibrations",
-                    "minimize",
+                    "optimization",
                     "replay",
-                    "neb",
-                    "string",
                     "dynamics",
                     "driven_dynamics",
                     "constrained_dynamics",
@@ -105,7 +101,6 @@ class InputMotionBase(Input):
                     "alchemy",
                     "atomswap",
                     "planetary",
-                    "instanton",
                     "al-kmc",
                     "dummy",
                     "scp",
@@ -132,20 +127,9 @@ class InputMotionBase(Input):
                 "help": "Indices of the atmoms that should be held fixed.",
             },
         ),
-        "optimizer": (
-            InputGeop,
-            {"default": {}, "help": "Option for geometry optimization"},
-        ),
-        "neb_optimizer": (
-            InputNEB,
-            {"default": {}, "help": "Option for NEB optimization"},
-        ),
-        "string_optimizer": (
-            InputStringMEP,
-            {
-                "default": {},
-                "help": "Option for String minimal-energy path optimization",
-            },
+        "optimization": (
+            InputOptimization,
+            {"default": {}, "help": "Option for optimization"},
         ),
         "dynamics": (
             InputDynamics,
@@ -209,10 +193,6 @@ class InputMotionBase(Input):
             InputPressureRamp,
             {"default": {}, "help": "Option for pressure ramp"},
         ),
-        "instanton": (
-            InputInst,
-            {"default": {}, "help": "Option for Instanton optimization"},
-        ),
         "al6xxx_kmc": (InputAlKMC, {"default": {}, "help": "Option for Al-6xxx KMC"}),
         "planetary": (
             InputPlanetary,
@@ -238,17 +218,9 @@ class InputMotionBase(Input):
         elif type(sc) is Replay:
             self.mode.store("replay")
             tsc = 0
-        elif type(sc) is GeopMotion:
-            self.mode.store("minimize")
-            self.optimizer.store(sc)
-            tsc = 1
-        elif type(sc) is NEBMover:
-            self.mode.store("neb")
-            self.neb_optimizer.store(sc)
-            tsc = 1
-        elif type(sc) is StringMover:
-            self.mode.store("string")
-            self.string_optimizer.store(sc)
+        elif type(sc) is Optimization:
+            self.mode.store("optimization")
+            self.optimization.store(sc)
             tsc = 1
         elif type(sc) is DrivenDynamics:
             self.mode.store("driven_dynamics")
@@ -281,10 +253,6 @@ class InputMotionBase(Input):
         elif type(sc) is AtomSwap:
             self.mode.store("atomswap")
             self.atomswap.store(sc)
-            tsc = 1
-        elif type(sc) is InstantonMotion:
-            self.mode.store("instanton")
-            self.instanton.store(sc)
             tsc = 1
         elif type(sc) is Planetary:
             self.mode.store("planetary")
@@ -332,35 +300,11 @@ class InputMotionBase(Input):
                 fixatoms=self.fixatoms.fetch(),
                 intraj=self.file.fetch(),
             )
-        elif self.mode.fetch() == "minimize":
-            sc = GeopMotion(
+        elif self.mode.fetch() == "optimization":
+            sc = Optimization(
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
-                **self.optimizer.fetch()
-            )
-        elif self.mode.fetch() == "neb":
-            #            raise ValueError(
-            #                "The nudged elastic band calculation has been "
-            #                "temporarily disabled until further bug-fixes."
-            #            )
-            sc = NEBMover(
-                fixcom=self.fixcom.fetch(),
-                fixatoms=self.fixatoms.fetch(),
-                **self.neb_optimizer.fetch()
-            )
-        elif self.mode.fetch() == "string":
-            softexit.trigger(
-                status="bad",
-                message=(
-                    "String method is experimental: not guaranteed to work correctly "
-                    "and makes twice more force calls than it is expected to.\n"
-                    "We stop here. If you want to proceed, comment out this trigger."
-                ),
-            )
-            sc = StringMover(
-                fixcom=self.fixcom.fetch(),
-                fixatoms=self.fixatoms.fetch(),
-                **self.string_optimizer.fetch()
+                **self.optimization.fetch()
             )
         elif self.mode.fetch() == "driven_dynamics":
             sc = DrivenDynamics(
@@ -409,12 +353,6 @@ class InputMotionBase(Input):
                 fixcom=self.fixcom.fetch(),
                 fixatoms=self.fixatoms.fetch(),
                 **self.atomswap.fetch()
-            )
-        elif self.mode.fetch() == "instanton":
-            sc = InstantonMotion(
-                fixcom=self.fixcom.fetch(),
-                fixatoms=self.fixatoms.fetch(),
-                **self.instanton.fetch()
             )
         elif self.mode.fetch() == "planetary":
             sc = Planetary(
