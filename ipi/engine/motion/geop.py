@@ -15,7 +15,7 @@ import numpy as np
 import time
 
 from ipi.engine.motion import Motion
-from ipi.utils.depend import dstrip
+from ipi.utils.depend import dstrip, dobject
 from ipi.utils.softexit import softexit
 from ipi.utils.mintools import min_brent, BFGS, BFGSTRM, L_BFGS, Damped_BFGS
 from ipi.utils.messages import verbosity, info
@@ -42,7 +42,7 @@ class GeopMotion(Motion):
                 gradient}
         tolerances:
         {energy: change in energy tolerance for ending minimization
-        force: force/change in force tolerance foe ending minimization
+        force: force/change in force tolerance for ending minimization
         position: change in position tolerance for ending minimization}
         corrections_lbfgs: number of corrections to be stored for L-BFGS
         scale_lbfgs: Scale choice for the initial hessian.
@@ -54,23 +54,22 @@ class GeopMotion(Motion):
         self,
         fixcom=False,
         fixatoms=None,
-        mode="sd",
-        optimizer=None,
+        mode="lbfgs",
         exit_on_convergence=True,
-        # biggest_step=100.0,
-        # old_pos=np.zeros(0, float),
-        # old_pot=np.zeros(0, float),
-        # old_force=np.zeros(0, float),
-        # old_direction=np.zeros(0, float),
-        # invhessian_bfgs=np.eye(0, 0, 0, float),
-        # hessian_trm=np.eye(0, 0, 0, float),
-        # tr_trm=np.zeros(0, float),
-        # ls_options={"tolerance": 1e-4, "iter": 100, "step": 1e-3, "adaptive": 1.0},
+        biggest_step=100.0,
+        old_pos=np.zeros(0, float),
+        old_pot=np.zeros(0, float),
+        old_force=np.zeros(0, float),
+        old_direction=np.zeros(0, float),
+        invhessian_bfgs=np.eye(0, 0, 0, float),
+        hessian_trm=np.eye(0, 0, 0, float),
+        tr_trm=np.zeros(0, float),
+        ls_options={"tolerance": 1e-4, "iter": 100, "step": 1e-3, "adaptive": 1.0},
         tolerances={"energy": 1e-7, "force": 1e-4, "position": 1e-4},
-        # corrections_lbfgs=6,  # changed to 6 because it's 6 in inputs/motion/geop.py, which overrides it anyways
-        # scale_lbfgs=1,
-        # qlist_lbfgs=np.zeros(0, float),
-        # glist_lbfgs=np.zeros(0, float),
+        corrections_lbfgs=6,  # changed to 6 because it's 6 in inputs/motion/geop.py, which overrides it anyways
+        scale_lbfgs=1,
+        qlist_lbfgs=np.zeros(0, float),
+        glist_lbfgs=np.zeros(0, float),
     ):
         """Initialises GeopMotion.
 
@@ -81,26 +80,24 @@ class GeopMotion(Motion):
         # if len(fixatoms) > 0:
         #     raise ValueError("The optimization algorithm with fixatoms is not implemented. "
         #                      "We stop here. Comment this line and continue only if you know what you are doing")
-
-        super(GeopMotion, self).__init__(fixcom=fixcom, fixatoms=fixatoms)
+        #Inherit from Motion class initialization fixcom and fixatoms
+        super(GeopMotion, self).__init__(fixcom=fixcom, fixatoms=fixatoms) 
 
         # Optimization Options
 
         self.mode = mode
-        self.optimizer = optimizer
         self.conv_exit = exit_on_convergence
-        # self.big_step = biggest_step
+        self.big_step = biggest_step
         self.tolerances = tolerances
-        # self.ls_options = ls_options
+        self.ls_options = ls_options
 
         #
-        # self.old_x = old_pos
-        # self.old_u = old_pot
-        # self.old_f = old_force
-        # self.d = old_direction
+        self.old_x = old_pos
+        self.old_u = old_pot
+        self.old_f = old_force
+        self.d = old_direction
 
         # Classes for minimization routines and specific attributes
-        """
         if self.mode == "bfgs":
             self.invhessian = invhessian_bfgs
             self.optimizer = BFGSOptimizer()
@@ -123,7 +120,6 @@ class GeopMotion(Motion):
             self.optimizer = Damped_BFGSOptimizer()
         else:
             self.optimizer = DummyOptimizer()
-        """
 
     def reset(self):  # necessary for Al6xxx-kmc
         # zeroes out all memory of previous steps
@@ -133,7 +129,7 @@ class GeopMotion(Motion):
         self.d *= 0.0
 
         if self.mode == "bfgs":
-            self.invhessian[:] = np.eye(
+            self.invhessian[:] = np.eye( # identity matrix of right lengths
                 len(self.invhessian), len(self.invhessian), 0, float
             )
         # bfgstrm
@@ -186,6 +182,7 @@ class GeopMotion(Motion):
 
 
 class LineMapper(object):
+
     """Creation of the one-dimensional function that will be minimized.
     Used in steepest descent and conjugate gradient minimizers.
 
@@ -239,6 +236,7 @@ class LineMapper(object):
 
 
 class GradientMapper(object):
+
     """Creation of the multi-dimensional function that will be minimized.
     Used in the BFGS and L-BFGS minimizers.
 
@@ -275,7 +273,7 @@ class GradientMapper(object):
         return e, g
 
 
-class DummyOptimizer:
+class DummyOptimizer(dobject):
     """Dummy class for all optimization classes"""
 
     def __init__(self):
@@ -326,7 +324,6 @@ class DummyOptimizer:
             )
 
         # The resize action must be done before the bind
-        """
         if geop.old_x.size != self.beads.q.size:
             if geop.old_x.size == 0:
                 geop.old_x = np.zeros((self.beads.nbeads, 3 * self.beads.natoms), float)
@@ -357,7 +354,7 @@ class DummyOptimizer:
         self.old_x = geop.old_x
         self.old_u = geop.old_u
         self.old_f = geop.old_f
-        self.d = geop.d"""
+        self.d = geop.d
 
     def exitstep(self, fx, u0, x):
         """Exits the simulation step. Computes time, checks for convergence."""
@@ -835,14 +832,11 @@ class SDOptimizer(DummyOptimizer):
     dq1_unit = unit vector of dq1
     """
 
-    def __init__(self, ls_options):
-        self.ls_options = ls_options
-
     def bind(self, geop):
         # call bind function from DummyOptimizer
         super(SDOptimizer, self).bind(geop)
         self.lm.bind(self)
-        # self.ls_options = geop.ls_options
+        self.ls_options = geop.ls_options
 
     def step(self, step=None):
         """Does one simulation time step

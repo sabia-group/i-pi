@@ -16,19 +16,17 @@
        <forces>
           <force forcefield="pswater"> </force>
        </forces>
-       <motion mode="optimization">
-            <optimization mode="minimize">
-                <optimizer mode="bfgs">
-                    <ls_options>
-		                <tolerance> 1e-4 </tolerance>
-	                </ls_options> 
-                    <tolerances>
-                        <energy> 5e-6 </energy>
-                        <force> 5e-6 </force>
-                        <position> 5e-6 </position>
-                    </tolerances>
-                </optimizer>
-            </optimization>
+       <motion mode="minimize">
+            <optimizer mode="bfgs">
+                <ls_options>
+		   <tolerance> 1e-4 </tolerance>
+	        </ls_options> 
+                <tolerances>
+                    <energy> 5e-6 </energy>
+                    <force> 5e-6 </force>
+                    <position> 5e-6 </position>
+                </tolerances>
+           </optimizer>
        </motion>
    </system>
 </simulation>

@@ -1,0 +1,78 @@
+
+ ____       ____       ____       ____
+/    \     /    \     /    \     /    \
+|  #################################  |
+\__#_/     \____/     \____/     \_#__/
+   #    _        _______  _____    #
+   #   (_)      |_   __ \|_   _|   #      -*-     v 3.0.0-alpha  -*-
+   #   __  ______ | |__) | | |     #
+   Y  [  ||______||  ___/  | |     #      A Universal Force Engine
+  0 0  | |       _| |_    _| |_    #
+   #  [___]     |_____|  |_____|   #
+ __#_       ____       ____       _#__
+/  # \     /    \     /    \     / #  \
+|  #################################  |
+\____/     \____/     \____/     \____/
+
+    
+ # @simulation: Fetchingffsocket
+ # Initializing system object 
+ # Initializing simulation object 
+ # Initializing from file init.xyz. Dimension: length, units: angstrom, cell_units: automatic
+ # Initializing from file init.xyz. Dimension: length, units: automatic, cell_units: automatic
+ # Initializing from file init.xyz. Dimension: length, units: automatic, cell_units: automatic
+ # Initializing from file init.xyz. Dimension: length, units: automatic, cell_units: automatic
+ !W! Momenta not specified in initialize. Will start with zero velocity if they are not specified in beads.
+ # Binding the forces 
+Created unix socket with address localhost
+ @ForceField: Starting the polling thread main loop.
+ # i-PI loaded input file:  input.xml
+ @SOCKET:   Client asked for connection from . Now hand-shaking.
+ @SOCKET:   Handshaking was successful. Added to the client list.
+   Number of force calls: 3
+@GEOP
+   Current energy             4.774490e-04
+   Position displacement      2.629552e-02  Tolerance 5.000000e-06
+   Max force component        8.659052e-03  Tolerance 5.000000e-06
+   Energy difference per atom 2.397220e-04  Tolerance 5.000000e-06
+ # Average timings at MD step       0. t/step: 1.35508e-02
+   Number of force calls: 1
+@GEOP
+   Current energy             2.961141e-04
+   Position displacement      7.386962e-03  Tolerance 5.000000e-06
+   Max force component        6.310654e-03  Tolerance 5.000000e-06
+   Energy difference per atom 6.044496e-05  Tolerance 5.000000e-06
+   Number of force calls: 1
+@GEOP
+   Current energy             7.899831e-07
+   Position displacement      3.142304e-02  Tolerance 5.000000e-06
+   Max force component        5.452015e-04  Tolerance 5.000000e-06
+   Energy difference per atom 9.844138e-05  Tolerance 5.000000e-06
+   Number of force calls: 1
+@GEOP
+   Current energy             1.332286e-07
+   Position displacement      1.069678e-03  Tolerance 5.000000e-06
+   Max force component        7.314448e-05  Tolerance 5.000000e-06
+   Energy difference per atom 2.189181e-07  Tolerance 5.000000e-06
+   Number of force calls: 1
+@GEOP
+   Current energy             1.277351e-07
+   Position displacement      7.575408e-05  Tolerance 5.000000e-06
+   Max force component        8.466669e-06  Tolerance 5.000000e-06
+   Energy difference per atom 1.831167e-09  Tolerance 5.000000e-06
+   Number of force calls: 1
+@GEOP
+   Current energy             1.276346e-07
+   Position displacement      9.666413e-06  Tolerance 5.000000e-06
+   Max force component        3.802444e-07  Tolerance 5.000000e-06
+   Energy difference per atom 3.351899e-11  Tolerance 5.000000e-06
+   Number of force calls: 1
+@GEOP
+   Current energy             1.276342e-07
+   Position displacement      8.081751e-07  Tolerance 5.000000e-06
+   Max force component        1.438422e-08  Tolerance 5.000000e-06
+   Energy difference per atom 1.188289e-13  Tolerance 5.000000e-06
+SOFTEXIT CALLED FROM THREAD <Thread(ThreadPoolExecutor-1_2, started 22676365518528)> Geometry optimization converged. Exiting simulation
+ !W! Soft exit has been requested with message: 'Geometry optimization converged. Exiting simulation
+I-PI reports success. Restartable as is: NO.'. Cleaning up.
+ @SOCKET: Shutting down the driver interface.

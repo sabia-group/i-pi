@@ -24,27 +24,16 @@ Classes:
 
 import numpy as np
 from ipi.engine.motion import *
-import ipi.engine.motion.geop
 from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
 from ipi.inputs.initializer import *
 from ipi.utils.units import *
-from ipi.utils.inputvalue import (
-    InputDictionary,
-    InputAttribute,
-    InputValue,
-    InputArray,
-    input_default,
-)
-
-# create InputOptimizer file in ipi.inputs
-from ipi.inputs.optimizers import InputOptimizer
-import ipi.engine.motion.geop as geoptimizers
 
 __all__ = ["InputGeop"]
 
 
 class InputGeop(InputDictionary):
+
     """Geometry optimization options.
 
     Contains options related with geometry optimization, such as method,
@@ -57,20 +46,28 @@ class InputGeop(InputDictionary):
             InputAttribute,
             {
                 "dtype": str,
-                "default": "",
+                "default": "lbfgs",
                 "help": "The geometry optimization algorithm to be used",
-                "options": ["", "sd"],
+                "options": ["sd", "cg", "bfgs", "bfgstrm", "lbfgs", "damped_bfgs"],
             },
         )
     }
 
     # options of the method (mostly tolerances)
     fields = {
-        "optimizer":(
-            InputOptimizer,
+        "ls_options": (
+            InputDictionary,
             {
-                "default": input_default(factory=ipi.engine.motion.geop.GeopMotion),
-                "help": "The geometry optimization algorithm used",
+                "dtype": [float, int, float, float],
+                "help": """"Options for line search methods. Includes:
+                              tolerance: stopping tolerance for the search (as a fraction of the overall energy tolerance),
+                              iter: the maximum number of iterations,
+                              step: initial step for bracketing,
+                              adaptive: whether to update initial step.
+                              """,
+                "options": ["tolerance", "iter", "step", "adaptive"],
+                "default": [1e-4, 100, 1e-3, 1.0],
+                "dimension": ["energy", "undefined", "length", "undefined"],
             },
         ),
         "exit_on_convergence": (
@@ -91,6 +88,110 @@ class InputGeop(InputDictionary):
                 "dimension": ["energy", "force", "length"],
             },
         ),
+        "biggest_step": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 100.0,
+                "help": "The maximum step size for (L)-BFGS line minimizations.",
+            },
+        ),
+        "scale_lbfgs": (
+            InputValue,
+            {
+                "dtype": int,
+                "default": 2,
+                "help": """Scale choice for the initial hessian.
+                                            0 identity.
+                                            1 Use first member of position/gradient list.
+                                            2 Use last  member of position/gradient list.""",
+            },
+        ),
+        "corrections_lbfgs": (
+            InputValue,
+            {
+                "dtype": int,
+                "default": 6,
+                "help": "The number of past vectors to store for L-BFGS.",
+            },
+        ),
+        # re-start parameters, estimate hessian, etc.
+        "old_pos": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The previous positions in an optimization step.",
+                "dimension": "length",
+            },
+        ),
+        "old_pot": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The previous potential energy in an optimization step.",
+                "dimension": "energy",
+            },
+        ),
+        "old_force": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The previous force in an optimization step.",
+                "dimension": "force",
+            },
+        ),
+        "old_direction": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The previous direction in a CG or SD optimization.",
+            },
+        ),
+        "invhessian_bfgs": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.eye, args=(0,)),
+                "help": "Approximate inverse Hessian for BFGS, if known.",
+            },
+        ),
+        "hessian_trm": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.eye, args=(0,)),
+                "help": "Approximate Hessian for trm, if known.",
+            },
+        ),
+        "tr_trm": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "The trust radius in trm.",
+                "dimension": "length",
+            },
+        ),
+        "qlist_lbfgs": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "List of previous position differences for L-BFGS, if known.",
+            },
+        ),
+        "glist_lbfgs": (
+            InputArray,
+            {
+                "dtype": float,
+                "default": input_default(factory=np.zeros, args=(0,)),
+                "help": "List of previous gradient differences for L-BFGS, if known.",
+            },
+        ),
     }
 
     dynamic = {}
@@ -107,9 +208,8 @@ class InputGeop(InputDictionary):
         self.mode.store(geop.mode)
         self.tolerances.store(geop.tolerances)
         self.exit_on_convergence.store(geop.conv_exit)
-        self.optimizer.store(geop.optimizer)
 
-        """if geop.mode == "bfgs":
+        if geop.mode == "bfgs":
             self.old_direction.store(geop.d)
             self.invhessian_bfgs.store(geop.invhessian)
             self.biggest_step.store(geop.big_step)
@@ -133,7 +233,7 @@ class InputGeop(InputDictionary):
         if geop.mode == "damped_bfgs":
             self.old_direction.store(geop.d)
             self.invhessian_bfgs.store(geop.invhessian)
-            self.biggest_step.store(geop.big_step)"""
+            self.biggest_step.store(geop.big_step)
 
     def fetch(self):
         rv = super(InputGeop, self).fetch()

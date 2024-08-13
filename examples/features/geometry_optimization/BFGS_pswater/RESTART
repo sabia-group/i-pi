@@ -1,0 +1,53 @@
+<simulation mode='static'>
+   <output prefix='simulation'>
+      <properties shape='(2)'> [ step, potential{electronvolt} ] </properties>
+      <trajectory filename='pos_c'>x_centroid</trajectory>
+      <trajectory filename='frc_c'>f_centroid</trajectory>
+   </output>
+   <step>7</step>
+   <total_steps>10</total_steps>
+   <ffsocket mode='unix' name='pswater'>
+   </ffsocket>
+   <system>
+      <forces>
+         <force forcefield='pswater'>
+         </force>
+      </forces>
+      <ensemble>
+         <temperature>  1.00000000e+00</temperature>
+         <pressure> -1.00000000e+00</pressure>
+         <stress shape='(3, 3)'>
+          [  -1.00000000e+00,  -1.00000000e+00,  -1.00000000e+00,  -1.00000000e+00,  -1.00000000e+00, 
+             -1.00000000e+00,  -1.00000000e+00,  -1.00000000e+00,  -1.00000000e+00 ]
+         </stress>
+         <hamiltonian_weights shape='(1)'> [   1.00000000e+00 ] </hamiltonian_weights>
+      </ensemble>
+      <motion mode='optimization'>
+         <optimization>
+            <optimizer mode=''>
+               <tolerances>
+                  <energy>  5.00000000e-06</energy>
+                  <force>  5.00000000e-06</force>
+                  <position>  5.00000000e-06</position>
+               </tolerances>
+            </optimizer>
+         </optimization>
+      </motion>
+      <beads natoms='3' nbeads='1'>
+         <q shape='(1, 9)'>
+          [   1.04017522e+00,  -1.85290497e+00,  -3.96717924e-01,   3.31744744e-01,  -2.32563543e+00, 
+             -1.99388034e+00,   7.68214708e-02,  -4.09245881e-01,   1.17163067e-01 ]
+         </q>
+         <p shape='(1, 9)'>
+          [   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   0.00000000e+00, 
+              0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   0.00000000e+00 ]
+         </p>
+         <m shape='(3)'> [   2.91651223e+04,   1.83736223e+03,   1.83736223e+03 ] </m>
+         <names shape='(3)'> [ O, H, H ] </names>
+      </beads>
+      <cell shape='(3, 3)'>
+       [   2.52916600e+01,   0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   2.52916600e+01, 
+           0.00000000e+00,   0.00000000e+00,   0.00000000e+00,   2.52916600e+01 ]
+      </cell>
+   </system>
+</simulation>

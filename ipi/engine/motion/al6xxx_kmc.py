@@ -12,7 +12,7 @@ import threading
 import numpy as np
 import collections
 
-from ipi.engine.motion import Motion, GeopMotion
+from ipi.engine.motion import Motion #, GeopMotion
 from ipi.utils.depend import dstrip, depend_value
 from ipi.engine.cell import Cell
 from ipi.utils.units import Constants

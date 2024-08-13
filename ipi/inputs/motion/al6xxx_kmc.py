@@ -29,7 +29,7 @@ from ipi.utils.inputvalue import *
 from ipi.inputs.thermostats import *
 from ipi.inputs.initializer import *
 from ipi.utils.units import *
-from .geop import InputGeop
+from ipi.inputs.motion.geop import InputGeop
 
 __all__ = ["InputAlKMC"]
 

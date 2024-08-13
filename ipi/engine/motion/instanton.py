@@ -25,7 +25,7 @@ from ipi.utils.softexit import softexit
 from ipi.utils.messages import verbosity, info
 from ipi.utils import units
 from ipi.utils.mintools import nichols, Powell
-from ipi.engine.motion.geop import L_BFGS
+#from ipi.engine.motion.geop import L_BFGS
 from ipi.utils.instools import (
     banded_hessian,
     invmul_banded,
