@@ -1086,7 +1086,7 @@ class Forces:
           - new_f list of length equal to number of force type, containing the beads forces
           - new_x list of length equal to number of force type, containing the beads extras
         """
-        msg = "Unconsistent dimensions inside transfer_forces_manual"
+        msg = "Inconsistent dimensions inside transfer_forces_manual"
         assert len(self.mforces) == len(new_q), msg
         assert len(self.mforces) == len(new_v), msg
         assert len(self.mforces) == len(new_forces), msg

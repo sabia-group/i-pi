@@ -51,6 +51,14 @@ class InputReplicaExchange(InputDictionary):
                 "help": "Rescale kinetic energy upon exchanges.",
             },
         ),
+        "srescale": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": False,
+                "help": "Rescale path-integral spring-energies upon exchanges. Involves extra force calls.",
+            },
+        ),
         "swapfile": (
             InputValue,
             {

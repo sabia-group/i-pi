@@ -60,7 +60,7 @@ class ReplicaExchange(Smotion):
             bias: activate hamiltonian replica exchange ***not yet implemented
     """
 
-    def __init__(self, stride=1.0, repindex=None, krescale=True, swapfile="PARATEMP"):
+    def __init__(self, stride=1.0, repindex=None, krescale=True, srescale=False, swapfile="PARATEMP"):
         """Initialises REMD.
 
         Args:
@@ -71,6 +71,8 @@ class ReplicaExchange(Smotion):
 
         self.swapfile = swapfile
         self.rescalekin = krescale
+        self.rescalespring = srescale
+
         # replica exchange options
         self.stride = stride
 
@@ -123,6 +125,15 @@ class ReplicaExchange(Smotion):
                 t_eval += time.time()
 
                 t_swap -= time.time()
+
+                # Check whether I need depend objects. Probably not. Should do dstrip?
+                if self.rescalespring:
+                    oldforcesi = sl[i].forces.copy()
+                    oldforcesj = sl[j].forces.copy()
+                    positionsi = sl[i].beads.q.copy()
+                    positionsj = sl[j].beads.q.copy()
+                    print("TYPES pos, sl", type(positionsi), type(sl[i].beads.q))
+
                 ensemble_swap(
                     sl[i].ensemble, sl[j].ensemble
                 )  # tries to swap the ensembles!
@@ -141,6 +152,25 @@ class ReplicaExchange(Smotion):
                     except AttributeError:
                         pass
 
+                # try to get rid of the spring term contributions and leave exchange mostly on the centroid
+                # needs extra potential evaluations
+                if self.rescalespring:
+                    # needs centroid position
+                    # pens of the initial potentials are saved
+                    print("positionsi before", positionsi)
+                    print("rescaled before", sl[i].beads.q)
+                    print("TYPES slresc i", type(sl[i].beads.q))
+                    print("TYPES slresc j", type(sl[j].beads.q))
+                    centroidi = sl[i].beads.qc.copy() # this should be just a copy with no dependencies
+                    centroidj = sl[j].beads.qc.copy()
+                    print("TYPES cent i", type(sl[i].beads.q))
+                    print("TYPES cent j", type(sl[j].beads.q))
+                    sl[i].beads.q = centroidi + np.sqrt(tj / ti) * (positionsi - centroidi)
+                    sl[j].beads.q = centroidj + np.sqrt(ti / tj) * (positionsj - centroidj)
+                    print("positionsi after", positionsi)
+                    print("rescaled after", sl[i].beads.q)
+                    # I think the barostat should be fine, no need to do anything
+
                 try:  # if motion has a barostat, and the barostat has a reference cell, does the swap
                     # as that when there are very different pressures, the cell should reflect the
                     # pressure/temperature dependence. this also changes the barostat conserved quantities
@@ -153,9 +183,11 @@ class ReplicaExchange(Smotion):
                 t_swap += time.time()
 
                 t_eval -= time.time()
+                # if we rescaled the positions, this should trigger a new call to the drivers
                 newpensi = sl[i].ensemble.lpens
                 newpensj = sl[j].ensemble.lpens
 
+                # it seems to me that this should be the same
                 pxc = np.exp((newpensi + newpensj) - (pensi + pensj))
                 t_eval += time.time()
 
@@ -171,6 +203,7 @@ class ReplicaExchange(Smotion):
 
                     t_eval -= time.time()
                     # we just have to carry on with the swapped ensembles, but we also keep track of the changes in econs
+                    # I will also carry on with the rescaled geometries. It is a good question whether I should unscale them? I think not.
                     sl[i].ensemble.eens += eci - sl[i].ensemble.econs
                     sl[j].ensemble.eens += ecj - sl[j].ensemble.econs
                     t_eval += time.time()
@@ -194,6 +227,17 @@ class ReplicaExchange(Smotion):
                             sl[j].motion.barostat.p *= tj / ti
                         except AttributeError:
                             pass
+                    if self.rescalespring:
+                    # HERE NEEDS TO UNDO THE RESCALING OF POSITIONS BUT RESTORE THE ENERGIES AND FORCES WITHOUT RECALCULATING
+                        sl[i].beads.q = positionsi
+                        sl[j].beads.q = positionsj
+                        sl[i].forces.transfer_forces(
+                            oldforcesi
+                        )
+                        sl[j].forces.transfer_forces(
+                            oldforcesj
+                        )
+
                     try:
                         bjh = dstrip(sl[j].motion.barostat.h0.h).copy()
                         sl[j].motion.barostat.h0.h[:] = sl[i].motion.barostat.h0.h[:]
