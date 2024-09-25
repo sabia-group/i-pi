@@ -95,11 +95,6 @@ class ReplicaExchange(Smotion):
                 )
 
         self.sf = self.output_maker.get_output(self.swapfile)
-        if self.rescalespring:
-            for i in range(len(self.syslist)):
-                self.syslist[i].dbeads = self.syslist[i].beads.copy()
-                self.syslist[i].dcell = self.syslist[i].cell.copy()
-                self.syslist[i].dforces = self.syslist[i].forces.copy(self.syslist[i].dbeads, self.syslist[i].dcell)
 
     def step(self, step=None):
         """Tries to exchange replica."""
@@ -135,6 +130,16 @@ class ReplicaExchange(Smotion):
                     sl[i].ensemble, sl[j].ensemble
                 )  # tries to swap the ensembles!
 
+                if self.rescalekin:
+                    # keep some information about positions and forces
+                    dbeadsi = sl[i].beads.clone()
+                    dcelli = sl[i].cell.clone()
+                    dbeadsj = sl[j].beads.clone()
+                    dcellj = sl[j].cell.clone()
+                    oldforcesi = sl[i].forces.dump_state()
+                    oldforcesj = sl[j].forces.dump_state()
+
+
                 # it is generally a good idea to rescale the kinetic energies,
                 # which means that the exchange is done only relative to the potential energy part.
                 if self.rescalekin:
@@ -156,20 +161,18 @@ class ReplicaExchange(Smotion):
                     # pens of the initial potentials are saved
                     #print("positionsi before", positionsi)
                     #print("rescaled before", sl[i].beads.q)
-                    centroidi = sl[i].dbeads.qc # this should be just a copy with no dependencies
-                    centroidj = sl[j].dbeads.qc
-                    deltai = sl[i].dbeads.q - centroidi
-                    deltaj = sl[j].dbeads.q - centroidj
+                    centroidi = sl[i].beads.qc # this should be just a copy with no dependencies
+                    centroidj = sl[j].beads.qc
+                    deltai = sl[i].beads.q - centroidi
+                    deltaj = sl[j].beads.q - centroidj
                     #print("TYPES bead cent i", type(sl[i].beads.q),  type(centroidi))
                     #print("TYPES bead cent j", type(sl[j].beads.q), type(centroidj))
-                    sl[i].dbeads.q = centroidi + np.sqrt(tj / ti) * deltai
+                    sl[i].beads.q = centroidi + np.sqrt(tj / ti) * deltai
                     #print("TYPES BEADS", type(sl[i].beads.q))
-                    sl[j].dbeads.q = centroidj + np.sqrt(ti / tj) * deltaj
+                    sl[j].beads.q = centroidj + np.sqrt(ti / tj) * deltaj
                     #print("positionsi after", positionsi)
                     #print("rescaled after, cent", sl[j].beads.q, centroidj, np.sqrt(ti / tj), (positionsj - centroidj))
                     # I think the barostat should be fine, no need to do anything
-                    #sl[i].beads.q *= np.sqrt(tj / ti)
-                    #sl[j].beads.q *= np.sqrt(ti / tj)
 
                 try:  # if motion has a barostat, and the barostat has a reference cell, does the swap
                     # as that when there are very different pressures, the cell should reflect the
@@ -184,10 +187,6 @@ class ReplicaExchange(Smotion):
 
                 t_eval -= time.time()
                 # if we rescaled the positions, this should trigger a new call to the drivers
-                newpoti = sl[i].dforces.pot
-                newpotj = sl[j].dforces.pot
-                sl[i].forces.pot.set(newpoti)
-                sl[j].forces.pot.set(newpotj)
                 newpensi = sl[i].ensemble.lpens
                 newpensj = sl[j].ensemble.lpens
 
@@ -219,19 +218,6 @@ class ReplicaExchange(Smotion):
 
                     fxc = True  # signal that an exchange has been made!
 
-                    if self.rescalespring:
-                        ## Here we need to propagate the rescaled positions and forces that were calculated (not yet, but soon)
-                        sl[i].beads.q = sl[i].dbeads.q
-                        sl[j].beads.q = sl[j].dbeads.q
-                        sl[i].cell.h = sl[i].cell.h
-                        sl[j].cell.h = sl[j].cell.h
-                        sl[i].forces.transfer_forces(
-                            sl[i].dforces
-                        )
-                        sl[j].forces.transfer_forces(
-                            sl[j].dforces
-                        )
-
                 else:  # undoes the swap - note that the original positions and forces were never changed, so they do not need to be undone
                     t_swap -= time.time()
                     ensemble_swap(sl[i].ensemble, sl[j].ensemble)
@@ -245,6 +231,16 @@ class ReplicaExchange(Smotion):
                             sl[j].motion.barostat.p *= tj / ti
                         except AttributeError:
                             pass
+
+                    if self.rescalespring:
+                    ## HERE NEEDS TO UNDO THE RESCALING OF POSITIONS BUT RESTORE THE ENERGIES AND FORCES WITHOUT RECALCULATING
+                        sl[i].beads.q = dbeadsi.q
+                        sl[j].beads.q = dbeadsj.q
+                        sl[i].cell.h = dcelli.h
+                        sl[j].cell.h = dcellj.h
+                        sl[i].forces.load_state(oldforcesi)
+                        sl[i].forces.load_state(oldforcesj)
+
                     try:
                         bjh = dstrip(sl[j].motion.barostat.h0.h).copy()
                         sl[j].motion.barostat.h0.h[:] = sl[i].motion.barostat.h0.h[:]
