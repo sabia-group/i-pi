@@ -266,7 +266,7 @@ class Ensemble:
 
         return eham + self.eens
 
-    def get_lpens(self):
+    def get_lpens(self, dforces=None):
         """Returns the ensemble probability (modulo the partition function)
         for the ensemble.
         """

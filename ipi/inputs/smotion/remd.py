@@ -86,6 +86,7 @@ class InputReplicaExchange(InputDictionary):
         self.stride.store(remd.stride)
         self.repindex.store(remd.repindex)
         self.krescale.store(remd.rescalekin)
+        self.srescale.store(remd.rescalespring)
         self.swapfile.store(remd.swapfile)
 
     def fetch(self):
