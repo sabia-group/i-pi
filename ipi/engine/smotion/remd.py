@@ -60,7 +60,14 @@ class ReplicaExchange(Smotion):
             bias: activate hamiltonian replica exchange ***not yet implemented
     """
 
-    def __init__(self, stride=1.0, repindex=None, krescale=True, srescale=False, swapfile="PARATEMP"):
+    def __init__(
+        self,
+        stride=1.0,
+        repindex=None,
+        krescale=True,
+        srescale=False,
+        swapfile="PARATEMP",
+    ):
         """Initialises REMD.
 
         Args:
@@ -139,7 +146,6 @@ class ReplicaExchange(Smotion):
                     oldforcesi = sl[i].forces.dump_state()
                     oldforcesj = sl[j].forces.dump_state()
 
-
                 # it is generally a good idea to rescale the kinetic energies,
                 # which means that the exchange is done only relative to the potential energy part.
                 if self.rescalekin:
@@ -159,19 +165,21 @@ class ReplicaExchange(Smotion):
                 if self.rescalespring:
                     # needs centroid position
                     # pens of the initial potentials are saved
-                    #print("positionsi before", positionsi)
-                    #print("rescaled before", sl[i].beads.q)
-                    centroidi = sl[i].beads.qc # this should be just a copy with no dependencies
+                    # print("positionsi before", positionsi)
+                    # print("rescaled before", sl[i].beads.q)
+                    centroidi = sl[
+                        i
+                    ].beads.qc  # this should be just a copy with no dependencies
                     centroidj = sl[j].beads.qc
                     deltai = sl[i].beads.q - centroidi
                     deltaj = sl[j].beads.q - centroidj
-                    #print("TYPES bead cent i", type(sl[i].beads.q),  type(centroidi))
-                    #print("TYPES bead cent j", type(sl[j].beads.q), type(centroidj))
+                    # print("TYPES bead cent i", type(sl[i].beads.q),  type(centroidi))
+                    # print("TYPES bead cent j", type(sl[j].beads.q), type(centroidj))
                     sl[i].beads.q = centroidi + np.sqrt(tj / ti) * deltai
-                    #print("TYPES BEADS", type(sl[i].beads.q))
+                    # print("TYPES BEADS", type(sl[i].beads.q))
                     sl[j].beads.q = centroidj + np.sqrt(ti / tj) * deltaj
-                    #print("positionsi after", positionsi)
-                    #print("rescaled after, cent", sl[j].beads.q, centroidj, np.sqrt(ti / tj), (positionsj - centroidj))
+                    # print("positionsi after", positionsi)
+                    # print("rescaled after, cent", sl[j].beads.q, centroidj, np.sqrt(ti / tj), (positionsj - centroidj))
                     # I think the barostat should be fine, no need to do anything
 
                 try:  # if motion has a barostat, and the barostat has a reference cell, does the swap
@@ -233,7 +241,7 @@ class ReplicaExchange(Smotion):
                             pass
 
                     if self.rescalespring:
-                    ## HERE NEEDS TO UNDO THE RESCALING OF POSITIONS BUT RESTORE THE ENERGIES AND FORCES WITHOUT RECALCULATING
+                        ## HERE NEEDS TO UNDO THE RESCALING OF POSITIONS BUT RESTORE THE ENERGIES AND FORCES WITHOUT RECALCULATING
                         sl[i].beads.q = dbeadsi.q
                         sl[j].beads.q = dbeadsj.q
                         sl[i].cell.h = dcelli.h
