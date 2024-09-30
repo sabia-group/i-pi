@@ -129,15 +129,20 @@ class ReplicaExchange(Smotion):
                 ecj = sl[j].ensemble.econs
                 pensi = sl[i].ensemble.lpens
                 pensj = sl[j].ensemble.lpens
+#                print("PENS FIRST", pensi, pensj)
                 t_eval += time.time()
 
                 t_swap -= time.time()
-
+#                print("potsorig", sl[i].forces.pot, sl[j].forces.pot, sl[i].ensemble.temp, sl[j].ensemble.temp)
+#                print("factororig", sl[i].forces.pot*sl[i].ensemble.temp, sl[j].forces.pot*sl[j].ensemble.temp)
+                print("springorig", sl[i].nm.vspring, sl[j].nm.vspring)
+                print("kinorig", sl[i].nm.kin, sl[j].nm.kin)
                 ensemble_swap(
                     sl[i].ensemble, sl[j].ensemble
                 )  # tries to swap the ensembles!
-
-                if self.rescalekin:
+ #               print("potsswap", sl[i].forces.pot, sl[j].forces.pot,sl[i].ensemble.temp, sl[j].ensemble.temp)
+ #               print("factorswap", sl[i].forces.pot * sl[i].ensemble.temp, sl[j].forces.pot * sl[j].ensemble.temp)
+                if self.rescalespring:
                     # keep some information about positions and forces
                     dbeadsi = sl[i].beads.clone()
                     dcelli = sl[i].cell.clone()
@@ -159,29 +164,8 @@ class ReplicaExchange(Smotion):
                         sl[j].motion.barostat.p *= ti / tj
                     except AttributeError:
                         pass
-
-                # try to get rid of the spring term contributions and leave exchange mostly on the centroid
-                # needs extra potential evaluations
-                if self.rescalespring:
-                    # needs centroid position
-                    # pens of the initial potentials are saved
-                    # print("positionsi before", positionsi)
-                    # print("rescaled before", sl[i].beads.q)
-                    centroidi = sl[
-                        i
-                    ].beads.qc  # this should be just a copy with no dependencies
-                    centroidj = sl[j].beads.qc
-                    deltai = sl[i].beads.q - centroidi
-                    deltaj = sl[j].beads.q - centroidj
-                    # print("TYPES bead cent i", type(sl[i].beads.q),  type(centroidi))
-                    # print("TYPES bead cent j", type(sl[j].beads.q), type(centroidj))
-                    sl[i].beads.q = centroidi + np.sqrt(tj / ti) * deltai
-                    # print("TYPES BEADS", type(sl[i].beads.q))
-                    sl[j].beads.q = centroidj + np.sqrt(ti / tj) * deltaj
-                    # print("positionsi after", positionsi)
-                    # print("rescaled after, cent", sl[j].beads.q, centroidj, np.sqrt(ti / tj), (positionsj - centroidj))
-                    # I think the barostat should be fine, no need to do anything
-
+                print("springswap", sl[i].nm.vspring, sl[j].nm.vspring)
+                print("kinswapscale", sl[i].nm.kin, sl[j].nm.kin)
                 try:  # if motion has a barostat, and the barostat has a reference cell, does the swap
                     # as that when there are very different pressures, the cell should reflect the
                     # pressure/temperature dependence. this also changes the barostat conserved quantities
@@ -190,6 +174,26 @@ class ReplicaExchange(Smotion):
                     sl[i].motion.barostat.h0.h[:] = bjh
                 except AttributeError:
                     pass
+                # try to get rid of the spring term contributions and leave exchange mostly on the centroid
+                # needs extra potential evaluations
+                if self.rescalespring:
+                    # needs centroid position
+                    # pens of the initial potentials are saved
+                    # print("positionsi before", positionsi)
+                    # print("rescaled before", sl[i].beads.q)
+                    centroidi = dstrip(sl[i].beads.qc)
+                    centroidj = dstrip(sl[j].beads.qc)
+                    deltai = sl[i].beads.q - centroidi
+                    deltaj = sl[j].beads.q - centroidj
+                    # print("TYPES bead cent i", type(sl[i].beads.q),  type(centroidi))
+                    # print("TYPES bead cent j", type(sl[j].beads.q), type(centroidj))
+                    sl[i].beads.q = centroidi + (ti / tj)**(1./2) * deltai
+                    # print("TYPES BEADS", type(sl[i].beads.q))
+                    sl[j].beads.q = centroidj + (tj / ti)**(1./2) * deltaj
+                    # print("positionsi after", positionsi)
+                    # print("rescaled after, cent", sl[j].beads.q, centroidj, np.sqrt(ti / tj), (positionsj - centroidj))
+                    # I think the barostat should be fine, no need to do anything
+
 
                 t_swap += time.time()
 
@@ -197,15 +201,21 @@ class ReplicaExchange(Smotion):
                 # if we rescaled the positions, this should trigger a new call to the drivers
                 newpensi = sl[i].ensemble.lpens
                 newpensj = sl[j].ensemble.lpens
+#                print("potsnew", sl[i].forces.pot, sl[j].forces.pot, sl[i].ensemble.temp, sl[j].ensemble.temp)
+                print("springnew", sl[i].nm.vspring, sl[j].nm.vspring)
+                print("kinnew", sl[i].nm.kin, sl[j].nm.kin)
+#                print("factornew", sl[i].forces.pot * sl[i].ensemble.temp, sl[j].forces.pot * sl[j].ensemble.temp)
 
                 # it seems to me that this should be the same
                 pxc = np.exp((newpensi + newpensj) - (pensi + pensj))
+#                print("PENS LAST", pensi, pensj)
+#                print("NEWPENS", newpensi, newpensj)
                 t_eval += time.time()
 
                 if pxc > self.prng.u:  # really does the exchange
                     info(
                         " @ PT:  SWAPPING replicas % 5d and % 5d." % (i, j),
-                        verbosity.high,
+                        verbosity.medium,
                     )
 
                     # if we have GLE thermostats, we also have to exchange rescale the s!!!
@@ -260,7 +270,7 @@ class ReplicaExchange(Smotion):
                     info(
                         " @ PT:  SWAP REJECTED BETWEEN replicas % 5d and % 5d."
                         % (i, j),
-                        verbosity.high,
+                        verbosity.medium,
                     )
 
                 # tempi = copy(self.syslist[i].ensemble.temp)
