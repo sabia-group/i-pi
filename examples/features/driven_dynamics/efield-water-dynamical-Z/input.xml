@@ -7,6 +7,10 @@
     <parameters> {template:start.xyz,model_path:pswater_compiled.model,jit:true} </parameters>
   </ffdirect>
 
+  <!-- <ffsocket name='driver' mode='unix'>
+    <address> host </address> <latency> 0.0001 </latency>
+  </ffsocket> -->
+
   <output prefix='i-pi'>
     <trajectory filename='forces'>forces</trajectory>               <!--      total forces (a.u.): nuclear + q_e Z @ E(t) -->
     <trajectory filename='Eforces'>Eforces</trajectory>             <!--     driven forces (a.u.): q_e Z @ E(t) -->

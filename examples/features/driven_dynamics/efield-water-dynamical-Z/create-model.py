@@ -1,95 +1,56 @@
-from ipi.utils.messages import warning
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 import torch
-from ipi.utils.messages import warning
-# from ipi.utils.units import unit_to_internal
 from e3nn.util.jit import compile_mode
 from e3nn.util import jit
-from mace import data
-from mace.tools import torch_geometric
 from ase.io import read
-from mace.tools import AtomicNumberTable
-from mace.tools.torch_geometric.batch import Batch
+from ase import Atoms
 
-# ---------------------------------------#
-def charges2dipole(charges: torch.Tensor, r1: torch.Tensor) -> torch.Tensor:
-    # return charges[0] * r1[0] + charges[1] * r1[1] + charges[2] * r1[2]
-    return torch.sum(charges * r1, dim=0)
+torch.set_default_dtype(torch.float64)
 
 
 # ---------------------------------------#
-# def compute_dipole_jacobian(
-#     dipole: torch.Tensor, positions: torch.Tensor
-# ) -> torch.Tensor:
-#     """Compute the spatial derivatives of a tensor.
-
-#     Args:
-#         dielectric (torch.Tensor): Dielectric tensor (shape: (3,))
-#         positions (torch.Tensor): Atom positions (shape: (N, 3))
-
-#     Returns:
-#         torch.Tensor: Spatial derivatives of dielectric tensor (shape: (3,3,3))
-#     """
-#     assert dipole.shape == (3,), "wrong shape"
-#     # Ensure gradients are tracked
-#     assert positions.requires_grad, "error"
-
-#     # Allocate tensor on the same device as positions
-#     gradients = positions.new_zeros((3, 3, 3))  # Shape (3,3,3)
-
-#     for n in range(3):  # Loop over dielectric tensor components
-#         grad = torch.autograd.grad(
-#             [dipole[n]], [positions], create_graph=True, retain_graph=True
-#         )
-#         if grad is None:
-#             raise RuntimeError("Gradient computation failed. Check requires_grad settings.")
-#         gradients[n, :, :] = grad[0]# .flatten()  # Store the gradient
-
-#     return gradients
-
 def compute_dipole_jacobian(
-    dipole: torch.Tensor, positions: torch.Tensor
+    dipole: torch.Tensor,
+    positions: torch.Tensor,
 ) -> torch.Tensor:
-    """Compute the spatial derivatives of a tensor.
 
-    Args:
-        dipole (torch.Tensor): Dipole tensor (shape: (3,))
-        positions (torch.Tensor): Atom positions (shape: (N, 3))
+    if dipole.ndim != 1:
+        raise RuntimeError("Dipole must have dimension == 1.")
 
-    Returns:
-        torch.Tensor: Spatial derivatives of dipole tensor (shape: (3, N, 3))
-    """
-    if dipole.shape != (3,):
-        raise RuntimeError("Dipole must have shape (3,).")
+    if positions.ndim != 2:
+        raise RuntimeError("Positions must have dimension == 2.")
 
     if not positions.requires_grad:
         raise RuntimeError("Positions must have requires_grad=True.")
 
-    gradients_list = []
+    # Preallocate tensor for Jacobian
+    jacobian = torch.zeros(
+        (dipole.shape[0], positions.shape[0], positions.shape[1]),
+        dtype=positions.dtype,
+        device=positions.device,
+    )
 
-    for n in range(3):  # Loop over dipole components
-        grad = torch.autograd.grad(
-            [dipole[n]],  # Fix: Pass as a list
-            [positions],  # Fix: Pass as a list
-            create_graph=True,
+    for i in range(dipole.shape[0]):
+        gradient = torch.autograd.grad(
+            outputs=[dipole[i]],
+            inputs=[positions],
             retain_graph=True,
-            allow_unused=True,  # Optional: Prevents errors if no gradient is found
-        )[0]  # Extract first element from tuple
+            create_graph=True,
+            allow_unused=True,
+        )[0]
 
-        if grad is None:
-            raise RuntimeError("Gradient computation failed. Check requires_grad settings.")
+        if gradient is not None:
+            jacobian[i] = gradient  # Assign directly instead of appending
 
-        gradients_list.append(grad.unsqueeze(0))  # Shape (1, N, 3)
-
-    return torch.cat(gradients_list, dim=0)  # Final shape: (3, N, 3)
+    return jacobian
 
 
 class ConstantData:
-    
+
     def __init__(self):
-        
+
         super().__init__()  # This is important to initialize nn.Module
-    
+
         # ---------------------------------------#
         # Parameters definitions
         # These parameters have been copied from 'drivers/f90/pes/pswater.f90'
@@ -1851,7 +1812,35 @@ class ConstantData:
 
         # Expansion indices for mass correction
         self.idxm = torch.tensor(
-            [1, 2, 1, 1, 3, 2, 1, 2, 1, 2, 1, 1, 3, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 3],
+            [
+                1,
+                2,
+                1,
+                1,
+                3,
+                2,
+                1,
+                2,
+                1,
+                2,
+                1,
+                1,
+                3,
+                1,
+                2,
+                2,
+                1,
+                1,
+                1,
+                1,
+                2,
+                1,
+                1,
+                1,
+                2,
+                2,
+                3,
+            ],
             dtype=torch.int64,
         )
 
@@ -1867,26 +1856,25 @@ class ConstantData:
                 -2.9962997e01,
                 1.3637682e02,
                 -3.0530195e00,
-            ],
-            dtype=torch.float64,
+            ]
         )
 
         # Two body parameters
-        self.reoh = torch.tensor(0.958649, dtype=torch.float64)
-        self.thetae = torch.tensor(104.3475, dtype=torch.float64)
-        self.b1 = torch.tensor(2.0, dtype=torch.float64)
-        self.roh = torch.tensor(0.9519607159623009, dtype=torch.float64)
-        self.alphaoh = torch.tensor(2.587949757553683, dtype=torch.float64)
-        self.deohA = torch.tensor(42290.92019288289, dtype=torch.float64)
-        self.phh1A = torch.tensor(16.94879431193463, dtype=torch.float64)
-        self.phh2 = torch.tensor(12.66426998162947, dtype=torch.float64)
+        self.reoh = torch.tensor(0.958649)
+        self.thetae = torch.tensor(104.3475)
+        self.b1 = torch.tensor(2.0)
+        self.roh = torch.tensor(0.9519607159623009)
+        self.alphaoh = torch.tensor(2.587949757553683)
+        self.deohA = torch.tensor(42290.92019288289)
+        self.phh1A = torch.tensor(16.94879431193463)
+        self.phh2 = torch.tensor(12.66426998162947)
 
         # Scaling factors for contributions to empirical potential
-        self.f5z = torch.tensor(0.999677885, dtype=torch.float64)
-        self.fbasis = torch.tensor(0.15860145369897, dtype=torch.float64)
-        self.fcore = torch.tensor(-1.6351695982132, dtype=torch.float64)
-        self.frest = torch.tensor(1.0, dtype=torch.float64)
-        self.costhe = torch.tensor(-0.24780227221366464506e0, dtype=torch.float64)
+        self.f5z = torch.tensor(0.999677885)
+        self.fbasis = torch.tensor(0.15860145369897)
+        self.fcore = torch.tensor(-1.6351695982132)
+        self.frest = torch.tensor(1.0)
+        self.costhe = torch.tensor(-0.24780227221366464506e0)
 
         self.idxD = torch.zeros((84, 3), dtype=torch.int64)
         self.idxD[:, 0] = torch.tensor(
@@ -2239,61 +2227,50 @@ class ConstantData:
                 -1.8340983193745e-01,
                 2.3426707273520e-01,
                 1.5141050914514e-01,
-            ],
-            dtype=torch.float64,
+            ]
         )
 
         # Additional parameters
-        self.b1D = torch.tensor(1.0, dtype=torch.float64)
-        self.a = torch.tensor(0.2999, dtype=torch.float64)
-        self.b = torch.tensor(-0.6932, dtype=torch.float64)
-        self.c0 = torch.tensor(1.0099, dtype=torch.float64)
-        self.c1 = torch.tensor(-0.1801, dtype=torch.float64)
-        self.c2 = torch.tensor(0.0892, dtype=torch.float64)
-        
+        self.b1D = torch.tensor(1.0)
+        self.a = torch.tensor(0.2999)
+        self.b = torch.tensor(-0.6932)
+        self.c0 = torch.tensor(1.0099)
+        self.c1 = torch.tensor(-0.1801)
+        self.c2 = torch.tensor(0.0892)
+
         # let's compute them only once
-        self.c5z = self.f5z * self.c5zA + self.fbasis * self.cbasis + self.fcore * self.ccore + self.frest * self.crest
+        self.c5z = (
+            self.f5z * self.c5zA
+            + self.fbasis * self.cbasis
+            + self.fcore * self.ccore
+            + self.frest * self.crest
+        )
         self.deoh = self.f5z * self.deohA
         self.phh1 = self.f5z * self.phh1A * torch.exp(self.phh2)
-    
+
 
 @compile_mode("script")
-class PSwater(ConstantData,torch.nn.Module):
-    
-    def __init__(self,device="cpu",*argc,**kwargs):
+class PSwater(ConstantData, torch.nn.Module):
+
+    def __init__(self, device="cpu", *argc, **kwargs):
         self.device = device
-        super().__init__(*argc,**kwargs)
-    
-    def atoms2data(self, atoms):
-        config = data.config_from_atoms(atoms)
-        data_loader = torch_geometric.dataloader.DataLoader(
-            dataset=[
-                data.AtomicData.from_config(
-                    config, z_table=AtomicNumberTable([1,8]), cutoff=1., heads=None
-                )
-            ],
-            batch_size=1,
-            shuffle=False,
-            drop_last=False,
-        )
-        batch = next(iter(data_loader)).to(self.device)
-        
-        for key in batch.keys:
-            if isinstance(batch[key], torch.Tensor):
-                batch[key] = batch[key].to(dtype=torch.float64)
-            
-        return batch
-    
-    def evaluate(self,atoms):
+        super().__init__(*argc, **kwargs)
+
+    def atoms2data(self, atoms: Atoms) -> Dict[str, torch.Tensor]:
+        data = {
+            "positions": torch.from_numpy(atoms.get_positions()),
+            # add more stuffs if you need
+        }
+        return data
+
+    def evaluate(self, atoms: Atoms) -> Dict[str, torch.Tensor]:
         data = self.atoms2data(atoms)
         return self(data)
-            
+
     def forward(
         self,
         data: Dict[str, torch.Tensor],
     ) -> Dict[str, torch.Tensor]:
-    
-    # def __call__(self, cell, pos):
         """Evaluates the potential energy surface (PES), forces, dipole moment, and Born effective charges for a water monomer.
 
         Args:
@@ -2306,26 +2283,22 @@ class PSwater(ConstantData,torch.nn.Module):
             numpy.ndarray: Virial tensor (not used in this example).
             dict: Additional properties including dipole moment and Born effective charges.
         """
-        
+
         r1 = data["positions"].clone().detach()
         r1.requires_grad_(True)  # angstrom
         pot, force = self.calculate_energy_forces(r1)  #
-        dipole, bec = self.calculate_dipole_born_charges(r1)
-        # Z = bec.detach().numpy()
-        # Z = np.reshape(Z, (3, 9)).T
-        vir = torch.zeros((3, 3))
-        # extras = {"dipole": dipole, "BEC": Z}
-        
+        dipole, Z = self.calculate_dipole_born_charges(r1)
+
         results = {
-            "energy" : pot,
+            "energy": pot,
             "forces": force,
-            "virials": vir,
-            "stress": vir,
-            # **extras
+            "stress": torch.zeros((3, 3)),
+            "dipole": dipole,
+            "BEC": Z.reshape((3, 9)).T,
         }
 
         return results
-    
+
     def calculate_pes(self, r1: torch.Tensor) -> torch.Tensor:
         """Calculates the potential energy surface (PES) for a water monomer.
 
@@ -2343,7 +2316,6 @@ class PSwater(ConstantData,torch.nn.Module):
         dRHH = torch.norm(RHH)
         costh = torch.dot(ROH1, ROH2) / (dROH1 * dROH2)
 
-        
         exp1 = torch.exp(-self.alphaoh * (dROH1 - self.roh))
         exp2 = torch.exp(-self.alphaoh * (dROH2 - self.roh))
         Va = self.deoh * (exp1 * (exp1 - 2.0) + exp2 * (exp2 - 2.0))
@@ -2354,8 +2326,8 @@ class PSwater(ConstantData,torch.nn.Module):
         x3 = costh - self.costhe
 
         # Initialize a list to store tensor values for each step
-        fmat_list = [torch.zeros(3, dtype=torch.float64)]  # fmat(0,1:3) = 0.d0
-        fmat_list.append(torch.ones(3, dtype=torch.float64))  # fmat(1,1:3) = 1.d0
+        fmat_list = [torch.zeros(3)]  # fmat(0,1:3) = 0.d0
+        fmat_list.append(torch.ones(3))  # fmat(1,1:3) = 1.d0
 
         # Compute fmat recursively without in-place operations
         for j in range(2, 16):
@@ -2372,9 +2344,11 @@ class PSwater(ConstantData,torch.nn.Module):
         # Convert list to a single tensor
         fmat = torch.stack(fmat_list)
 
-        efac = torch.exp(-self.b1 * ((dROH1 - self.reoh) ** 2 + (dROH2 - self.reoh) ** 2))
+        efac = torch.exp(
+            -self.b1 * ((dROH1 - self.reoh) ** 2 + (dROH2 - self.reoh) ** 2)
+        )
 
-        sum0 = torch.tensor(0.)
+        sum0 = torch.tensor(0.0)
 
         for j in range(1, 244):  # Fortran (2:245) → Python (1, 244)
             inI = self.idx[j][0]
@@ -2411,7 +2385,9 @@ class PSwater(ConstantData,torch.nn.Module):
         dROH2 = torch.norm(ROH2)
         # dRHH = torch.norm(RHH)
         costh = torch.dot(ROH1, ROH2) / (dROH1 * dROH2)
-        efac = torch.exp(-self.b1 * ((dROH1 - self.reoh) ** 2 + (dROH2 - self.reoh) ** 2))
+        efac = torch.exp(
+            -self.b1 * ((dROH1 - self.reoh) ** 2 + (dROH2 - self.reoh) ** 2)
+        )
 
         x1 = (dROH1 - self.reoh) / self.reoh
         x2 = (dROH2 - self.reoh) / self.reoh
@@ -2431,8 +2407,8 @@ class PSwater(ConstantData,torch.nn.Module):
             )
         fmat = torch.stack(fmat_list)
 
-        P1 = 0.0
-        P2 = 0.0
+        P1 = torch.tensor(0.0)
+        P2 = torch.tensor(0.0)
         for j in range(2, 84):
             inI = self.idx[j][0]
             inJ = self.idx[j][1]
@@ -2452,7 +2428,9 @@ class PSwater(ConstantData,torch.nn.Module):
 
         return q3
 
-    def calculate_energy_forces(self, r1: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def calculate_energy_forces(
+        self, r1: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Calculates the potential energy surface (PES) and forces for a water monomer.
 
         Args:
@@ -2469,7 +2447,9 @@ class PSwater(ConstantData,torch.nn.Module):
         forces = -r1.grad
         return pes, forces
 
-    def calculate_dipole_born_charges(self, r1: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def calculate_dipole_born_charges(
+        self, r1: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Calculates the dipole moment and Born effective charges for a water monomer.
 
         Args:
@@ -2479,10 +2459,9 @@ class PSwater(ConstantData,torch.nn.Module):
             torch.Tensor: Dipole moment.
             torch.Tensor: Born effective charges.
         """
-        # with torch.autograd.set_detect_anomaly(False):
         r1.requires_grad_(True)
         charges = self.calculate_charges(r1)
-        dipole = charges2dipole(charges, r1)
+        dipole = torch.sum(charges * r1, dim=0)
         assert dipole.shape == (3,)
         bec = compute_dipole_jacobian(dipole, r1)
         # test = bec.sum(dim=1)
@@ -2491,12 +2470,13 @@ class PSwater(ConstantData,torch.nn.Module):
         #         "Born effective charges does not satify acoustic sum rule: ",
         #         torch.mean(test),
         #     )
-        return dipole, dipole
-    
+        return dipole, bec
+
+
 # ---------------------------------------#
 model = PSwater()
 model.eval()
-torch.save(model,"pswater.model")
+torch.save(model, "pswater.model")
 
 model = torch.load("pswater.model")
 
@@ -2505,13 +2485,13 @@ results = model.evaluate(atoms)
 
 
 batch = {
-    "positions" : torch.from_numpy(atoms.get_positions()),
+    "positions": torch.from_numpy(atoms.get_positions()),
     # add more stuffs if you need
 }
 test = model(batch)
 
 model_compiled = jit.compile(model)
-torch.jit.save(model_compiled,"pswater_compiled.model")
+torch.jit.save(model_compiled, "pswater_compiled.model")
 
 model_compiled = torch.jit.load("pswater_compiled.model")
 
@@ -2519,7 +2499,7 @@ results = model.evaluate(atoms)
 
 
 batch = {
-    "positions" : torch.from_numpy(atoms.get_positions()),
+    "positions": torch.from_numpy(atoms.get_positions()),
     # add more stuffs if you need
 }
 test = model(batch)
