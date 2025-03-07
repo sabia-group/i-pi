@@ -3,8 +3,8 @@
   <total_steps>10</total_steps>
 
   <ffdirect name='driver' threaded='true'>
-    <pes> pswater </pes>
-    <parameters> {template:start.xyz} </parameters>
+    <pes> mace </pes>
+    <parameters> {template:start.xyz,model:pswater.model} </parameters>
   </ffdirect>
 
   <output prefix='i-pi'>
