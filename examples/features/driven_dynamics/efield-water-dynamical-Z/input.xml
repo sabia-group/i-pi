@@ -3,8 +3,8 @@
   <total_steps>10</total_steps>
 
   <ffdirect name='driver' threaded='true'>
-    <pes> mace </pes>
-    <parameters> {template:start.xyz,model:pswater.model} </parameters>
+    <pes> torch </pes>
+    <parameters> {template:start.xyz,model_path:pswater_compiled.model,jit:true} </parameters>
   </ffdirect>
 
   <output prefix='i-pi'>
@@ -28,7 +28,7 @@
     </forces>
 
     <initialize nbeads='1'>
-      <file mode='xyz' units='atomic_unit' > start.xyz </file>                     <!-- ground state -->
+      <file mode='xyz' units='angstrom' > start.xyz </file>                     <!-- ground state -->
       <velocities mode='thermal' units='kelvin'> 0 </velocities>                   <!-- no initial velocities: the system get excitated by the Efield only -->
       <cell mode="manual" units="atomic_unit">[ 7,0,0, 0,7,0, 0,0,7 ]</cell>    <!-- big cell: isolated system -->
     </initialize>

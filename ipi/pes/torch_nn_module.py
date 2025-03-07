@@ -1,88 +1,16 @@
-from ipi.utils.messages import warning
-from typing import Dict, Optional, Tuple
+"""An easy interface to any torch.nn.Module suing ase.Calculator"""
+from ase.calculators.calculator import Calculator, all_changes
+from ase import Atoms
+from .ase import ASEDriver
+from ipi.utils.messages import verbosity, warning
+from typing import Tuple, Dict
+
 import torch
-from ipi.utils.messages import warning
-# from ipi.utils.units import unit_to_internal
-from e3nn.util.jit import compile_mode
-from e3nn.util import jit
-from mace import data
-from mace.tools import torch_geometric
-from ase.io import read
-from mace.tools import AtomicNumberTable
-from mace.tools.torch_geometric.batch import Batch
-
-# ---------------------------------------#
-def charges2dipole(charges: torch.Tensor, r1: torch.Tensor) -> torch.Tensor:
-    # return charges[0] * r1[0] + charges[1] * r1[1] + charges[2] * r1[2]
-    return torch.sum(charges * r1, dim=0)
+import torch_geometric
 
 
-# ---------------------------------------#
-# def compute_dipole_jacobian(
-#     dipole: torch.Tensor, positions: torch.Tensor
-# ) -> torch.Tensor:
-#     """Compute the spatial derivatives of a tensor.
-
-#     Args:
-#         dielectric (torch.Tensor): Dielectric tensor (shape: (3,))
-#         positions (torch.Tensor): Atom positions (shape: (N, 3))
-
-#     Returns:
-#         torch.Tensor: Spatial derivatives of dielectric tensor (shape: (3,3,3))
-#     """
-#     assert dipole.shape == (3,), "wrong shape"
-#     # Ensure gradients are tracked
-#     assert positions.requires_grad, "error"
-
-#     # Allocate tensor on the same device as positions
-#     gradients = positions.new_zeros((3, 3, 3))  # Shape (3,3,3)
-
-#     for n in range(3):  # Loop over dielectric tensor components
-#         grad = torch.autograd.grad(
-#             [dipole[n]], [positions], create_graph=True, retain_graph=True
-#         )
-#         if grad is None:
-#             raise RuntimeError("Gradient computation failed. Check requires_grad settings.")
-#         gradients[n, :, :] = grad[0]# .flatten()  # Store the gradient
-
-#     return gradients
-
-def compute_dipole_jacobian(
-    dipole: torch.Tensor, positions: torch.Tensor
-) -> torch.Tensor:
-    """Compute the spatial derivatives of a tensor.
-
-    Args:
-        dipole (torch.Tensor): Dipole tensor (shape: (3,))
-        positions (torch.Tensor): Atom positions (shape: (N, 3))
-
-    Returns:
-        torch.Tensor: Spatial derivatives of dipole tensor (shape: (3, N, 3))
-    """
-    if dipole.shape != (3,):
-        raise RuntimeError("Dipole must have shape (3,).")
-
-    if not positions.requires_grad:
-        raise RuntimeError("Positions must have requires_grad=True.")
-
-    gradients_list = []
-
-    for n in range(3):  # Loop over dipole components
-        grad = torch.autograd.grad(
-            [dipole[n]],  # Fix: Pass as a list
-            [positions],  # Fix: Pass as a list
-            create_graph=True,
-            retain_graph=True,
-            allow_unused=True,  # Optional: Prevents errors if no gradient is found
-        )[0]  # Extract first element from tuple
-
-        if grad is None:
-            raise RuntimeError("Gradient computation failed. Check requires_grad settings.")
-
-        gradients_list.append(grad.unsqueeze(0))  # Shape (1, N, 3)
-
-    return torch.cat(gradients_list, dim=0)  # Final shape: (3, N, 3)
-
+__DRIVER_NAME__ = "torch"
+__DRIVER_CLASS__ = "TorchDriver"
 
 class ConstantData:
     
@@ -2257,6 +2185,7 @@ class ConstantData:
         self.phh1 = self.f5z * self.phh1A * torch.exp(self.phh2)
     
 
+from e3nn.util.jit import compile_mode
 @compile_mode("script")
 class PSwater(ConstantData,torch.nn.Module):
     
@@ -2264,29 +2193,29 @@ class PSwater(ConstantData,torch.nn.Module):
         self.device = device
         super().__init__(*argc,**kwargs)
     
-    def atoms2data(self, atoms):
-        config = data.config_from_atoms(atoms)
-        data_loader = torch_geometric.dataloader.DataLoader(
-            dataset=[
-                data.AtomicData.from_config(
-                    config, z_table=AtomicNumberTable([1,8]), cutoff=1., heads=None
-                )
-            ],
-            batch_size=1,
-            shuffle=False,
-            drop_last=False,
-        )
-        batch = next(iter(data_loader)).to(self.device)
+    # def atoms2data(self, atoms):
+    #     config = data.config_from_atoms(atoms)
+    #     data_loader = torch_geometric.dataloader.DataLoader(
+    #         dataset=[
+    #             data.AtomicData.from_config(
+    #                 config, z_table=AtomicNumberTable([1,8]), cutoff=1., heads=None
+    #             )
+    #         ],
+    #         batch_size=1,
+    #         shuffle=False,
+    #         drop_last=False,
+    #     )
+    #     batch = next(iter(data_loader)).to(self.device)
         
-        for key in batch.keys:
-            if isinstance(batch[key], torch.Tensor):
-                batch[key] = batch[key].to(dtype=torch.float64)
+    #     for key in batch.keys:
+    #         if isinstance(batch[key], torch.Tensor):
+    #             batch[key] = batch[key].to(dtype=torch.float64)
             
-        return batch
+    #     return batch
     
-    def evaluate(self,atoms):
-        data = self.atoms2data(atoms)
-        return self(data)
+    # def evaluate(self,atoms):
+    #     data = self.atoms2data(atoms)
+    #     return self(data)
             
     def forward(
         self,
@@ -2310,7 +2239,7 @@ class PSwater(ConstantData,torch.nn.Module):
         r1 = data["positions"].clone().detach()
         r1.requires_grad_(True)  # angstrom
         pot, force = self.calculate_energy_forces(r1)  #
-        dipole, bec = self.calculate_dipole_born_charges(r1)
+        # dipole, bec = self.calculate_dipole_born_charges(r1)
         # Z = bec.detach().numpy()
         # Z = np.reshape(Z, (3, 9)).T
         vir = torch.zeros((3, 3))
@@ -2374,7 +2303,7 @@ class PSwater(ConstantData,torch.nn.Module):
 
         efac = torch.exp(-self.b1 * ((dROH1 - self.reoh) ** 2 + (dROH2 - self.reoh) ** 2))
 
-        sum0 = torch.tensor(0.)
+        sum0 = 0.0
 
         for j in range(1, 244):  # Fortran (2:245) → Python (1, 244)
             inI = self.idx[j][0]
@@ -2456,70 +2385,89 @@ class PSwater(ConstantData,torch.nn.Module):
         """Calculates the potential energy surface (PES) and forces for a water monomer.
 
         Args:
-            r1 (torch.Tensor): Positions of the atoms in the water monomer (in angstrom).
+            r1 (torch.Tensor): Positions of the atoms in the water monomer.
 
         Returns:
             torch.Tensor: Potential energy.
             torch.Tensor: Forces on the atoms.
         """
         # with torch.autograd.set_detect_anomaly(False):
+        # bohr2ang = unit_to_user("length", "angstrom", 1)
+        # r1 *= bohr2ang
         r1.requires_grad_(True)
         pes = self.calculate_pes(r1)
         pes.backward()
         forces = -r1.grad
-        return pes, forces
+        return pes, forces # * bohr2ang
 
-    def calculate_dipole_born_charges(self, r1: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Calculates the dipole moment and Born effective charges for a water monomer.
+    # def calculate_dipole_born_charges(self, r1: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    #     """Calculates the dipole moment and Born effective charges for a water monomer.
 
-        Args:
-            r1 (torch.Tensor): Positions of the atoms in the water monomer.
+    #     Args:
+    #         r1 (torch.Tensor): Positions of the atoms in the water monomer.
 
-        Returns:
-            torch.Tensor: Dipole moment.
-            torch.Tensor: Born effective charges.
+    #     Returns:
+    #         torch.Tensor: Dipole moment.
+    #         torch.Tensor: Born effective charges.
+    #     """
+    #     # with torch.autograd.set_detect_anomaly(False):
+    #     r1.requires_grad_(True)
+    #     charges = self.calculate_charges(r1)
+    #     dipole = charges2dipole(charges, r1)
+    #     assert dipole.shape == (3,)
+    #     bec = compute_dipole_jacobian(dipole, r1)
+    #     test = bec.sum(dim=1)
+    #     if torch.mean(test) > 1e-6:
+    #         warning(
+    #             "Born effective charges does not satify acoustic sum rule: ",
+    #             torch.mean(test),
+    #         )
+    #     return dipole, bec
+
+class TorchDriver(ASEDriver):
+
+    def __init__(self, template, *args, **kwargs):
+        self.kwargs = kwargs
+        super().__init__(template, *args, **kwargs)
+
+    def check_parameters(self):
+        """Check the arguments requuired to run the driver
+
+        This loads the potential and atoms template in MACE
         """
-        # with torch.autograd.set_detect_anomaly(False):
-        r1.requires_grad_(True)
-        charges = self.calculate_charges(r1)
-        dipole = charges2dipole(charges, r1)
-        assert dipole.shape == (3,)
-        bec = compute_dipole_jacobian(dipole, r1)
-        # test = bec.sum(dim=1)
-        # if torch.mean(test) > 1e-6:
-        #     warning(
-        #         "Born effective charges does not satify acoustic sum rule: ",
-        #         torch.mean(test),
-        #     )
-        return dipole, dipole
+
+        super().check_parameters()
+
+        self.ase_calculator = EasyTorchCalculator(**self.kwargs)
+      
+        
+# class Module(torch.nn.Module):
+#     """
+#     Class defined only for static typing purposes
+#     """
     
-# ---------------------------------------#
-model = PSwater()
-model.eval()
-torch.save(model,"pswater.model")
+#     def atoms2data(self, atoms:Atoms):
+#         raise NotImplementedError("Your model should have a method called 'atoms2data' implemented.")
+    
 
-model = torch.load("pswater.model")
-
-atoms = read("start.xyz")
-results = model.evaluate(atoms)
-
-
-batch = {
-    "positions" : torch.from_numpy(atoms.get_positions()),
-    # add more stuffs if you need
-}
-test = model(batch)
-
-model_compiled = jit.compile(model)
-torch.jit.save(model_compiled,"pswater_compiled.model")
-
-model_compiled = torch.jit.load("pswater_compiled.model")
-
-results = model.evaluate(atoms)
-
-
-batch = {
-    "positions" : torch.from_numpy(atoms.get_positions()),
-    # add more stuffs if you need
-}
-test = model(batch)
+class EasyTorchCalculator(Calculator):
+    
+    def __init__(self,model_path:str,device:str="cpu",dtype:torch.dtype=torch.float64,jit:bool=False,*argc,**kwargs):
+        self.device = device
+        self.dtype = dtype
+        if jit:
+            self.model:torch.nn.Module = torch.jit.load(model_path)
+        else:
+            self.model:torch.nn.Module = torch.load(model_path)
+        self.model.to(device=self.device,dtype=self.dtype)
+        super().__init__(*argc,**kwargs)
+        
+    def calculate(self, atoms:Atoms=None, properties=None, system_changes=all_changes)->None:
+        
+        data = {
+            "positions" : torch.from_numpy(atoms.get_positions()).to(device=self.device,dtype=self.dtype),
+            # add more stuffs if you need
+        }
+        data["positions"].requires_grad_(True) # don't forget this
+        self.results = self.model(data)
+        pass 
