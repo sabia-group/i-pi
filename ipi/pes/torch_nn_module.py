@@ -28,10 +28,12 @@ class TorchDriver(ASEDriver):
 
         self.ase_calculator = EasyTorchCalculator(**self.kwargs)
 
+
 try:
     import torch
 except:
     pass
+
 
 class EasyTorchCalculator(Calculator):
 
