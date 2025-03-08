@@ -5,8 +5,6 @@ from ase import Atoms
 from .ase import ASEDriver
 from typing import Dict
 
-import torch
-
 __DRIVER_NAME__ = "torch"
 __DRIVER_CLASS__ = "TorchDriver"
 
@@ -30,6 +28,10 @@ class TorchDriver(ASEDriver):
 
         self.ase_calculator = EasyTorchCalculator(**self.kwargs)
 
+try:
+    import torch
+except:
+    pass
 
 class EasyTorchCalculator(Calculator):
 
@@ -54,7 +56,6 @@ class EasyTorchCalculator(Calculator):
     def calculate(
         self, atoms: Atoms = None, properties=None, system_changes=all_changes
     ) -> None:
-
         data = {
             "positions": torch.from_numpy(atoms.get_positions()).to(
                 device=self.device, dtype=self.dtype
