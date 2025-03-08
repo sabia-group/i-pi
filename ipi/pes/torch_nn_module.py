@@ -4,6 +4,7 @@ from ase.calculators.calculator import Calculator, all_changes
 from ase import Atoms
 from .ase import ASEDriver
 from typing import Dict
+import torch
 
 __DRIVER_NAME__ = "torch"
 __DRIVER_CLASS__ = "TorchDriver"
@@ -27,12 +28,6 @@ class TorchDriver(ASEDriver):
         super().check_parameters()
 
         self.ase_calculator = EasyTorchCalculator(**self.kwargs)
-
-
-try:
-    import torch
-except:
-    pass
 
 
 class EasyTorchCalculator(Calculator):
