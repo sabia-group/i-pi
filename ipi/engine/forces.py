@@ -534,6 +534,7 @@ class ForceComponentDielectric(ForceComponent):
     # Attention:
     # for constant-D simulations the Born Charges might need to be rescaled
     # by the dielectric constant epsilon_infinity
+    # check Supporting Information of https://pubs.acs.org/doi/10.1021/acs.jpclett.6b01127#_i1
     # This is at the moment NOT supported
 
     # static type hinting for modern python
