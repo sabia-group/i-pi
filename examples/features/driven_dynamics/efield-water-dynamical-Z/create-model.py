@@ -76,10 +76,10 @@ class PSwater(ConstantData, torch.nn.Module):
             pos: Positions of the atoms in the water monomer.
 
         Returns:
-            float: Potential energy.
-            numpy.ndarray: Forces on the atoms.
-            numpy.ndarray: Virial tensor (not used in this example).
-            dict: Additional properties including dipole moment and Born effective charges.
+            float: potential energy.
+            numpy.ndarray: forces on the atoms.
+            numpy.ndarray: virial tensor (not used in this example).
+            dict: additional properties including dipole moment and Born effective charges.
         """
 
         r1 = data["positions"].clone().detach()
@@ -235,8 +235,8 @@ class PSwater(ConstantData, torch.nn.Module):
             r1 (torch.Tensor): Positions of the atoms in the water monomer (in angstrom).
 
         Returns:
-            torch.Tensor: Potential energy.
-            torch.Tensor: Forces on the atoms.
+            torch.Tensor: potential energy.
+            torch.Tensor: forces on the atoms.
         """
         # with torch.autograd.set_detect_anomaly(False):
         r1.requires_grad_(True)
