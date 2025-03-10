@@ -2,14 +2,10 @@
 
   <total_steps>100</total_steps>
 
-  <!-- <ffdielectric name='driver' mode="E"> -->
-    <!-- <field> [1, 0, 0 ]</field> -->
-      <ffdirect name='driver'>
-        <pes> torch </pes>
-        <parameters> {template:start.xyz,model_path:pswater_compiled.model,jit:true} </parameters>
-      </ffdirect>
-  <!-- </ffdielectric> -->
-
+  <ffdirect name='driver'>
+    <pes> torch </pes>
+    <parameters> {template:start.xyz,model_path:pswater_compiled.model,jit:true} </parameters>
+  </ffdirect>
 
   <output prefix='i-pi'>
     <trajectory filename='forces'>forces</trajectory>
