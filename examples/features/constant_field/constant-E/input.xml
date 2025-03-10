@@ -1,0 +1,47 @@
+<simulation verbosity='high'>
+
+  <total_steps>10</total_steps>
+
+  <ffdielectric>
+    <ffdirect name='driver'>
+      <pes> torch </pes>
+      <parameters> {template:start.xyz,model_path:pswater_compiled.model,jit:true} </parameters>
+    </ffdirect>
+  </ffdielectric>
+
+
+  <output prefix='i-pi'>
+    <trajectory filename='positions'>positions</trajectory>
+    <properties filename='properties.out' verbosity='low' > [ step, time, conserved, kinetic_md, potential ] </properties>
+  </output>
+
+  <prng>
+    <seed>10545</seed>
+  </prng>
+
+  <system>
+    <forces>
+      <force forcefield='driver' />
+    </forces>
+
+    <initialize nbeads='1'>
+      <file mode='xyz' units='atomic_unit' > start.xyz </file>                     
+      <velocities mode='thermal' units='kelvin'> 300 </velocities>                   
+      <cell mode="manual" units="atomic_unit">[ 100,0,0, 0,100,0, 0,0,100 ]</cell>    
+    </initialize>
+
+    <ensemble>
+      <temperature units='kelvin'>300</temperature>
+    </ensemble>
+
+    <motion mode='dynamics'>
+      <dynamics mode='nvt'>
+        <timestep units='femtosecond'> 0.5 </timestep>
+        <thermostat mode='svr'>
+          <tau units='femtosecond'> 100 </tau>
+        </thermostat>
+      </dynamics>
+    </motion>
+
+  </system>
+</simulation>
