@@ -7,9 +7,11 @@
 
 from ipi.engine.forces import *
 from ipi.utils.inputvalue import *
+from ipi.utils.units import UnitMap
 import numpy as np
+from copy import copy
 
-__all__ = ["InputForces", "InputForceComponent"]
+__all__ = ["InputForces", "InputForceComponent", "InputForceComponentDielectric"]
 
 
 class InputForceComponent(Input):
@@ -140,6 +142,75 @@ class InputForceComponent(Input):
             )
 
 
+class InputForceComponentDielectric(InputForceComponent):
+
+    fields = copy(InputForceComponent.fields)
+    attribs = copy(InputForceComponent.attribs)
+
+    fields["dielectric_field"] = (
+        InputArray,
+        {
+            "dtype": float,
+            "default": np.zeros(3),
+            "help": "The applied external electric field/dielectric displacement (in cartesian coordinates)",
+            "dimension": "electric-field",
+        },
+    )
+
+    attribs["mode"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "options": ["none", "E", "D"],
+            "default": "none",
+            "help": "Specifies type of applied dielectric field: none, external electric field (E) or electric displacement (D).",
+        },
+    )
+    attribs["dipole_units"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "options": list(UnitMap["electric-dipole"].keys()),
+            "default": "atomic_unit",
+            "help": "The units of the dipole.",
+        },
+    )
+
+    def store(self, forceb):
+        """Takes a ForceComponent instance and stores a minimal
+        representation of it.
+
+        Args:
+           forceb: A ForceComponent object.
+        """
+
+        super().store(forceb)
+        self.mode.store(forceb.mode)
+        self.dielectric_field.store(forceb.dielectric_field)
+        self.dipole_units.store(forceb.dipole_units)
+
+    def fetch(self):
+        """Creates a ForceComponent object.
+
+        Returns:
+           A ForceComponent object.
+        """
+
+        super().fetch()
+        return ForceComponentDielectric(
+            ffield=self.forcefield.fetch(),
+            nbeads=self.nbeads.fetch(),
+            weight=self.weight.fetch(),
+            name=self.name.fetch(),
+            mts_weights=self.mts_weights.fetch(),
+            interpolate_extras=self.interpolate_extras.fetch(),
+            epsilon=self.fd_epsilon.fetch(),
+            mode=self.mode.fetch(),
+            dielectric_field=self.dielectric_field.fetch(),
+            dipole_units=self.dipole_units.fetch(),
+        )
+
+
 class InputForces(Input):
     """Deals with creating all the forcefield objects required in the
     simulation.
@@ -151,7 +222,11 @@ class InputForces(Input):
     # At the moment only socket driver codes implemented, other types
     # could be used in principle
     dynamic = {
-        "force": (InputForceComponent, {"help": InputForceComponent.default_help})
+        "force": (InputForceComponent, {"help": InputForceComponent.default_help}),
+        "forcedielectric": (
+            InputForceComponentDielectric,
+            {"help": InputForceComponentDielectric.default_help},
+        ),
     }
 
     default_help = "Deals with creating all the necessary forcefield objects."
@@ -187,8 +262,15 @@ class InputForces(Input):
 
         for ii, el in enumerate(flist):
             if self.extra[ii] == 0:
-                iff = InputForceComponent()
-                iff.store(el)
-                self.extra[ii] = ("force", iff)
+                if isinstance(el, ForceComponentDielectric):
+                    iff = InputForceComponentDielectric()
+                    iff.store(el)
+                    self.extra[ii] = ("forcedielectric", iff)
+                elif isinstance(el, ForceComponent):
+                    iff = InputForceComponent()
+                    iff.store(el)
+                    self.extra[ii] = ("force", iff)
+                else:
+                    raise ValueError("coding error")
             else:
                 self.extra[ii][1].store(el)

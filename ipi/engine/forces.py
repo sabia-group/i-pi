@@ -25,9 +25,10 @@ from ipi.utils.depend import *
 from ipi.utils.nmtransform import nm_rescale
 from ipi.engine.beads import Beads
 from ipi.engine.cell import Cell
+from ipi.utils.units import unit_to_internal, Constants
 
 
-__all__ = ["Forces", "ForceComponent"]
+__all__ = ["Forces", "ForceComponent", "ForceComponentDielectric"]
 
 
 fbuid = 0
@@ -527,6 +528,147 @@ class ForceComponent:
 dproperties(ForceComponent, ["weight", "f", "pots", "pot", "virs", "vir", "extras"])
 
 
+class ForceComponentDielectric(ForceComponent):
+
+    # ToDo:
+    # Attention:
+    # for constant-D simulations the Born Charges might need to be rescaled
+    # by the dielectric constant epsilon_infinity
+    # This is at the moment NOT supported
+
+    # static type hinting for modern python
+    extras: dict
+    dipole: depend_array
+    born_charges: depend_array
+
+    def __init__(self, mode, dielectric_field, dipole_units, *argc, **kwargs):
+        super().__init__(*argc, **kwargs)
+        self.mode = mode  # mmode/ensemble type
+        self.dielectric_field = dielectric_field  # electric of displacement field
+        self.dipole_units = dipole_units  # necessary for RESTART file
+        self.dipole_conversion_factor = unit_to_internal(
+            "electric-dipole", dipole_units, 1
+        )  # let's evaluate it once and for all
+
+    def bind(self, beads, cell, fflist, output_maker):
+        super().bind(beads, cell, fflist, output_maker)
+        self._dipole = depend_array(
+            name="dipole", func=self._get_dipole, value=np.zeros((beads.nbeads, 3))
+        )
+        self._born_charges = depend_array(
+            name="born_charges",
+            func=self._get_born_charges,
+            value=np.zeros((self.nbeads, 3 * self.natoms, 3)),
+        )
+
+    def _get_dipole(self):
+        extras = self.extras
+        if "dipole" not in extras:
+            softexit.trigger(
+                status="bad",
+                message=f"The dipole is not available in 'extras' strings for ForceComponentDielectric with name '{self.name}'.",
+            )
+
+        # let's convert to numpy array (let's check that it's possible to convert it to a numpy array)
+        try:
+            muextras = np.asarray(extras["dipole"])
+        except:
+            softexit.trigger(
+                status="bad",
+                message=f"The dipole can not be converted to numpy.arrray.",
+            )
+
+        # and copy to another array (let's check that axis and dimensions match)
+        mu = np.zeros((self.nbeads, 3))
+        try:
+            mu[:, :] = muextras[:, :]
+        except:
+            softexit.trigger(
+                status="bad",
+                message=f"The dipole has the wrong shape: expected {mu.shape} but got {muextras.shape}.",
+            )
+
+        # the dipole is often reported in e*ang
+        # this provides an easy unit conversion
+        return mu * self.dipole_conversion_factor
+
+    def _get_born_charges(self):
+        # let's call ForceComponent.extra_gather
+        extras = self.extras
+        if "BEC" not in extras:
+            softexit.trigger(
+                status="bad",
+                message=f"The Born Effective Charges (BEC) are not available in 'extras' strings for ForceComponentDielectric with name '{self.name}'.",
+            )
+
+        # let's convert to numpy array (let's check that it's possible to convert it to a numpy array)
+        try:
+            Zextras = np.asarray(extras["BEC"])
+        except:
+            softexit.trigger(
+                status="bad",
+                message=f"The Born Effective Charges (BEC) can not be converted to numpy.arrray.",
+            )
+
+        # and copy to another array (let's check that axis and dimensions match)
+        Z = np.zeros((self.nbeads, 3 * self.natoms, 3))
+        try:
+            Z[:, :, :] = Zextras[:, :, :]
+        except:
+            softexit.trigger(
+                status="bad",
+                message=f"The Born Effective Charges (BEC) have the wrong shape: expected {Z.shape} but got {Zextras.shape}.",
+            )
+
+        # the Born Charges are assumed to be dimensionless
+        return Z
+
+    def pot_gather(self):
+        """Obtains the potential energy for each replica.
+
+        Returns:
+           A list of the potential energy of each replica of the system.
+        """
+        mu = self.dipole
+        if self.mode == "E":
+            interaction_energy = mu @ self.dielectric_field
+        elif self.mode == "D":
+            interaction_energy = np.zeros(self.nbeads)
+        else:  # self.mode == "none"
+            interaction_energy = np.zeros(self.nbeads)
+        return interaction_energy
+
+    def f_gather(self):
+        """Obtains the force vector for each replica.
+
+        Returns:
+           An array with all the components of the force. Row i gives the force
+           array for replica i of the system.
+        """
+        Z = self.born_charges
+        if self.mode == "E":
+            external_forces = (
+                Constants.e * Z @ self.dielectric_field
+            )  # [e] [] [eV/ang/e] = [eV/ang] --> forces
+        elif self.mode == "D":
+            external_forces = np.zeros((self.nbeads, 3 * self.natoms))
+        else:  # self.mode == "none"
+            external_forces = np.zeros(
+                (self.nbeads, 3 * self.natoms)
+            )  # for debugging purposes only
+        return external_forces
+
+    def vir_gather(self):
+        """Not supported at the moment"""
+        return np.zeros((len(self._forces), 3, 3))
+
+
+dproperties(
+    ForceComponentDielectric,
+    ["weight", "f", "pots", "pot", "virs", "vir", "extras", "born_charges", "dipole"],
+)
+
+
 class ScaledForceComponent:
     def __init__(self, baseforce, scaling=1):
         self.bf = baseforce
@@ -808,15 +950,29 @@ class Forces:
             # assume full force evaluation
             if newb == 0 or newb > beads.nbeads:
                 newb = beads.nbeads
-            newforce = ForceComponent(
-                ffield=fc.ffield,
-                name=fc.name,
-                nbeads=newb,
-                weight=fc.weight,
-                mts_weights=fc.mts_weights,
-                interpolate_extras=fc.interpolate_extras,
-                epsilon=fc.epsilon,
-            )
+            if isinstance(fc, ForceComponentDielectric):
+                newforce = ForceComponentDielectric(
+                    ffield=fc.ffield,
+                    name=fc.name,
+                    nbeads=newb,
+                    weight=fc.weight,
+                    mts_weights=fc.mts_weights,
+                    interpolate_extras=fc.interpolate_extras,
+                    epsilon=fc.epsilon,
+                    mode=fc.mode,
+                    dielectric_field=fc.dielectric_field,
+                    dipole_units=fc.dipole_units,
+                )
+            else:
+                newforce = ForceComponent(
+                    ffield=fc.ffield,
+                    name=fc.name,
+                    nbeads=newb,
+                    weight=fc.weight,
+                    mts_weights=fc.mts_weights,
+                    interpolate_extras=fc.interpolate_extras,
+                    epsilon=fc.epsilon,
+                )
             newbeads = Beads(beads.natoms, newb)
             newrpc = nm_rescale(beads.nbeads, newb, open_paths=self.open_paths)
 

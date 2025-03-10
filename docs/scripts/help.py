@@ -100,6 +100,7 @@ objects = {
     "ffcavphsocket": forcefields.InputFFCavPhSocket(),
     "forces": forces.InputForces(),
     "force": forces.InputForceComponent(),
+    "forcedielectric": forces.InputForceComponentDielectric(),
     "al6xxx_kmc": motion.al6xxx_kmc.InputAlKMC(),
     "atoms": atoms.InputAtoms(),
     "beads": beads.InputBeads(),
