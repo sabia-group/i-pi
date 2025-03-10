@@ -607,7 +607,7 @@ class ForceComponentDielectric(ForceComponent):
         except:
             softexit.trigger(
                 status="bad",
-                message=f"The Born Effective Charges (BEC) can not be converted to numpy.arrray.",
+                message="The Born Effective Charges (BEC) can not be converted to numpy.arrray.",
             )
 
         # and copy to another array (let's check that axis and dimensions match)
