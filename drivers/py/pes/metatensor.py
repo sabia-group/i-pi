@@ -1,5 +1,6 @@
 """Interface with the [metatensor](https://lab-cosmo.github.io/metatensor/latest/atomistic/index.html)
-calculator, that can be used to perform calculations based on different types of machine learning potentials"""
+calculator, that can be used to perform calculations based on different types of machine learning potentials
+"""
 
 import sys
 from .ase import ASEDriver
