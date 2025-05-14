@@ -531,11 +531,10 @@ dproperties(ForceComponent, ["weight", "f", "pots", "pot", "virs", "vir", "extra
 class ForceComponentDielectric(ForceComponent):
 
     # ToDo:
-    # Attention:
-    # for constant-D simulations the Born Charges might need to be rescaled
-    # by the dielectric constant epsilon_infinity
-    # check Supporting Information of https://pubs.acs.org/doi/10.1021/acs.jpclett.6b01127#_i1
-    # This is at the moment NOT supported
+    # Attention!
+    # For constant-D simulations the Born Charges might need to be rescaled by the dielectric constant epsilon_infinity.
+    # Check Supporting Information of https://pubs.acs.org/doi/10.1021/acs.jpclett.6b01127#_i1
+    # This is at the moment NOT supported.
 
     # static type hinting for modern python
     extras: dict
@@ -544,7 +543,7 @@ class ForceComponentDielectric(ForceComponent):
 
     def __init__(self, mode, dielectric_field, dipole_units, *argc, **kwargs):
         super().__init__(*argc, **kwargs)
-        self.mode = mode  # mmode/ensemble type
+        self.mode = mode  # mode/ensemble type
         self.dielectric_field = dielectric_field  # electric of displacement field
         self.dipole_units = dipole_units  # necessary for RESTART file
         self.dipole_conversion_factor = unit_to_internal(
