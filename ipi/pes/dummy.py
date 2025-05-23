@@ -35,3 +35,6 @@ class Dummy_driver(object):
             {"dipole": [0.0, 0.0, 0.0]}
         )  # have json formatting to potentially work with some test examples. meaningless value
         return pot, force, vir, extras
+    
+    def store_extra(self,extra:dict):
+        raise ValueError("This method should be implemented by the user")

@@ -25,6 +25,9 @@ METHODS_AVAILABLE = [
 #   -- compute the energy and forces, dipole and BEC, and then compute the sum of the forces
 #   -- compute the energy, add E x mu, and compute the total forces directly (easier and faster)
 
+# this is based on numpy and I can not perform any backward propagation
+# I need to set up a "naked" MACE_driver to keep the variables as torch tensors.
+
 
 class MACE_dielectric_driver(MACE_driver):
 
@@ -143,6 +146,10 @@ class MACE_dielectric_driver(MACE_driver):
         extras_ipi = {**extras_ipi, **extras}
 
         return pot_ipi, force_ipi, vir_ipi, extras_ipi
+    
+    def store_extra(self, extra):
+        # ToDo: implement this method
+        pass
 
 
 # ------------------------------ #
