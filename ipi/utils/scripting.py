@@ -1,11 +1,12 @@
 import numpy as np
 from ipi.utils.depend import dstrip
-from ipi.utils.units import Elements, unit_to_internal, unit_to_user
+from ipi.utils.units import Elements, unit_to_internal, unit_to_user, Constants
 from ipi.inputs.beads import InputBeads
 from ipi.inputs.cell import InputCell
 from ipi.engine.beads import Beads
 from ipi.engine.cell import Cell
 from ipi.engine.simulation import Simulation
+from ipi.engine.motion import Dynamics
 from ipi.utils.io.inputs.io_xml import xml_parse_string, xml_write, write_dict
 from ipi.pes import __drivers__
 
@@ -39,7 +40,27 @@ def simulation_xml(
     prefix=None,
 ):
     """
-    A helper function to generate an XML string for an i-PI simulation input.
+    A helper function to generate an XML string for a basic i-PI
+    simulation input.
+
+    param structures: ase.Atoms|list(ase.Atoms) an Atoms object containing
+        the initial structure for the system (or list of Atoms objects to
+        initialize a path integral simulation with many beads). The
+        structures should be in standardized form (cf. standard_cell from ASE).
+    param forcefield: str An XML-formatted string describing the forcefield
+        to be used in the simulation
+    param motion: str An XML-formatted string describing the motion class
+        to be used in the simulation
+    temperature: Optional(float) A float specifying the temperature. If not
+        specified, the temperature won't be set, and you should use a NVE
+        motion class
+    output: Optional(str) An  XML-formatted string describing the output
+        A default list of outputs will be generated if not provided
+    verbosity: Optional(str), default "quiet". The level of logging done
+        to stdout
+    safe_stride: Optional(int), default 20. How often the internal checkpoint
+        data should be stored
+    prefix: Optional(str) The prefix to be used for simulation outputs.
     """
 
     if type(structures) is list:
@@ -64,7 +85,7 @@ def simulation_xml(
     input_beads = InputBeads()
     input_beads.store(beads)
 
-    cell = Cell(h=np.array(structure.cell) * unit_to_internal("length", "ase", 1.0))
+    cell = Cell(h=np.array(structure.cell).T * unit_to_internal("length", "ase", 1.0))
     input_cell = InputCell()
     input_cell.store(cell)
 
@@ -185,7 +206,39 @@ def motion_nvt_xml(timestep, thermostat=None, path_integrals=False):
 """
 
 
-class InteractiveSimulation:
+DummyASECalculator = None
+
+
+def _define_calculator():
+    global DummyASECalculator
+    _asecheck()
+    from ase.calculators.calculator import Calculator, all_changes
+
+    if DummyASECalculator is None:
+
+        class DummyASECalculator(Calculator):
+            implemented_properties = ["energy", "forces"]
+
+            def __init__(self, energy=None, forces=None, **kwargs):
+                super().__init__(**kwargs)
+                self._energy = energy
+                self._forces = forces
+
+            def calculate(
+                self,
+                atoms=None,
+                properties=["energy", "forces"],
+                system_changes=all_changes,
+            ):
+                super().calculate(atoms, properties, system_changes)
+                self.results = {}
+                if "energy" in properties:
+                    self.results["energy"] = self._energy
+                if "forces" in properties:
+                    self.results["forces"] = self._forces
+
+
+class InteractiveSimulation(Simulation):
     """A wrapper to `Simulation` that allows accessing
     properties and configurations in a "safe" way from Python.
     The object is initialized from an XML input, and supports
@@ -197,7 +250,13 @@ class InteractiveSimulation:
     """
 
     def __init__(self, xml_input):
-        self.simulation = Simulation.load_from_xml(xml_input)
+        # not-so-great way to initialize from the class method-generated
+        # Simulation object. one should probably reconsider how Simulation
+        # is initialized as this hack might lead to issues further down
+        # the line, but for the moment all looks good.
+
+        sim = Simulation.load_from_xml(xml_input)
+        self.__dict__.update(sim.__dict__)
 
     def run(self, steps=1, write_outputs=True):
         """Stepper through the simulation.
@@ -206,15 +265,11 @@ class InteractiveSimulation:
         :param steps: int, number of steps the simulation should be advanced by
         """
 
-        print(self.simulation.step)
-        self.simulation.tsteps = self.simulation.step + steps
-        self.simulation.run(write_outputs=write_outputs)
+        self.tsteps = self.step + steps
+        super().run(write_outputs=write_outputs)
         # saves the RESTART file
-        self.simulation.chk.write(store=True)
-        self.simulation.step += 1
-
-    def run_step(self, step):
-        self.simulation.run_step(step)
+        self.chk.write(store=True)
+        self.step += 1
 
     def properties(self, property):
         """Fetches properties from the simulation state.
@@ -222,7 +277,7 @@ class InteractiveSimulation:
         :param property: the name of a property to be fetched from the simulation
         """
         props = []
-        for system in self.simulation.syslist:
+        for system in self.syslist:
             value, dimension, unit = system.properties[property]
             props.append(value * unit_to_user(dimension, "ase", 1.0))
         if len(props) == 1:
@@ -232,26 +287,28 @@ class InteractiveSimulation:
 
     def get_structures(self):
         _asecheck()
+        _define_calculator()
 
         sys_structures = []
-        for system in self.simulation.syslist:
+        for system in self.syslist:
             structures = []
             for b in range(system.beads.nbeads):
                 struc = ase.Atoms(
                     positions=dstrip(system.beads.q[b]).reshape(-1, 3)
                     * unit_to_user("length", "ase", 1.0),
                     symbols=dstrip(system.beads.names),
-                    cell=dstrip(system.cell.h) * unit_to_user("length", "ase", 1.0),
+                    cell=dstrip(system.cell.h).T * unit_to_user("length", "ase", 1.0),
                 )
-                struc.arrays["ipi_velocities"] = dstrip(system.beads.p[b]).reshape(
-                    -1, 3
-                ) * unit_to_user("velocity", "ase", 1.0)
-                struc.arrays["ipi_forces"] = dstrip(system.forces.f[b]).reshape(
-                    -1, 3
-                ) * unit_to_user("force", "ase", 1.0)
-                struc.info["ipi_potential"] = dstrip(
-                    system.forces.pots[b]
-                ) * unit_to_user("energy", "ase", 1.0)
+                struc.set_momenta(
+                    dstrip(system.beads.p[b]).reshape(-1, 3)
+                    * unit_to_user("momentum", "ase", 1.0)
+                )
+                struc.calc = DummyASECalculator(
+                    energy=dstrip(system.forces.pots[b])
+                    * unit_to_user("energy", "ase", 1.0),
+                    forces=dstrip(system.forces.f[b]).reshape(-1, 3)
+                    * unit_to_user("force", "ase", 1.0),
+                )
                 structures.append(struc)
             if len(structures) == 1:  # flatten the structure if there's just one beads
                 structures = structures[0]
@@ -263,17 +320,82 @@ class InteractiveSimulation:
     def set_structures(self, sys_structures):
         _asecheck()
 
-        if len(self.simulation.syslist) == 1:
+        if len(self.syslist) == 1:
             sys_structures = [sys_structures]
-        for system, structures in zip(self.simulation.syslist, sys_structures):
+        for system, structures in zip(self.syslist, sys_structures):
             if system.beads.nbeads == 1:
                 structures = [structures]
             for b, struc in enumerate(structures):
                 system.beads.q[b] = struc.positions.flatten() * unit_to_internal(
                     "length", "ase", 1.0
                 )
-                system.cell.h = struc.cell * unit_to_internal("length", "ase", 1.0)
-                if "ipi_velocities" in struc.arrays:
+                system.cell.h = struc.cell.T * unit_to_internal("length", "ase", 1.0)
+                if "momenta" in struc.arrays:
                     system.beads.p[b] = struc.arrays[
-                        "ipi_velocities"
-                    ].flatten() * unit_to_internal("velocity", "ase", 1.0)
+                        "momenta"
+                    ].flatten() * unit_to_internal("momentum", "ase", 1.0)
+
+    def get_motion_step(self):
+        """
+        Fetches the step function(s) associated with the system motion classes.
+
+        Returns a single function, or a list depending if there's just one system
+        or many.
+        """
+
+        step_list = []
+        for s in self.syslist:
+            step_list.append(s.motion.step)
+
+        if len(step_list) == 1:
+            return step_list[0]
+        else:
+            return step_list
+
+    def set_motion_step(self, custom_step):
+        """
+        Overrides the step function of the main motion class with a custom one.
+        `custom_step` should be defined as
+
+        ```
+        def custom_step(self, step=None):
+            do_something
+        ```
+
+        and `self` will be a reference to the motion class itself; depending on the
+        original motion class, this might contain thermostats, barostats, etc.
+
+        Call with a single function, or with a list if you have many systems and
+        want to set a different function for each system (for whatever reason)
+        """
+
+        if not hasattr(custom_step, "__len__"):
+            custom_step = [custom_step for s in self.syslist]
+
+        for s, f in zip(self.syslist, custom_step):
+            s.motion.__dict__["step"] = f.__get__(s.motion, s.motion.__class__)
+
+    def thermalize_momenta(self, temperature_K=None):
+        """Resets system momenta"""
+
+        for s in self.syslist:
+            if temperature_K is not None:
+                temperature = unit_to_internal("energy", "kelvin", temperature_K)
+            else:
+                temperature = s.ensemble.temp
+
+            # also correct for the change in kinetic energy
+            s.ensemble.eens += s.nm.kin
+
+            # initialize in the nm basis to handle PIMD mass scaling
+            s.nm.pnm[:] = (
+                self.prng.gvec((s.beads.nbeads, 3 * s.beads.natoms))
+                * np.sqrt(dstrip(s.nm.dynm3))
+                * np.sqrt(s.beads.nbeads * temperature * Constants.kb)
+            )
+
+            s.ensemble.eens -= s.nm.kin
+
+            # apply momentum constraints
+            if isinstance(s.motion, Dynamics):
+                s.motion.integrator.pconstraints()

@@ -433,9 +433,11 @@ class FFDirect(FFEval):
 
         if pars is None:
             pars = {}  # defaults no pars
+        if not "verbosity" in pars:
+            pars["verbosity"] = verbosity.high
         self.pes = pes
         try:
-            self.driver = __drivers__[self.pes](verbose=verbosity.high, **pars)
+            self.driver = __drivers__[self.pes](**pars)
         except ImportError:
             # specific errors have already been triggered
             raise
@@ -452,7 +454,7 @@ class FFDirect(FFEval):
         results[1] = results[1].reshape(-1)
         results[2] = results[2].reshape(3, 3)
 
-        # copied and pasted from 'Driver.getforce' in 'ipi/interfaces/sockets.py'
+        # converts the extra fields, if there are any
         mxtra = results[3]
         mxtradict = {}
         if mxtra:
@@ -481,6 +483,7 @@ class FFDirect(FFEval):
 
         request["result"] = results
         request["status"] = "Done"
+        request["t_finished"] = time.time()
 
 
 class FFLennardJones(FFEval):
