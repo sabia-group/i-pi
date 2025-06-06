@@ -18,12 +18,12 @@ bad data types, and failure to input required fields.
 # See the "licenses" directory for full license information.
 
 
-from copy import copy
+from copy import copy, deepcopy
 
 import numpy as np
 
 from ipi.utils.io.inputs.io_xml import *
-from ipi.utils.units import unit_to_internal, unit_to_user
+from ipi.utils.units import unit_to_internal, unit_to_user, UnitMap
 
 __all__ = [
     "Input",
@@ -33,6 +33,7 @@ __all__ = [
     "InputAttribute",
     "InputArray",
     "input_default",
+    "InputValueFromDict",
 ]
 
 
@@ -1317,3 +1318,80 @@ class InputArray(InputValue):
         # if the shape is not specified, assume the array is linear.
         if self.shape.fetch() == (0,):
             self.shape.store((len(self.value),))
+
+
+class InputValueFromDict(Input):
+
+    # The user can not provide the 'family', but only 'units' and 'key'.
+    # The 'family' is provided by the developer.
+
+    attribs = {
+        # "family": (
+        #     InputAttribute,
+        #     {"dtype": str, "default": "", "help": "Help message for 'family'", "options": None},
+        # ),
+        "units": (
+            InputAttribute,
+            {
+                "dtype": str,
+                "default": "",
+                "help": "Help message for 'units'",
+                "options": None,
+            },
+        ),
+        "key": (
+            InputAttribute,
+            {
+                "dtype": str,
+                "default": "",
+                "help": "Help message for 'key'",
+                "options": None,
+            },
+        ),
+    }
+
+    # Some comments:
+    # - this is a really bad hack, but it should be robust
+    # - The new attribute will not be saved to file because it will always have the default value (this is the default in i-PI)
+    # - the user can not specify 'family': the code will raise an exception.
+    @classmethod
+    def specialize(cls, family: str, default: str, key: str):
+        assert family in UnitMap, "coding error"
+        assert default in UnitMap[family], "coding error"
+        options = list(UnitMap[family].keys())
+        assert default in options, "coding error"
+
+        # Create a deep copy of the original fields
+        new_attribs = deepcopy(cls.attribs)
+
+        new_attribs["family"] = (
+            InputAttribute,
+            {
+                "dtype": str,
+                "default": family,
+                "help": "Help message for 'family'",
+                "options": list(UnitMap.keys()),
+            },
+        )
+
+        new_attribs["units"][1]["options"] = options
+        new_attribs["units"][1]["default"] = default
+
+        new_attribs["key"][1]["default"] = key
+
+        # Dynamically create a new subclass with updated fields
+        return type(
+            f"{cls.__name__}", (cls,), {"attribs": new_attribs}  # name of new class
+        )
+
+    def store(self, value: dict):
+        for k in value.keys():
+            self.__dict__[k].store(value[k])
+        pass
+
+    def fetch(self):
+        self.check()
+        rdic = {}
+        for f, v in self.attribs.items():
+            rdic[f] = self.__dict__[f].fetch()
+        return rdic

@@ -74,8 +74,9 @@ def run_driver(
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         sock.connect((address, port))
 
-    f_init = False
-    f_data = False
+    f_init = False  # whether the driver has been initialized
+    f_data = False  # whether the driver has data ready to be sent
+    f_extra = False  # whether the driver has extra data
 
     # initializes structure arrays
     cell = np.zeros((3, 3), float)
@@ -94,8 +95,11 @@ def run_driver(
             # responds to a status request
             if not f_init:
                 sock.sendall(Message("NEEDINIT"))
+            elif not f_extra and driver.requires_extra:  # this goes before f_data
+                sock.sendall(Message("NEEDEXTRA"))
             elif f_data:
                 sock.sendall(Message("HAVEDATA"))
+                f_extra = False
             else:
                 sock.sendall(Message("READY"))
         elif header == Message("INIT"):
@@ -125,6 +129,28 @@ def run_driver(
             ##### THIS IS THE TIME TO DO SOMETHING WITH THE POSITIONS!
             pot, force, vir, extras = driver(cell, pos)
             f_data = True
+            # f_extra = False  # no, the driver does not have extra data anymore
+
+        elif header == Message("EXTRADATA"):
+            if not driver.requires_extra:
+                raise ValueError("The driver does not support EXTRADATA.")
+
+            # The following code has been roughly copied and pasted from 'ipi/interfaces/sockets.py'
+
+            # read how many charater are gonne be sent
+            nchar = recv_data(sock, np.int32())
+            # allocate an array of characters of the right size
+            extra = np.zeros(nchar, dtype="S1")
+            # read the extra string
+            extra = recv_data(sock, extra)
+            # convert to ... something
+            extra = bytearray(extra).decode("utf-8")
+            # store extra data
+            driver.store_extra(extra)
+
+            f_extra = True  # yes, the driver has extra data
+            # sock.sendall(Message("READY"))
+
         elif header == Message("GETFORCE"):
             sock.sendall(Message("FORCEREADY"))
 
@@ -160,6 +186,7 @@ def run_driver(
             sock.sendall(extras.encode("utf-8"))
 
             f_data = False
+
         elif header == Message("EXIT"):
             print("Received exit message from i-PI. Bye bye!")
             return

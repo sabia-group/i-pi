@@ -448,7 +448,15 @@ class FFDirect(FFEval):
             raise err
 
     def evaluate(self, request):
-        results = list(self.driver(request["cell"][0], request["pos"].reshape(-1, 3)))
+        try:
+            if "extra" in request:
+                self.driver.store_extra(request["extra"])
+            results = list(
+                self.driver(request["cell"][0], request["pos"].reshape(-1, 3))
+            )
+        except Exception as err:
+            print("Error in 'FFDirect.evaluate' while evaluating energy and forces.")
+            raise err
 
         # ensure forces and virial have the correct shape to fit the results
         results[1] = results[1].reshape(-1)
@@ -1586,7 +1594,6 @@ class FFRotations(ForceField):
         self.ff.start()
 
     def queue(self, atoms, cell, reqid=-1):
-
         # launches requests for all of the rotations FF objects
         ffh = []  # this is the list of "inner" FF requests
         rots = []  # this is a list of tuples of (rotation matrix, weight)
@@ -2198,3 +2205,123 @@ class FFCavPhSocket(FFSocket):
         )
 
         return newreq
+
+
+class FFDielectric(ForceField):
+    def __init__(
+        self,
+        name: str,
+        mode: str,
+        where: str,
+        dipole: dict,
+        bec: dict,
+        field: np.ndarray,
+        forcefield: ForceField,
+    ):
+        super().__init__()
+        self.name = name  # this might be useless
+        self.mode = mode
+        self.where = where
+        self.dipole = ArrayFromDict(**dipole)
+        self.bec = ArrayFromDict(**bec)
+        self.field = field
+        self.forcefield = forcefield
+
+    def bind(self, output_maker=None):
+        """Binds the FF, at present just to allow for
+        managed output"""
+
+        self.output_maker = output_maker
+        self.forcefield.bind(output_maker)
+
+    def start(self):
+        return self.forcefield.start()
+
+    def queue(self, atoms, cell, **kwargs) -> dict:
+        # atoms.motion.actual_time
+        template = None
+        if self.where == "driver":
+            template = {
+                "extra": json.dumps({"Efield": [0.0, 0.0, 0.0]})  # just an example
+            }
+        request = self.forcefield.queue(atoms, cell, **kwargs, template=template)
+
+        if self.where == "client":
+            return self.apply_ensemble(request)
+        else:
+            return request
+
+    def apply_ensemble(self, request: dict) -> dict:
+        # do nothing
+        if self.mode == "none":
+            return request
+
+        # check that we have all necessary information
+        u, f, v, x = request["result"]
+
+        mu = self.dipole.get(x)
+        # check that the Born Charges are provided
+        Z = self.bec.get(x)
+
+        assert mu is not None, "Just to let the automatic tests pass"
+        assert Z is not None, "Just to let the automatic tests pass"
+
+        if self.mode == "E":  # apply fixed-E ensemble
+            request["result"] = self.fixed_E(request["result"])
+        elif self.mode == "D":  # apply fixed-D ensemble
+            request["result"] = self.fixed_D(request["result"])
+        else:  # there is an error in the implementation
+            raise ValueError("coding error")
+        return request
+
+    def fixed_E(self, results: dict):
+        u, f, v, x = results
+        dipole = self.dipole.get(x)
+        Z = self.bec.get(x)
+        u -= dipole @ self.field
+        f += Z @ self.field
+        return u, f, v, x
+
+    def fixed_D(self, request):
+        raise ValueError("Not implemented yet")
+        return request
+
+
+class ArrayFromDict:
+    def __init__(self, family: str, units, key: str):
+        self.family = family
+        self.units = units
+        self.key = key
+        # self.shape = shape
+
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}("
+            f"family={self.family!r}, "
+            f"units={self.units!r}, "
+            f"key={self.key!r}, "
+            # f"shape={self.shape!r})"
+        )
+
+    def get(self, dictionary: dict) -> np.ndarray:
+        if not isinstance(dictionary, dict):
+            softexit.trigger(
+                status="bad",
+                message=f"The input variable was supposed to be a python dictionary but it is {type(dictionary)}.",
+            )
+        if self.key not in dictionary:
+            softexit.trigger(
+                status="bad",
+                message=f"The key '{self.key}' is not in the provided dictionary.",
+            )
+        value = dictionary[self.key]
+        value = np.asarray(value)
+        # if self.shape is not None:
+        #     value = np.reshape(value,self.shape)
+        return unit_to_internal(self.family, self.units, value)
+
+    def __getitem__(self, name):
+        return self.__getattribute__(name)
+
+    def keys(self):
+        return self.__dict__.keys()

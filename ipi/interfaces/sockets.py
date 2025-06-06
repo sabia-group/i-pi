@@ -55,6 +55,8 @@ MESSAGE = {
         "posdata",
         "getforce",
         "forceready",
+        "needextra",
+        "extradata",
     ]
 }
 
@@ -105,6 +107,7 @@ class Status(object):
     HasData = 8
     Busy = 16
     Timeout = 32
+    NeedExtra = 64
 
 
 class DriverSocket(socket.socket):
@@ -296,6 +299,8 @@ class Driver(DriverSocket):
             return Status.Up | Status.NeedsInit
         elif reply == MESSAGE["havedata"]:
             return Status.Up | Status.HasData
+        elif reply == MESSAGE["needextra"]:
+            return Status.Up | Status.NeedExtra
         else:
             warning(" @SOCKET:    Unrecognized reply: " + str(reply), verbosity.low)
             return Status.Up
@@ -336,6 +341,8 @@ class Driver(DriverSocket):
             return Status.Up | Status.NeedsInit
         elif reply == MESSAGE["havedata"]:
             return Status.Up | Status.HasData
+        elif reply == MESSAGE["needextra"]:
+            return Status.Up | Status.NeedExtra
         else:
             warning(" @SOCKET:    Unrecognized reply: " + str(reply), verbosity.low)
             return Status.Up
@@ -418,6 +425,38 @@ class Driver(DriverSocket):
                 raise exc
         else:
             raise InvalidStatus("Status in sendpos was " + self.status)
+
+    def sendextra(self, extra: str):
+        """Sends the extra string to the client.
+
+        Args:
+           extra: a JSON-formatted string.
+
+        Raises:
+           InvalidStatus: Raised if the status is not Ready.
+        """
+        global TIMEOUT  # we need to update TIMEOUT in case of sendall failure
+
+        if self.status & Status.NeedExtra:
+            try:
+                # reduces latency by combining all messages in one
+                self.sendall(
+                    MESSAGE["extradata"] + np.int32(len(extra)) + extra.encode("utf-8")
+                )  # header  # extras
+                self.status = Status.Up | Status.Busy
+            except socket.timeout:
+                warning(
+                    f"Timeout in sendall after {TIMEOUT}s: resetting status and increasing timeout",
+                    verbosity.quiet,
+                )
+                self.status = Status.Timeout
+                TIMEOUT *= 2
+                return
+            except Exception as exc:
+                warning(f"Other exception during extra receive: {exc}", verbosity.quiet)
+                raise exc
+        else:
+            raise InvalidStatus("Status in sendextra was " + self.status)
 
     def getforce(self):
         """Gets the potential energy, force and virial from the driver.
@@ -528,15 +567,40 @@ class Driver(DriverSocket):
             self.initialize(r["id"], r["pars"])
             self.status = self.get_status()
 
-        if not (self.status & Status.Ready):
+        if not (self.status & (Status.Ready | Status.NeedExtra)):
             warning(
                 " @SOCKET:   Inconsistent client state in dispatch thread! (II)",
                 verbosity.low,
             )
             return
 
+        # From now on self.status can be only one among Status.Ready and Status.NeedExtra:
+        # not both, nor neither of both, but only and only one of these.
+
         r["start"] = time.time()
-        self.sendpos(r["pos"][r["active"]], r["cell"])
+
+        if self.status & (Status.Ready & Status.NeedExtra):
+            warning(
+                " @SOCKET:   Keep calm: set Ready and NeedExtra once at a time.",
+                verbosity.high,
+            )
+            raise InvalidStatus
+
+        if self.status & Status.NeedExtra:
+            if "extra" not in r:
+                warning(
+                    " @SOCKET:   'extra' is empty.",
+                    verbosity.high,
+                )
+                r["extra"] = ""
+
+            self.sendextra(r["extra"])
+            self.get_status()
+
+        if self.status & Status.Ready:
+            self.sendpos(r["pos"][r["active"]], r["cell"])
+        else:
+            raise InvalidStatus
 
         self.get_status()
         if not (self.status & Status.HasData):
@@ -919,7 +983,10 @@ class InterfaceSocket(object):
             return False
         if fc.status & Status.HasData:
             return False
-        if not (fc.status & (Status.Ready | Status.NeedsInit | Status.Busy)):
+        if not (
+            fc.status
+            & (Status.Ready | Status.NeedsInit | Status.Busy | Status.NeedExtra)
+        ):
             warning(
                 " @SOCKET: Client "
                 + str(fc.peername)

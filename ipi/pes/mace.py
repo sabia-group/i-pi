@@ -1,8 +1,8 @@
 """An interface for the [MACE](https://github.com/ACEsuit/mace) calculator"""
 
-from .ase import ASEDriver
+import json
 
-from ipi.utils.messages import verbosity, warning
+from .ase import ASEDriver
 
 MACECalculator = None
 
@@ -26,11 +26,21 @@ class MACE_driver(ASEDriver):
     :param model: string, filename of the MACE model
     """
 
-    def __init__(self, template, model, device="cpu", *args, **kwargs):
-        warning(
-            "THIS PES HAS NOT BEEN TESTED FOLLOWING CONVERSION TO THE NEW PES API.",
-            verbosity.low,
-        )
+    def __init__(
+        self,
+        template,
+        model,
+        device="cpu",
+        requires_extra: bool = False,
+        mace_kwargs=None,
+        *args,
+        **kwargs
+    ):
+
+        # warning(
+        #     "THIS PES HAS NOT BEEN TESTED FOLLOWING CONVERSION TO THE NEW PES API.",
+        #     verbosity.low,
+        # )
         global MACECalculator
 
         try:
@@ -50,7 +60,13 @@ class MACE_driver(ASEDriver):
 
         self.model = model
         self.device = device
+        self.mace_kwargs = {}
+        if mace_kwargs is not None:
+            with open(mace_kwargs, "r") as f:
+                self.mace_kwargs = json.load(f)
+
         super().__init__(template, *args, **kwargs)
+        self.requires_extra = requires_extra
 
     def check_parameters(self):
         """Check the arguments requuired to run the driver
@@ -60,4 +76,6 @@ class MACE_driver(ASEDriver):
 
         super().check_parameters()
 
-        self.ase_calculator = MACECalculator(model_paths=self.model, device=self.device)
+        self.ase_calculator = MACECalculator(
+            model_paths=self.model, device=self.device, **self.mace_kwargs
+        )
