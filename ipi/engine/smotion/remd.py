@@ -155,7 +155,6 @@ class ReplicaExchange(Smotion):
                 t_eval -= time.time()
                 newpensi = sl[i].ensemble.lpens
                 newpensj = sl[j].ensemble.lpens
-
                 pxc = np.exp((newpensi + newpensj) - (pensi + pensj))
                 t_eval += time.time()
 

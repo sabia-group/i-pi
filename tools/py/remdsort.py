@@ -48,11 +48,11 @@ def main(inputfile, prefix="SRT_"):
     simul = isimul.fetch()
     swapfile = ""
     if simul.smotion is None or (
-        simul.smotion.mode != "remd" and simul.smotion.mode != "multi"
+        simul.smotion.mode not in ["remd", "multi", "qremd"]
     ):
         raise ValueError("Simulation does not look like a parallel tempering one.")
     else:
-        if simul.smotion.mode == "remd":
+        if simul.smotion.mode == "remd" or simul.smotion.mode == "qremd":
             swapfile = simul.smotion.swapfile
         else:
             for sm in simul.smotion.mlist:

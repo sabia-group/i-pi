@@ -10,3 +10,4 @@ from .remd import ReplicaExchange
 from .metad import MetaDyn
 from .dmd import DMD
 from .multi import MultiSmotion
+from .qremd import QReplicaExchange
