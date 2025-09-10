@@ -108,6 +108,10 @@ class Dynamics(Motion):
             )
         elif self.enstype == "nvt":
             self.integrator = NVTIntegrator()
+        elif self.enstype == "nvt-f":
+            self.integrator = NVTIntegratorWithFriction(
+                friction=self.friction,
+            )
         elif self.enstype == "nvt-cc":
             self.integrator = NVTCCIntegrator()
         elif self.enstype == "npt":
@@ -525,10 +529,8 @@ class NVEIntegrator(DummyIntegrator):
 
 
 class NVEIntegratorWithFriction(NVEIntegrator):
-    """Integrator for constant energy simulations with friction.
-
-    Attributes:
-
+    """
+    Integrator object for constant Number of particles, Volume, and Energy (NVE) simulations with friction.
     """
 
     def __init__(
@@ -589,6 +591,28 @@ class NVTIntegrator(NVEIntegrator):
             self.pconstraints()
             self.mtsprop_ab(0)
 
+class NVTIntegratorWithFriction(NVTIntegrator):
+    """
+    Integrator object for constant Number of particles, Volume, and Temperature (NVT) simulations with friction.
+    """
+    def __init__(
+        self,
+        friction: Friction,
+    ):
+        assert friction is not None, "Friction must be provided to use nvt-f integrator"
+        self.friction = friction
+        super().__init__()
+
+    def bind(self, motion):
+        super().bind(motion)
+        self.friction.bind(motion)
+
+    def step(self, step=None):
+        forces = self.friction.forces()
+        self.beads.p += forces * self.pdt[0]
+        self.pconstraints()
+
+        super().step(step)
 
 class NVTCCIntegrator(NVTIntegrator):
     """Integrator object for constant temperature simulations with constrained centroid.
