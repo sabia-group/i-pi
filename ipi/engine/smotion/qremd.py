@@ -44,7 +44,7 @@ class QReplicaExchange(Smotion):
         else:
             self.repindex = np.asarray(repindex, int).copy()
 
-        self.mode = "acremd"
+        self.mode = "qremd"
 
     def bind(self, syslist, prng, omaker):
         super().bind(syslist, prng, omaker)
