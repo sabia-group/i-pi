@@ -31,7 +31,6 @@ class Fricition_eq133(FrictionProtocol):
         self.alpha = alpha
 
     def forces(self) -> np.ndarray:
-
         fnm = self.alpha[:, np.newaxis] * self.nm.qnm  # (nmodes, 3 * natoms)
         forces = self.nm.transform.nm2b(fnm)  # (nbeads, 3 * natoms)
         return forces
@@ -59,14 +58,12 @@ class Fricition_eq134(FrictionProtocol):
         self.alpha = alpha
 
     def forces(self) -> np.ndarray:
-
         fnm = self.alpha[:, np.newaxis] * self.nm.qnm  # (nmodes, 3 * natoms)
         forces = self.nm.transform.nm2b(fnm)  # (nbeads, 3 * natoms)
         return forces
 
 
 def get_alpha(eta0: float, omega_cutoff: float, nm: NormalModes) -> np.ndarray:
-
     def Lambda(omega: float) -> float:
         return eta0 * np.exp(-omega / omega_cutoff)
 

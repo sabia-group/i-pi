@@ -14,9 +14,11 @@ from ipi.engine.beads import Beads
 
 
 class FrictionProtocol(Protocol):
-    def bind(self, motion: Motion) -> None: ...
+    def bind(self, motion: Motion) -> None:
+        ...
 
-    def forces(self) -> np.ndarray: ...
+    def forces(self) -> np.ndarray:
+        ...
 
 
 class Friction(FrictionProtocol):
@@ -47,7 +49,6 @@ class Friction(FrictionProtocol):
         )  # (nmodes,)
 
     def forces(self) -> np.ndarray:
-
         fnm = self.alpha[:, np.newaxis] * self.nm.qnm  # (nmodes, 3 * natoms)
         forces = self.nm.transform.nm2b(fnm)  # (nbeads, 3 * natoms)
         return forces
@@ -58,7 +59,6 @@ def get_alpha_numeric(
 ) -> np.ndarray:
     try:
         from scipy.interpolate import CubicSpline
-        from scipy.integrate import quad
     except ModuleNotFoundError as e:
         raise ModuleNotFoundError(
             "Friction class requires scipy to work, please install scipy"

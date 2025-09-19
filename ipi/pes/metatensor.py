@@ -291,10 +291,11 @@ class MetatensorDriver(Dummy_driver):
                         .values.squeeze(0)
                     )
 
-                minus_force_ensemble_tensor, minus_virial_ensemble_tensor = (
-                    torch.autograd.functional.jacobian(
-                        _compute_ensemble, (positions, strain), vectorize=True
-                    )
+                (
+                    minus_force_ensemble_tensor,
+                    minus_virial_ensemble_tensor,
+                ) = torch.autograd.functional.jacobian(
+                    _compute_ensemble, (positions, strain), vectorize=True
                 )
                 force_ensemble_tensor = -minus_force_ensemble_tensor
                 virial_ensemble_tensor = -minus_virial_ensemble_tensor

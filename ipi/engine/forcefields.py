@@ -1586,7 +1586,6 @@ class FFRotations(ForceField):
         self.ff.start()
 
     def queue(self, atoms, cell, reqid=-1):
-
         # launches requests for all of the rotations FF objects
         ffh = []  # this is the list of "inner" FF requests
         rots = []  # this is a list of tuples of (rotation matrix, weight)
