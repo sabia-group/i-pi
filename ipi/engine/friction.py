@@ -14,11 +14,9 @@ from ipi.engine.beads import Beads
 
 
 class FrictionProtocol(Protocol):
-    def bind(self, motion: Motion) -> None:
-        ...
+    def bind(self, motion: Motion) -> None: ...
 
-    def forces(self) -> np.ndarray:
-        ...
+    def forces(self) -> np.ndarray: ...
 
 
 class Friction(FrictionProtocol):
