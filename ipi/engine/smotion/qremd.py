@@ -44,7 +44,7 @@ class QReplicaExchange(Smotion):
         else:
             self.repindex = np.asarray(repindex, int).copy()
 
-        self.mode = "acremd"
+        self.mode = "qremd"
 
     def bind(self, syslist, prng, omaker):
         super().bind(syslist, prng, omaker)
@@ -58,14 +58,14 @@ class QReplicaExchange(Smotion):
         self.sf = self.output_maker.get_output(self.swapfile)
 
     def step(self, step=None):
-        if self.stride <= 0.0 or step == 0:
+        if self.stride <= 0.0:
             return
 
         u = self.prng.u
-        if 1.0 / self.stride < u:
-            return  # tries a swap with probability 1/stride
 
-        
+
+        #if step % self.stride != 0 or step == 0:
+        #    return
         info(f"\nTrying to exchange replicas on STEP {step}", verbosity.debug)
 
         t_start = time.time()
@@ -73,8 +73,12 @@ class QReplicaExchange(Smotion):
         sl = self.syslist
         self._cached_V = [s.forces.pot for s in sl]
 
+        #offset = 0 if (step // self.stride) % 2 == 0 else 1
+        #pairs = [(k, k+1) for k in range(offset, len(sl)-1, 2)]
         for i in range(len(sl)):
             for j in range(i):
+                if 1.0 / self.stride < u:
+                    continue  # tries a swap with probability 1/stride
 
                 ti = sl[i].ensemble.temp
                 tj = sl[j].ensemble.temp
