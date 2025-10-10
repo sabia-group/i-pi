@@ -10,12 +10,14 @@ import itertools
 
 __all__ = ["QReplicaExchange"]
 
+
 def thermo_scale(thermo, scale):
     if hasattr(thermo, "tlist"):
         for t in thermo.tlist:
             thermo_scale(t, scale)
     if hasattr(thermo, "s"):
         thermo.s *= scale
+
 
 def motion_scale(motion, scale):
     if hasattr(motion, "mlist"):
@@ -26,8 +28,10 @@ def motion_scale(motion, scale):
     if hasattr(motion, "barostat"):
         thermo_scale(motion.barostat.thermostat, scale)
 
+
 def gle_scale(sys, scale):
     motion_scale(sys.motion, scale)
+
 
 class QReplicaExchange(Smotion):
     """quantum replica exchange (QREMD)."""
@@ -63,8 +67,7 @@ class QReplicaExchange(Smotion):
 
         u = self.prng.u
 
-
-        #if step % self.stride != 0 or step == 0:
+        # if step % self.stride != 0 or step == 0:
         #    return
         info(f"\nTrying to exchange replicas on STEP {step}", verbosity.debug)
 
@@ -73,8 +76,8 @@ class QReplicaExchange(Smotion):
         sl = self.syslist
         self._cached_V = [s.forces.pot for s in sl]
 
-        #offset = 0 if (step // self.stride) % 2 == 0 else 1
-        #pairs = [(k, k+1) for k in range(offset, len(sl)-1, 2)]
+        # offset = 0 if (step // self.stride) % 2 == 0 else 1
+        # pairs = [(k, k+1) for k in range(offset, len(sl)-1, 2)]
         for i in range(len(sl)):
             for j in range(i):
                 if 1.0 / self.stride < u:
@@ -104,8 +107,8 @@ class QReplicaExchange(Smotion):
                 sl[j].beads.q[:] = q2_orig
                 Vi = self._cached_V[i]
                 Vj = self._cached_V[j]
-                #Vi = sl[i].forces.pot
-                #Vj = sl[j].forces.pot
+                # Vi = sl[i].forces.pot
+                # Vj = sl[j].forces.pot
 
                 beta_i = 1.0 / ti
                 beta_j = 1.0 / tj
@@ -114,9 +117,15 @@ class QReplicaExchange(Smotion):
                 Delta1 = V_q2p - Vi
                 Delta2 = V_q1p - Vj
                 pxc = np.exp(-beta_i * Delta1 - beta_j * Delta2)
-                info(f" @ QREMD: Acceptance criterium:{pxc:.2e} and delta1: {Delta1:.2e} and delta2: {Delta2:.2e}", verbosity.medium)
+                info(
+                    f" @ QREMD: Acceptance criterium:{pxc:.2e} and delta1: {Delta1:.2e} and delta2: {Delta2:.2e}",
+                    verbosity.medium,
+                )
                 if pxc > self.prng.u:
-                    info(f" @ QREMD: SWAPPING replicas {i:5d} and {j:5d}.", verbosity.high)
+                    info(
+                        f" @ QREMD: SWAPPING replicas {i:5d} and {j:5d}.",
+                        verbosity.high,
+                    )
 
                     ensemble_swap(sl[i].ensemble, sl[j].ensemble)
 
@@ -139,31 +148,29 @@ class QReplicaExchange(Smotion):
                     gle_scale(sl[i], tj / ti)
                     gle_scale(sl[j], ti / tj)
 
-                    self.repindex[i], self.repindex[j] = self.repindex[j], self.repindex[i]
-                    self._cached_V[i], self._cached_V[j] = self._cached_V[j], self._cached_V[i]
+                    self.repindex[i], self.repindex[j] = (
+                        self.repindex[j],
+                        self.repindex[i],
+                    )
+                    self._cached_V[i], self._cached_V[j] = (
+                        self._cached_V[j],
+                        self._cached_V[i],
+                    )
                     fxc = True
                 else:
-                    info(f" @ QREMD: SWAP REJECTED BETWEEN replicas {i:5d} and {j:5d}.", verbosity.high)
+                    info(
+                        f" @ QREMD: SWAP REJECTED BETWEEN replicas {i:5d} and {j:5d}.",
+                        verbosity.high,
+                    )
 
         if fxc:
-
             self.sf.write(f"{step:10d}")
             for idx in self.repindex:
                 self.sf.write(f" {idx:5d}")
             self.sf.write("\n")
             self.sf.force_flush()
 
-        info(f"# QREMD step evaluated in {time.time() - t_start:.6f} sec.", verbosity.debug)
-
-
-
-
-
-
-
-
-
-
-
-
-
+        info(
+            f"# QREMD step evaluated in {time.time() - t_start:.6f} sec.",
+            verbosity.debug,
+        )
