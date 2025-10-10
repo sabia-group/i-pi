@@ -5,8 +5,9 @@ from ipi.engine.smotion import Smotion
 from ipi.engine.ensembles import ensemble_swap
 from ipi.utils.depend import dstrip
 from ipi.utils.messages import verbosity, info
-from ipi.utils.units import Constants
-import itertools
+
+# from ipi.utils.units import Constants
+# import itertools
 
 __all__ = ["QReplicaExchange"]
 
@@ -104,6 +105,7 @@ class QReplicaExchange(Smotion):
                 V_q1p = sl[j].forces.pot
 
                 sl[i].beads.q[:] = q1_orig
+                # MR: NOTE THAT WITH THE DEPENDENCY MECHANISM, ONCE POT OR FORCE IS CALLED HERE AGAIN, IT WILL TRIGGER A CALCULATION OF THE FORCE THAT YOU DO NOT NEED BECAUSE YOU KNEW IT BEFORE.
                 sl[j].beads.q[:] = q2_orig
                 Vi = self._cached_V[i]
                 Vj = self._cached_V[j]
@@ -156,6 +158,7 @@ class QReplicaExchange(Smotion):
                         self._cached_V[j],
                         self._cached_V[i],
                     )
+                    # MR: ah above you are just updating the list of the replicas to attempt swapping again. yes?
                     fxc = True
                 else:
                     info(
