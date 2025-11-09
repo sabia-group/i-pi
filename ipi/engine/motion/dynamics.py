@@ -545,6 +545,7 @@ class NVEIntegratorWithFriction(NVEIntegrator):
     def bind(self, motion):
         super().bind(motion)
         self.friction.bind(motion)
+
     def fstep(self):
         """Velocity Verlet friction step"""
 
@@ -556,7 +557,7 @@ class NVEIntegratorWithFriction(NVEIntegrator):
         if self.splitting == "obabo":
             # friction is applied for dt/2
             self.fstep()
-            self.pconstraints()  #I am not sure this sould include or not!
+            self.pconstraints()  # I am not sure this sould include or not!
 
             # forces are integerated for dt with MTS.
             self.mtsprop(0)
