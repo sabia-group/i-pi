@@ -60,6 +60,7 @@ class InputDynamics(InputDictionary):
                 "options": [
                     "nve",
                     "nve-f",
+                    "nvt-f",
                     "nvt",
                     "npt",
                     "nst",
@@ -75,7 +76,7 @@ class InputDynamics(InputDictionary):
                 "dtype": str,
                 "default": "obabo",
                 "help": "The Louiville splitting used for sampling the target ensemble. ",
-                "options": ["obabo", "baoab"],
+                "options": ["obabo", "baoab", "fbabf", "bafab", "ofbabfo", "bafofab"],
             },
         ),
     }
