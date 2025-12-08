@@ -275,13 +275,23 @@ class DummyIntegrator:
         return dtl
 
     def get_tdt(self):
-        if self.splitting in ("obabo", "fbabf", "ofbabfo"):
+        if self.splitting in ("obabo", "ofbabfo"):
             return self.dt * 0.5
-        elif self.splitting in ("baoab", "bafab", "bafofab"):
+        elif self.splitting in ("baoab", "bafofab"):
             return self.dt
         else:
             raise ValueError(
                 "Invalid splitting requested. Only OBABO and BAOAB are supported."
+            )
+
+    def get_fdt(self):
+        if self.splitting in ("fbabf", "ofbabfo", "bafofab"):
+            return self.dt * 0.5
+        elif self.splitting in ("bafab",):
+            return self.dt
+        else:
+            raise ValueError(
+                "Invalid splitting requested. Only FBABF, BAFAB, OFBABFO and BAFOFAB are supported."
             )
 
     def bind(self, motion):
@@ -549,7 +559,7 @@ class NVEIntegratorWithFriction(NVEIntegrator):
     def fstep(self):
         """Velocity Verlet friction step"""
 
-        self.friction.step(self.get_tdt())
+        self.friction.step(self.get_fdt())
 
     def step(self, step=None):
         """Does one simulation time step.
@@ -651,7 +661,7 @@ class NVTIntegratorWithFriction(NVTIntegrator):
     def fstep(self):
         """Velocity Verlet friction step"""
 
-        self.friction.step(self.get_tdt())
+        self.friction.step(self.get_fdt())
 
     def step(self, step=None):
         """Does one simulation time step.
