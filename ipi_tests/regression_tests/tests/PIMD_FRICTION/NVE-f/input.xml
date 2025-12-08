@@ -1,0 +1,36 @@
+<simulation verbosity='high'>
+  <output prefix='simulation'>
+    <properties stride='1' filename='out'>  [ step, conserved, temperature{kelvin},  potential, kinetic_md ] </properties>
+    <trajectory filename='pos_c' stride='1'> x_centroid </trajectory>
+    <trajectory filename='mom_c' stride='1'> p_centroid </trajectory>
+  </output>
+  <total_steps> 100 </total_steps>
+  <prng>
+    <seed>31415</seed>
+  </prng>
+  <ffsocket name='doublewell_1D' mode='unix' pbc='false'>
+    <address>localhost</address>
+  </ffsocket>
+  <system>
+    <initialize nbeads='32'>
+      <file mode='xyz'> init.xyz </file>
+      <momenta mode='xyz' units='atomic_unit'> initial_momenta.xyz </momenta>
+      <cell mode='abc' units='angstrom'> [300, 300, 300] </cell>
+    </initialize>
+    <forces>
+      <force forcefield='doublewell_1D'> </force>
+    </forces>
+    <motion mode='dynamics'>
+      <fixcom> False </fixcom>
+      <dynamics mode='nve-f' splitting='fbabf'>
+        <timestep units='femtosecond'> 0.5 </timestep>
+        <friction>
+	  <alpha_input mode='file' shape='(32, 2)' > alpha_ref.dat </alpha_input>
+	</friction>
+      </dynamics>
+    </motion>
+    <ensemble>
+      <temperature units='kelvin'> 100 </temperature>
+    </ensemble>
+  </system>
+</simulation>
