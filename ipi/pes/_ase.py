@@ -2,7 +2,7 @@
 
 import json
 import numpy as np
-from .dummy import Dummy_driver
+from ipi.pes.dummy import Dummy_driver
 
 from ipi.utils.units import unit_to_internal, unit_to_user
 
