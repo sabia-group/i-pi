@@ -16,7 +16,7 @@ from ase import Atoms
 from ase.io import read
 from ase.outputs import _defineprop, all_outputs
 
-from ipi.pes.ase import ASEDriver
+from ipi.pes._ase import ASEDriver
 from ipi.pes.tools import Timer, timeit, JSONLogger, ModelResults
 from ipi.utils.messages import warning, verbosity
 from ipi.utils.units import unit_to_user
@@ -30,6 +30,7 @@ DEBUG = False
 
 ase_like_properties = {
     "energy": (),
+    "interaction_energy": (),
     "node_energy": ("natoms",),
     "forces": ("natoms", 3),
     "displacement": (3, 3),
@@ -41,6 +42,8 @@ ase_like_properties = {
     "BEC": ("natoms", 3, 3),
     "piezoelectric": (3, 3, 3),
 }
+
+to_ignore_properties = ["interaction_energy", "node_feats"]
 
 
 class Extended_MACE_driver(ASEDriver):
@@ -334,10 +337,12 @@ class ExtendedMACECalculator(MACECalculator):
                 with self.logger.section("postprocess"):
                     results_tensors = {}
                     for key, value in out.items():
+                        if value is None:
+                            continue
                         if (
                             "ignore" in self.instructions
                             and key in self.instructions["ignore"]
-                        ):
+                        ) or key in to_ignore_properties:
                             continue
                         if key not in results_tensors:
                             results_tensors[key] = [None] * len(self.models)
@@ -660,8 +665,13 @@ if __name__ == "__main__":
     import argparse
     from ase.io import write
 
+    argv = {
+        "metavar": "\b",
+    }
+
     parser = argparse.ArgumentParser(
-        description="Evaluate a MACE model on structures using ExtendedMACECalculator."
+        description="Evaluate a MACE model on structures using ExtendedMACECalculator.\n\
+        Run with 'python extmace.py -m mace.model -i dataset.extxyz -o output.extxyz'"
     )
 
     parser.add_argument(
@@ -670,41 +680,50 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="Path to the trained MACE model file.",
+        **argv,
     )
     parser.add_argument(
         "-d",
         "--device",
         type=str,
+        required=False,
         default="cpu",
-        help="Torch device (default: cpu). Example: cuda:0",
+        help="torch device (default: %(default)s).",
+        **argv,
     )
     parser.add_argument(
         "-mk",
         "--mace_kwargs",
         type=str,
+        required=False,
         default=None,
         help="JSON file with extra input arguments for the calculator.",
+        **argv,
     )
     parser.add_argument(
         "-i",
         "--input_structures",
         type=str,
         required=True,
-        help="Input file (ASE-readable).",
+        help="input file.",
+        **argv,
     )
     parser.add_argument(
         "-o",
         "--output_structures",
         type=str,
         required=True,
-        help="Output file (ASE-readable).",
+        help="output file.",
+        **argv,
     )
     parser.add_argument(
         "-p",
         "--prefix",
         type=str,
+        required=False,
         default="MACE_",
-        help="Prefix for saved properties.",
+        help="prefix for saved properties (default: %(default)s).",
+        **argv,
     )
 
     args = parser.parse_args()
@@ -725,7 +744,7 @@ if __name__ == "__main__":
         f"Initializing ExtendedMACECalculator with model '{args.model}' on device '{args.device}'..."
     )
     calc = ExtendedMACECalculator(
-        model_path=args.model, device=args.device, **mace_kwargs
+        model_paths=args.model, device=args.device, **mace_kwargs
     )
     print("Calculator initialized.")
 
