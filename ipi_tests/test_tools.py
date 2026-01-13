@@ -386,9 +386,7 @@ class Runner(object):
 
             # check i-pi errors
             ipi_out, ipi_error = ipi.communicate(timeout=TIMEOUT)
-            if ipi.returncode != 0:
-                print("i-PI error occurred:")
-                raise Exception(ipi_error)
+            assert ipi.returncode == 0, f"i-PI error occurred: {ipi_error}"
 
             # check driver errors
             for driver in drivers:
