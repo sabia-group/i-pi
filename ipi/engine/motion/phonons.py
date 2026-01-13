@@ -121,7 +121,7 @@ class DynMatrixMover(Motion):
 
         dmatx = dmatx + np.eye(len(dmatx)) * deltaw
         if deltaw != 0.0:
-            wstr = " !! Shifted by %e !!" % (deltaw)
+            wstr = f" !! Shifted by {deltaw:e} !!"
         else:
             wstr = ""
 

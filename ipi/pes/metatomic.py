@@ -522,7 +522,7 @@ class MetatomicDriver(Dummy_driver):
             processed_outputs = self._process_outputs(outputs, sys_batch, strain_batch)
             pp_time += time()
             info(
-                "Test timings %e %e %e" % (pre_time, model_time, pp_time),
+                f"Test timings {pre_time:e} {model_time:e} {pp_time:e}",
                 verbosity.high,
             )
 
