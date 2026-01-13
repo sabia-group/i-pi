@@ -67,7 +67,7 @@ class DoubleWell_with_friction_driver(DoubleWell_driver):
             self.B = ((m**2) * (w_b) ** 4) / (16 * v0)
 
         except:
-            sys.exit(self.__doc__)
+            raise ValueError("Error in DoubleWell_with_friction_driver")
 
         super().__init__(*args, **kwargs)
 
