@@ -1284,6 +1284,15 @@ class InputFFDielectric(InputForceField):
         },
     )
 
+    attribs["logfile"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "default": "",
+            "help": "Log file to measure the execution time of the FFDielectric class.",
+        },
+    )
+
     default_help = "still empty"
     default_label = "FFDIELECTRIC"
 
@@ -1338,6 +1347,7 @@ class InputFFDielectric(InputForceField):
         self.dipole.store(ff.dipole)
         self.bec.store(ff.bec)
         self.piezo.store(ff.piezo)
+        self.logfile.store(ff.logfile)
 
     def fetch(self):
         """Fetches all of the FF objects"""
@@ -1357,4 +1367,5 @@ class InputFFDielectric(InputForceField):
             piezo=self.piezo.fetch(),
             field=self.field.fetch(),  # this is a 'VectorField' object
             forcefield=ff,
+            logfile=self.logfile.fetch(),
         )

@@ -17,7 +17,8 @@ from ase.io import read
 from ase.outputs import _defineprop, all_outputs
 
 from ipi.pes._ase import ASEDriver
-from ipi.pes.tools import Timer, timeit, JSONLogger, ModelResults
+from ipi.utils.timing import Timer, timeit
+from ipi.pes.tools import JSONLogger, ModelResults
 from ipi.utils.messages import warning, verbosity
 from ipi.utils.units import unit_to_user
 

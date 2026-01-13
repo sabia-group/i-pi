@@ -34,6 +34,7 @@ from ipi.utils.mathtools import (
     get_rotation_quadrature_lebedev,
     random_rotation,
 )
+from ipi.utils.timing import Timer, timeit
 
 plumed = None
 
@@ -2275,6 +2276,7 @@ class FFDielectric(ForceField):
         piezo: dict,
         field: VectorField,
         forcefield: ForceField,
+        logfile: str,
     ):
         super().__init__()
         self.name = name  # this might be useless
@@ -2292,6 +2294,8 @@ class FFDielectric(ForceField):
         self.field = field  # what type of external field should be applied
         self.forcefield = forcefield
         self.template = {}
+        self.logfile = logfile
+        self.logger = Timer(logfile != "", logfile)
 
     def bind(self, output_maker=None):
         """Binds the FF, at present just to allow for
@@ -2303,10 +2307,12 @@ class FFDielectric(ForceField):
     def start(self):
         return self.forcefield.start()
 
+    @timeit(name="get_extra", report=True)
     def get_extra(self):
         """Store all the templates used in a MD step so that the user can inspect them by printing them to file"""
         return self.template.copy()
 
+    @timeit(name="queue", report=True)
     def queue(self, atoms, cell, template=None, **kwargs) -> dict:
         if template is None:
             template = {}
@@ -2333,6 +2339,7 @@ class FFDielectric(ForceField):
 
         return self.forcefield.queue(atoms, cell, template=template, **kwargs)
 
+    @timeit(name="post_process", report=True)
     def post_process(self, r: dict):
         """Post-processes the results of the forcefield request."""
         # This is a no-op for now, but can be overridden in subclasses
@@ -2361,6 +2368,7 @@ class FFDielectric(ForceField):
         else:
             raise ValueError("coding error")
 
+    @timeit(name="apply_ensemble")
     def apply_ensemble(self, request: dict) -> dict:
         """
         Apply the selected ensemble.
@@ -2375,6 +2383,7 @@ class FFDielectric(ForceField):
             raise ValueError("coding error")
         return request
 
+    @timeit(name="fixed_E")
     def fixed_E(self, request: dict) -> tuple:
 
         # Extract  energy, forces, virials and extra information
@@ -2412,5 +2421,6 @@ class FFDielectric(ForceField):
 
         return u, f, v, x
 
+    @timeit(name="fixed_D")
     def fixed_D(self, request: dict):
         raise ValueError("Not implemented yet")
