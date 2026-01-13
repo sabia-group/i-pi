@@ -501,8 +501,6 @@ class FrictionMapper(PesMapper):
         """Creates the friction hessian from the eta derivatives
         THIS IS ONLY DONE FOR THE ACTIVE MODES"""
 
-        fric_hessian = np.asarray(fric_hessian)
-
         nphys = self.fix.nactive * 3
         ndof = self.dbeads.nbeads * self.fix.nactive * 3
         nbeads = self.dbeads.nbeads
