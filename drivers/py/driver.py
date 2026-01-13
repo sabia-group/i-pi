@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 from ipi.pes import Dummy_driver, load_pes, __drivers__
 from ipi.utils.io.inputs import read_args_kwargs
-from ipi.pes.tools import Timer
+from ipi.utils.timing import Timer
 
 description = """
 Minimal example of a Python driver connecting to i-PI and exchanging energy, forces, etc.
