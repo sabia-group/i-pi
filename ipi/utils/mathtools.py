@@ -394,11 +394,12 @@ def root_herm(A):
         if eigvals[i] >= 0:
             diag[i, i] = math.sqrt(eigvals[i])
         else:
+            eigval = float(eigvals[i]) if hasattr(eigvals[i], "shape") else eigvals[i]
             warning(
-                "Zeroing negative %d-th element in matrix square root: %e"
-                % (i, eigvals[i]),
+                f"Zeroing negative {i}-th element in matrix square root: {eigval:e}",
                 verbosity.low,
             )
+
             diag[i, i] = 0
             negev = True
     rv = np.dot(eigvecs, np.dot(diag, eigvecs.T))
