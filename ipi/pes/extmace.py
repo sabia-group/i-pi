@@ -28,6 +28,7 @@ __DRIVER_NAME__ = "extmace"
 __DRIVER_CLASS__ = "Extended_MACE_driver"
 
 DEBUG = False
+MAX_VOLUME = 1e12
 
 ase_like_properties = {
     "energy": (),
@@ -115,6 +116,11 @@ class Extended_MACE_driver(ASEDriver):
             atoms.set_positions(p)
             atoms.set_pbc(True)
             atoms.set_cell(c)
+            volume = atoms.get_volume()
+            if volume > MAX_VOLUME:
+                raise ValueError(
+                    f"The provided structure has a volume of {volume}, which seems wrongs."
+                )
 
         return self.all_templates[:Nstructures]
 
