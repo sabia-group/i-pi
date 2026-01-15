@@ -2352,30 +2352,33 @@ class FFDielectric(ForceField):
         # This is a no-op for now, but can be overridden in subclasses
 
         # general safe checks
-        if r["status"] != "Done":
-            softexit.trigger(
-                status="bad",
-                message=f"Forcefield request {r['id']} is not done, cannot post-process (this is coding error).",
-            )
-        if r not in self.forcefield.requests:
-            softexit.trigger(
-                status="bad",
-                message=f"Forcefield request {r['id']} is not in the forcefield's request list (this is coding error).",
-            )
-        if "result" not in r:
-            softexit.trigger(
-                status="bad",
-                message=f"Forcefield request {r['id']} does not have a result (this is coding error).",
-            )
+        with self.logger.section("post_process status (1)"):
+            if r["status"] != "Done":
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} is not done, cannot post-process (this is coding error).",
+                )
+        with self.logger.section("post_process requests (2)"):
+            if r not in self.forcefield.requests:
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} is not in the forcefield's request list (this is coding error).",
+                )
+        with self.logger.section("post_process result (3)"):
+            if "result" not in r:
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} does not have a result (this is coding error).",
+                )
 
         if self.where == "server":
-            return self.apply_ensemble(r)
+            with self.logger.section("post_process apply_ensemble (4)"):
+                return self.apply_ensemble(r)
         elif self.where == "client":
             return r
         else:
             raise ValueError("coding error")
 
-    @timeit(name="apply_ensemble")
     def apply_ensemble(self, request: dict) -> dict:
         """
         Apply the selected ensemble.
@@ -2383,14 +2386,14 @@ class FFDielectric(ForceField):
         if self.mode == "none":
             return request
         elif self.mode == "E":  # fixed-E ensemble
-            request["result"] = self.fixed_E(request)
+            with self.logger.section("post_process apply_ensemble fixed_E (5)"):
+                request["result"] = self.fixed_E(request)
         elif self.mode == "D":  # fixed-D ensemble
             request["result"] = self.fixed_D(request)
         else:  # there is an error in the implementation
             raise ValueError("coding error")
         return request
 
-    @timeit(name="fixed_E")
     def fixed_E(self, request: dict) -> tuple:
 
         # Extract  energy, forces, virials and extra information
@@ -2431,3 +2434,12 @@ class FFDielectric(ForceField):
     @timeit(name="fixed_D")
     def fixed_D(self, request: dict):
         raise ValueError("Not implemented yet")
+
+    def release(self, request, lock=True):
+        """Releases a request from the forcefield.
+
+        Args:
+            request: The request to be released.
+            lock: Whether to use the thread lock or not.
+        """
+        self.forcefield.release(request, lock)
