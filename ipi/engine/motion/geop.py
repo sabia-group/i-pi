@@ -367,21 +367,20 @@ class DummyOptimizer:
         e = np.absolute((fx - u0) / self.beads.natoms)
         info("@GEOP", verbosity.medium)
         self.tolerances["position"]
-        info(f"   Current energy             {fx:e}")
+        info("   Current energy             %e" % (fx))
         info(
-            f"   Position displacement      {x:e}  Tolerance {self.tolerances['position']:e}",
+            "   Position displacement      %e  Tolerance %e"
+            % (x, self.tolerances["position"]),
             verbosity.medium,
         )
         info(
-            f"   Max force component        {fmax:e}  Tolerance {self.tolerances['force']:e}",
+            "   Max force component        %e  Tolerance %e"
+            % (fmax, self.tolerances["force"]),
             verbosity.medium,
         )
-
-        # dtype = str(type(self.tolerances["energy"]))
-        # assert 1 == 0 , f"type {dtype}"
-        value = self.tolerances["energy"]
         info(
-            f"   Energy difference per atom {e}  Tolerance {value}",
+            "   Energy difference per atom %e  Tolerance %e"
+            % (e, self.tolerances["energy"]),
             verbosity.medium,
         )
 
