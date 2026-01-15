@@ -990,8 +990,7 @@ def Damped_BFGS(x0, fdf, fdf0, hessian, big_step):
     else:
         info(" @DampedBFGS: Update of the Hessian, no damping.", verbosity.debug)
 
-    info(f" @DampedBFGS: (s_k dot y_k) before reciprocating: {skyk:e}", verbosity.debug)
-
+    info(" @DampedBFGS: (s_k dot y_k) before reciprocating: %e" % skyk, verbosity.debug)
     try:
         rhok = 1.0 / skyk
     except:

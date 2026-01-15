@@ -8,6 +8,7 @@ except:
 import numpy as np
 from ipi.utils import units
 import json
+import sys
 
 
 __DRIVER_NAME__ = "DW_friction"
@@ -66,7 +67,7 @@ class DoubleWell_with_friction_driver(DoubleWell_driver):
             self.B = ((m**2) * (w_b) ** 4) / (16 * v0)
 
         except:
-            raise ValueError("Error in DoubleWell_with_friction_driver")
+            sys.exit(self.__doc__)
 
         super().__init__(*args, **kwargs)
 
