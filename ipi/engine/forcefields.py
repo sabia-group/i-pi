@@ -2278,6 +2278,8 @@ class FFDielectric(ForceField):
         forcefield: ForceField,
         logfile: str,
     ):
+        # self._requests = []
+        # self.ready = False
         super().__init__()
         self.name = name  # this might be useless
         self.mode = mode
@@ -2296,6 +2298,7 @@ class FFDielectric(ForceField):
         self.template = {}
         self.logfile = logfile
         self.logger = Timer(logfile != "", logfile)
+        # self.ready = True
 
     def bind(self, output_maker=None):
         """Binds the FF, at present just to allow for
@@ -2306,6 +2309,24 @@ class FFDielectric(ForceField):
 
     def start(self):
         return self.forcefield.start()
+
+    def stop(self):
+        return self.forcefield.stop()
+
+    def update(self):
+        raise NotImplementedError("update should not be called on FFDielectric")
+
+    def poll(self):
+        raise NotImplementedError("poll should not be called on FFDielectric")
+
+    def release(self, request, lock=True):
+        """Releases a request from the forcefield.
+
+        Args:
+            request: The request to be released.
+            lock: Whether to use the thread lock or not.
+        """
+        self.forcefield.release(request, lock)
 
     @timeit(name="get_extra", report=True)
     def get_extra(self):
@@ -2344,7 +2365,8 @@ class FFDielectric(ForceField):
                 template = {**template, **extra_template}
 
         with self.logger.section("forcefield.queue (7)"):
-            return self.forcefield.queue(atoms, cell, template=template, **kwargs)
+            newreq = self.forcefield.queue(atoms, cell, template=template, **kwargs)
+        return newreq
 
     @timeit(name="post_process", report=True)
     def post_process(self, r: dict):
@@ -2435,11 +2457,14 @@ class FFDielectric(ForceField):
     def fixed_D(self, request: dict):
         raise ValueError("Not implemented yet")
 
-    def release(self, request, lock=True):
-        """Releases a request from the forcefield.
+    # @property
+    # def requests(self):
+    #     if self.ready:
+    #         raise ValueError("FFDielectric does not have its own requests list")
+    #     return self._requests
 
-        Args:
-            request: The request to be released.
-            lock: Whether to use the thread lock or not.
-        """
-        self.forcefield.release(request, lock)
+    # @requests.setter
+    # def requests(self, value):
+    #     if self.ready:
+    #         raise ValueError("FFDielectric does not have its own requests list")
+    #     self._requests = value
