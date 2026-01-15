@@ -2318,26 +2318,33 @@ class FFDielectric(ForceField):
             template = {}
 
         # time-dependent information
-        time = float(atoms.motion.actual_time)
-        field = self.field.get(time)
-        field = dstrip(field).tolist()
-        extra_template = {  # extra information
-            "time": time,  # necessary in 'fixed_E'
-            "extra": json.dumps(
-                {
-                    "Efield": field,  # electric field
-                }
-            ),
-        }
-        self.template = extra_template.copy()  # just for debugging
+        with self.logger.section("getting time (1)"):
+            time = float(atoms.motion.actual_time)
+        with self.logger.section("getting field (2)"):
+            field = self.field.get(time)
+        with self.logger.section("getting dstrip field (3)"):
+            field = dstrip(field).tolist()
+        with self.logger.section("getting extra_template (4)"):
+            extra_template = {  # extra information
+                "time": time,  # necessary in 'fixed_E'
+                "extra": json.dumps(
+                    {
+                        "Efield": field,  # electric field
+                    }
+                ),
+            }
+        with self.logger.section("copy extra_template (5)"):
+            self.template = extra_template.copy()  # just for debugging
 
         assert self.where in ["client", "server"], "coding error"
 
         # send the extra information only if requested
-        if self.where == "client":
-            template = {**template, **extra_template}
+        with self.logger.section("getting template (6)"):
+            if self.where == "client":
+                template = {**template, **extra_template}
 
-        return self.forcefield.queue(atoms, cell, template=template, **kwargs)
+        with self.logger.section("forcefield.queue (7)"):
+            return self.forcefield.queue(atoms, cell, template=template, **kwargs)
 
     @timeit(name="post_process", report=True)
     def post_process(self, r: dict):
