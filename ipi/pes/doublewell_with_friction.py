@@ -101,13 +101,41 @@ class DoubleWell_with_friction_driver(DoubleWell_driver):
         friction_tensor[0, 0] = self.eta0 * self.dSD_dq(x) ** 2
         return friction_tensor
 
-    def __call__(self, cell, pos):
-        """DoubleWell potential l"""
+    def get_sigma_tensor(self, pos):
+        self.check_dimensions(pos)
+        x = pos[0, 0]
+        sigma = np.zeros((3, 3))
+        sigma[0, 0] = np.sqrt(self.eta0) * self.dSD_dq(x)  # = dF/dx
+        return sigma
 
-        pot, force, vir, extras = super(DoubleWell_with_friction_driver, self).__call__(
-            cell, pos
-        )
+    def get_coupling_value(self, pos):
+        self.check_dimensions(pos)
+        x = pos[0, 0]
+        F = np.sqrt(self.eta0) * x * self.SD(x)           # F(x)
+        return F
+
+    def __call__(self, cell, pos):
+        pot, force, vir, extras = super().__call__(cell, pos)
 
         friction_tensor = self.get_friction_tensor(pos)
-        extras = json.dumps({"friction": friction_tensor.tolist()})
+        sigma_tensor = self.get_sigma_tensor(pos)
+        coupling_value = self.get_coupling_value(pos)
+
+        extras = json.dumps({
+            "friction": friction_tensor.tolist(),  # keep old
+            "sigma": sigma_tensor.tolist(),        # new
+            "coupling": coupling_value             # new (scalar)
+        })
         return pot, force, vir, extras
+
+
+    # def __call__(self, cell, pos):
+    #     """DoubleWell potential l"""
+
+    #     pot, force, vir, extras = super(DoubleWell_with_friction_driver, self).__call__(
+    #         cell, pos
+    #     )
+
+    #     friction_tensor = self.get_friction_tensor(pos)
+    #     extras = json.dumps({"friction": friction_tensor.tolist()})
+    #     return pot, force, vir, extras
