@@ -159,6 +159,7 @@ class InputFriction(Input):
 
             self.spectral_density.store(friction.spectral_density)
             self.alpha_input.store(friction.alpha_input)
+<<<<<<< HEAD
             self.friction_static.store(friction.friction_static)
 
             self.ou_fit_kind.store(friction.ou_fit_kind)
@@ -170,6 +171,9 @@ class InputFriction(Input):
 
             self.sigma_key.store(friction.sigma_key)
             self.friction_key.store(friction.friction_key)
+=======
+            self.position_dependent.store(friction.position_dependent)
+>>>>>>> vahideh/friction
 
     def fetch(self) -> Friction:
         return Friction(
@@ -178,6 +182,7 @@ class InputFriction(Input):
             mf_mode=self.mf_mode.fetch(),
             spectral_density=self.spectral_density.fetch(),
             alpha_input=self.alpha_input.fetch(),
+<<<<<<< HEAD
             friction_static=self.friction_static.fetch(),
             ou_fit_kind=self.ou_fit_kind.fetch(),
             ou_nterms=self.ou_nterms.fetch(),
@@ -187,4 +192,7 @@ class InputFriction(Input):
             ou_propagator=self.ou_propagator.fetch(),
             sigma_key=self.sigma_key.fetch(),
             friction_key=self.friction_key.fetch(),
+=======
+            position_dependent=self.position_dependent.fetch(),
+>>>>>>> vahideh/friction
         )

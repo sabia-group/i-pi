@@ -148,6 +148,7 @@ class Friction:
     def bind(self, motion: Motion) -> None:
         self.beads = motion.beads
         self.nm = motion.nm
+<<<<<<< HEAD
         self.ensemble = motion.ensemble
         self.forces = motion.ensemble.forces
         self.prng = motion.prng
@@ -160,6 +161,9 @@ class Friction:
 
         if self.ou_propagator not in ("exact", "euler"):
             raise ValueError("ou_propagator must be one of: 'exact', 'euler'.")
+=======
+        self.forces = motion.ensemble.forces
+>>>>>>> vahideh/friction
 
         # Markovian MF policy: off unless alpha_input exists
         if self.bath_mode == "markovian" and self.mf_mode != "none":
@@ -517,6 +521,7 @@ class Friction:
             y[:, 0] += (-g * db0 - w * db1) / denom
             y[:, 1] += (w * db0 - g * db1) / denom
         else:
+<<<<<<< HEAD
             y[:, 0] += u * dt
 
         # exact discrete-time noise
@@ -751,6 +756,33 @@ class Friction:
           - bath kick (markovian/non-markovian)
         """
         self._istep += 1
+=======
+            assert self.spectral_density.ndim == 2
+            Lambda = self.spectral_density[:, 1] / self.spectral_density[:, 0]
+            omega = self.spectral_density[:, 0]
+
+            # otherwise, compute alpha numerically
+
+            self.alpha = get_alpha_numeric(
+                Lambda=Lambda,
+                omega=omega,
+                omegak=self.nm.omegak,
+            )  # (nmodes,)
+            info("compute alpha using get_alpha_numeric().")
+
+    def fric_forces(self) -> np.ndarray:
+        fnm = -self.alpha[:, np.newaxis] * self.nm.qnm  # (nmodes, 3 * natoms)
+        forces = self.nm.transform.nm2b(fnm)  # (nbeads, 3 * natoms)
+        eta0 = np.asarray(self.forces.extras["eta0"])
+        if self.position_dependent:
+            ...  # To be implemented
+        return forces * eta0[:, np.newaxis]
+
+    def step(self, pdt: float) -> None:
+        fric_forces = self.fric_forces()
+        self.beads.p += fric_forces * pdt
+        self.efric = 0.5 * np.einsum("n,nm,nm->", self.alpha, self.nm.qnm, self.nm.qnm)
+>>>>>>> vahideh/friction
 
         # MF
         f_mf = self.meanfield_forces()
