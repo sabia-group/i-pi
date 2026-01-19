@@ -1,10 +1,15 @@
 """An interface for the [MACE](https://github.com/ACEsuit/mace) calculator"""
 
+import json
+
 from .ase import ASEDriver
+from mace.calculators import MACECalculator
+from ase.outputs import _defineprop, all_outputs
 
-from ipi.utils.messages import verbosity, warning
-
-MACECalculator = None
+# avoid duplicate
+# it complains with a committee of ffdirect MACE models
+if "node_energy" not in all_outputs:
+    _defineprop("node_energy", dtype=float, shape=("natoms",))
 
 __DRIVER_NAME__ = "mace"
 __DRIVER_CLASS__ = "MACE_driver"
@@ -26,30 +31,17 @@ class MACE_driver(ASEDriver):
     :param model: string, filename of the MACE model
     """
 
-    def __init__(self, template, model, device="cpu", *args, **kwargs):
-        warning(
-            "THIS PES HAS NOT BEEN TESTED FOLLOWING CONVERSION TO THE NEW PES API.",
-            verbosity.low,
-        )
-        global MACECalculator
-
-        try:
-            from mace.calculators import MACECalculator
-        except:
-            raise ImportError("Couldn't load mace bindings")
-
-        try:
-            from ase.outputs import _defineprop, all_outputs
-
-            # avoid duplicate
-            # it complains with a committee of ffdirect MACE models
-            if "node_energy" not in all_outputs:
-                _defineprop("node_energy", dtype=float, shape=("natoms",))
-        except ImportError:
-            raise ValueError("Could not find or import the ASE module")
+    def __init__(
+        self, template, model, device="cpu", mace_kwargs=None, *args, **kwargs
+    ):
 
         self.model = model
         self.device = device
+        self.mace_kwargs = {}
+        if mace_kwargs is not None:
+            with open(mace_kwargs, "r") as f:
+                self.mace_kwargs = json.load(f)
+
         super().__init__(template, *args, **kwargs)
 
     def check_parameters(self):
@@ -60,4 +52,6 @@ class MACE_driver(ASEDriver):
 
         super().check_parameters()
 
-        self.ase_calculator = MACECalculator(model_paths=self.model, device=self.device)
+        self.ase_calculator = MACECalculator(
+            model_paths=self.model, device=self.device, **self.mace_kwargs
+        )
