@@ -7,6 +7,7 @@
 import numpy as np
 import ipi.engine.thermostats
 import ipi.engine.barostats
+import ipi.engine.friction
 from ipi.utils.inputvalue import (
     InputDictionary,
     InputAttribute,
@@ -16,6 +17,7 @@ from ipi.utils.inputvalue import (
 )
 from ipi.inputs.barostats import InputBaro
 from ipi.inputs.thermostats import InputThermo
+from ipi.inputs.friction import InputFriction
 
 
 __all__ = ["InputDynamics"]
@@ -57,6 +59,8 @@ class InputDynamics(InputDictionary):
                  """,
                 "options": [
                     "nve",
+                    "nve-f",
+                    "nvt-f",
                     "nvt",
                     "npt",
                     "nst",
@@ -72,7 +76,7 @@ class InputDynamics(InputDictionary):
                 "dtype": str,
                 "default": "obabo",
                 "help": "The Louiville splitting used for sampling the target ensemble. ",
-                "options": ["obabo", "baoab"],
+                "options": ["obabo", "baoab", "fbabf", "bafab", "ofbabfo", "bafofab"],
             },
         ),
     }
@@ -109,6 +113,13 @@ class InputDynamics(InputDictionary):
                 "help": "Number of iterations for each MTS level (including the outer loop, that should in most cases have just one iteration).",
             },
         ),
+        "friction": (
+            InputFriction,
+            {
+                "default": input_default(factory=ipi.engine.friction.Friction),
+                "help": InputFriction.default_help,
+            },
+        ),
     }
 
     dynamic = {}
@@ -132,6 +143,7 @@ class InputDynamics(InputDictionary):
         self.barostat.store(dyn.barostat)
         self.nmts.store(dyn.nmts)
         self.splitting.store(dyn.splitting)
+        self.friction.store(dyn.friction)
 
     def fetch(self):
         """Creates an ensemble object.

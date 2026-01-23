@@ -18,6 +18,7 @@ from ipi.engine.thermostats import Thermostat
 from ipi.engine.barostats import Barostat
 from ipi.utils.softexit import softexit
 from ipi.utils.messages import warning, verbosity
+from ipi.engine.friction import Friction
 
 
 class Dynamics(Motion):
@@ -55,6 +56,7 @@ class Dynamics(Motion):
         fixcom=False,
         fixatoms_dof=None,
         nmts=None,
+        friction=None,
         efield=None,
         bec=None,
     ):
@@ -83,6 +85,11 @@ class Dynamics(Motion):
                 )
             self.thermostat = thermostat
 
+        if friction is None:
+            self.friction = Friction()
+        else:
+            self.friction = friction
+
         if nmts is None or len(nmts) == 0:
             self._nmts = depend_array(name="nmts", value=np.asarray([1], int))
         else:
@@ -95,8 +102,16 @@ class Dynamics(Motion):
         self.enstype = mode
         if self.enstype == "nve":
             self.integrator = NVEIntegrator()
+        elif self.enstype == "nve-f":
+            self.integrator = NVEIntegratorWithFriction(
+                friction=self.friction,
+            )
         elif self.enstype == "nvt":
             self.integrator = NVTIntegrator()
+        elif self.enstype == "nvt-f":
+            self.integrator = NVTIntegratorWithFriction(
+                friction=self.friction,
+            )
         elif self.enstype == "nvt-cc":
             self.integrator = NVTCCIntegrator()
         elif self.enstype == "npt":
@@ -191,6 +206,7 @@ class Dynamics(Motion):
 
         self.ensemble.add_econs(self.thermostat._ethermo)
         self.ensemble.add_econs(self.barostat._ebaro)
+        self.ensemble.add_econs(self.friction._efric)
 
         # adds the potential, kinetic energy and the cell Jacobian to the ensemble
         self.ensemble.add_xlpot(self.barostat._pot)
@@ -259,13 +275,23 @@ class DummyIntegrator:
         return dtl
 
     def get_tdt(self):
-        if self.splitting == "obabo":
+        if self.splitting in ("obabo", "ofbabfo"):
             return self.dt * 0.5
-        elif self.splitting == "baoab":
+        elif self.splitting in ("baoab", "bafofab"):
             return self.dt
         else:
             raise ValueError(
                 "Invalid splitting requested. Only OBABO and BAOAB are supported."
+            )
+
+    def get_fdt(self):
+        if self.splitting in ("fbabf", "ofbabfo", "bafofab"):
+            return self.dt * 0.5
+        elif self.splitting in ("bafab",):
+            return self.dt
+        else:
+            raise ValueError(
+                "Invalid splitting requested. Only FBABF, BAFAB, OFBABFO and BAFOFAB are supported."
             )
 
     def bind(self, motion):
@@ -513,6 +539,65 @@ class NVEIntegrator(DummyIntegrator):
         self.mtsprop(0)
 
 
+class NVEIntegratorWithFriction(NVEIntegrator):
+    """
+    Integrator object for constant Number of particles, Volume, and Energy (NVE) simulations with friction.
+    """
+
+    def __init__(
+        self,
+        friction: Friction,
+    ):
+        # TODO: should this not be done in bind() ?
+        assert friction is not None, "Friction must be provided to use nve-f integrator"
+        self.friction = friction
+        super().__init__()
+
+    def bind(self, motion):
+        super().bind(motion)
+        self.friction.bind(motion)
+
+    def fstep(self):
+        """Velocity Verlet friction step"""
+
+        self.friction.step(self.get_fdt())
+
+    def step(self, step=None):
+        """Does one simulation time step.
+
+        a
+          is propagation of positions
+        b
+          is propagation of momenta with forces
+        f
+          is propagation of momenta with friction
+        """
+
+        if self.splitting == "fbabf":
+            # friction is applied for dt/2
+            self.fstep()
+            self.pconstraints()  # I am not sure this sould include or not!
+
+            # forces are integerated for dt with MTS.
+            self.mtsprop(0)
+
+            # friction is applied for dt/2
+            self.fstep()
+            self.pconstraints()
+
+        elif self.splitting == "bafab":
+            self.mtsprop_ba(0)
+            # friction is applied for dt
+            self.fstep()
+            self.pconstraints()
+            self.mtsprop_ab(0)
+
+        else:
+            raise ValueError(
+                f"Invalid splitting {self.splitting} requested. Only FBABF and BAFAB are supported for NVE-f integrator."
+            )
+
+
 class NVTIntegrator(NVEIntegrator):
     """Integrator object for constant temperature simulations.
 
@@ -550,6 +635,75 @@ class NVTIntegrator(NVEIntegrator):
             self.tstep()
             self.pconstraints()
             self.mtsprop_ab(0)
+
+        else:
+            raise ValueError(
+                f"Invalid splitting {self.splitting} requested. Only OBABO and BAOAB are supported for NVT integrator."
+            )
+
+
+class NVTIntegratorWithFriction(NVTIntegrator):
+    """
+    Integrator object for constant Number of particles, Volume, and Temperature (NVT) simulations with friction.
+    """
+
+    def __init__(
+        self,
+        friction: Friction,
+    ):
+        assert friction is not None, "Friction must be provided to use nvt-f integrator"
+        self.friction = friction
+        super().__init__()
+
+    def bind(self, motion):
+        super().bind(motion)
+        self.friction.bind(motion)
+
+    def fstep(self):
+        """Velocity Verlet friction step"""
+
+        self.friction.step(self.get_fdt())
+
+    def step(self, step=None):
+        """Does one simulation time step.
+
+        a
+          is propagation of positions
+        b
+          is propagation of momenta with forces
+        f
+          is propagation of momenta with friction
+        o
+            is update of momenta with thermostat
+        """
+
+        if self.splitting == "ofbabfo":
+            # Thermostat and friction is applied for dt/2
+            self.tstep()
+            self.fstep()
+            self.pconstraints()
+
+            # forces are integerated for dt with MTS.
+            self.mtsprop(0)
+
+            # friction and thermostat is applied for dt/2
+            self.fstep()
+            self.tstep()
+            self.pconstraints()
+
+        elif self.splitting == "bafofab":
+            self.mtsprop_ba(0)
+            # friction and thermostat is applied for dt
+            self.fstep()
+            self.tstep()
+            self.fstep()
+            self.pconstraints()
+            self.mtsprop_ab(0)
+
+        else:
+            raise ValueError(
+                f"Invalid splitting {self.splitting} requested. Only OFBABFO and BAFOFAB are supported for NVT-f integrator."
+            )
 
 
 class NVTCCIntegrator(NVTIntegrator):
