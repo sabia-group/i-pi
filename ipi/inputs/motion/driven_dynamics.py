@@ -4,7 +4,13 @@
 # i-PI Copyright (C) 2014-2015 i-PI developers
 # See the "licenses" directory for full license information.
 
-from ipi.engine.motion.driven_dynamics import ElectricField, BEC
+from ipi.engine.motion.driven_dynamics import (
+    ElectricField,
+    BEC,
+    ConstantVectorField,
+    PlaneWaveVectorField,
+    PlaneWaveGaussVectorField,
+)
 from ipi.utils.inputvalue import (
     input_default,
 )
@@ -18,7 +24,164 @@ from ipi.inputs.cell import *
 from copy import copy
 
 
-__all__ = ["InputDrivenDynamics", "InputElectricField", "InputBEC"]
+__all__ = ["InputDrivenDynamics", "InputElectricField", "InputBEC", "InputFunction"]
+
+CommonFields = {
+    "amplitude": (
+        InputArray,
+        {
+            "dtype": float,
+            "default": np.zeros(3),
+            "help": "The amplitude of the external field (in cartesian coordinates)",
+            "dimension": "electric-field",
+        },
+    ),
+    "freq": (
+        InputValue,
+        {
+            "dtype": float,
+            "default": 0.0,
+            "help": "The pulsation of the external field",
+            "dimension": "frequency",
+        },
+    ),
+    "phase": (
+        InputValue,
+        {
+            "dtype": float,
+            "default": 0.0,
+            "help": "The phase of the external field (in deg)",
+            "dimension": "number",
+        },
+    ),
+    "peak": (
+        InputValue,
+        {
+            "dtype": float,
+            "default": 0.0,
+            "help": "The time when the external field gets its maximum value",
+            "dimension": "time",
+        },
+    ),
+    "fwhm": (
+        InputValue,
+        {
+            "dtype": float,
+            "default": np.inf,
+            "help": "The FWHM of the gaussian envelope function of the external field",
+            "dimension": "time",
+        },
+    ),
+}
+
+
+class _InputCommonVectorField(Input):
+    _VF = None
+
+    def fetch(self):
+        kwargs = {}
+        for k in self.fields.keys():
+            kwargs[k] = getattr(self, k).fetch()
+        return self._VF(**kwargs)
+
+    def store(self, field):
+        super().store(field)
+        for k in self.fields.keys():
+            value = getattr(field, k)
+            self.__dict__[k].store(value)
+
+
+class InputConstantVectorField(_InputCommonVectorField):
+
+    fields = {"amplitude": CommonFields["amplitude"]}
+    _VF = ConstantVectorField
+
+
+class InputPlaneWaveVectorField(_InputCommonVectorField):
+    fields = {
+        "amplitude": CommonFields["amplitude"],
+        "freq": CommonFields["freq"],
+        "phase": CommonFields["phase"],
+    }
+
+    _VF = PlaneWaveVectorField
+
+
+class InputPlaneWaveGaussVectorField(_InputCommonVectorField):
+    fields = CommonFields.copy()
+    _VF = PlaneWaveGaussVectorField
+
+
+class InputVectorField(Input):
+
+    attribs = {
+        "mode": (
+            InputAttribute,
+            {
+                "dtype": str,
+                "default": "constant",
+                "options": ["constant", "pw", "pw+gauss"],
+                "help": "The type of electric field.",
+            },
+        )
+    }
+
+    fields = {
+        "constant": (
+            InputConstantVectorField,
+            {
+                "default": input_default(factory=ConstantVectorField),
+                "help": "Option for constant field",
+            },
+        ),
+        "pw": (
+            InputPlaneWaveVectorField,
+            {
+                "default": input_default(factory=PlaneWaveVectorField),
+                "help": "Option for plane-wave field",
+            },
+        ),
+        "pwgauss": (
+            InputPlaneWaveGaussVectorField,
+            {
+                "default": input_default(factory=PlaneWaveGaussVectorField),
+                "help": "Option for plane-wave field with gaussian envelope",
+            },
+        ),
+    }
+
+    def fetch(self):
+        super().fetch()
+        mode = self.mode.fetch()
+        if mode == "constant":
+            return (
+                self.constant.fetch()
+            )  # this will return a 'ConstantVectorField' object
+        elif mode == "pw":
+            return self.pw.fetch()  # this will return a 'PlaneWaveVectorField' object
+        elif mode == "pwgauss":
+            return (
+                self.pwgauss.fetch()
+            )  # this will return a 'PlaneWaveGaussVectorField' object
+        else:
+            raise ValueError(f"Unknown mode {mode} in InputVectorField.fetch()")
+
+    def store(self, field):
+        super().store()
+        if isinstance(field, ConstantVectorField):
+            self.mode.store("constant")
+            self.constant.store(field)
+        elif isinstance(field, PlaneWaveVectorField):
+            self.mode.store("pw")
+            self.pw.store(field)
+        elif isinstance(field, PlaneWaveGaussVectorField):
+            self.mode.store("pwgauss")
+            self.pwgauss.store(field)
+        else:
+            raise ValueError(f"Unknown type {type(field)} in InputVectorField.store()")
+
+
+# Here come the old classes
 
 
 class InputElectricField(Input):

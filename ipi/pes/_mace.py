@@ -2,7 +2,7 @@
 
 import json
 
-from .ase import ASEDriver
+from ipi.pes._ase import ASEDriver
 from mace.calculators import MACECalculator
 from ase.outputs import _defineprop, all_outputs
 

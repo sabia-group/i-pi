@@ -21,6 +21,7 @@ from ipi.engine.forcefields import (
     FFdmd,
     FFCavPhSocket,
     FFRotations,
+    FFDielectric,
 )
 from ipi.interfaces.sockets import InterfaceSocket
 from ipi.pes import __drivers__
@@ -30,6 +31,7 @@ from ipi.utils.inputvalue import *
 from ipi.utils.messages import verbosity, warning
 from ipi.utils.prng import Random
 from ipi.inputs.prng import InputRandom
+from ipi.inputs.motion.driven_dynamics import InputVectorField
 
 __all__ = [
     "InputFFSocket",
@@ -1203,4 +1205,167 @@ class InputFFCavPhSocket(InputFFSocket):
             E0=self.E0.fetch(),
             omega_c=self.omega_c.fetch(),
             ph_rep=self.ph_rep.fetch(),
+        )
+
+
+class InputFFDielectric(InputForceField):
+
+    _dipole_cls = InputValueFromDict.specialize(
+        family="electric-dipole", units="eang", key="dipole"
+    )
+    _bec_cls = InputValueFromDict.specialize(family="charge", units="e", key="BEC")
+    _piezo_cls = InputValueFromDict.specialize(
+        family="electric-polarization", units="e/ang2", key="piezoelectric"
+    )
+
+    dynamic = {
+        "ffsocket": (InputFFSocket, {"help": InputFFSocket.default_help}),
+        "ffdirect": (InputFFDirect, {"help": InputFFDirect.default_help}),
+        "fflj": (InputFFLennardJones, {"help": InputFFLennardJones.default_help}),
+        "ffdmd": (InputFFdmd, {"help": InputFFdmd.default_help}),
+        "ffdebye": (InputFFDebye, {"help": InputFFDebye.default_help}),
+        "ffplumed": (InputFFPlumed, {"help": InputFFPlumed.default_help}),
+        "ffyaff": (InputFFYaff, {"help": InputFFYaff.default_help}),
+        "ffsgdml": (InputFFsGDML, {"help": InputFFsGDML.default_help}),
+        "ffcommittee": (InputFFCommittee, {"help": InputFFCommittee.default_help}),
+    }
+
+    fields = copy(InputForceField.fields)
+    attribs = copy(InputForceField.attribs)
+
+    fields["field"] = (
+        InputVectorField,
+        {
+            "help": "The applied external field, i.e. electric field or dielectric displacement (in cartesian coordinates).",
+        },
+    )
+
+    fields["dipole"] = (
+        _dipole_cls,
+        {
+            "default": _dipole_cls().default(),
+            "help": "How to extract the dipole (keyword and units) from the extra information.",
+        },
+    )
+    fields["bec"] = (
+        _bec_cls,
+        {
+            "default": _bec_cls().default(),
+            "help": "How to extract the Born Charges (keyword and units) from the extra information.",
+        },
+    )
+    fields["piezo"] = (
+        _piezo_cls,
+        {
+            "default": _piezo_cls().default(),
+            "help": "How to extract the piezoelectric tensor (keyword and units) from the extra information.",
+        },
+    )
+
+    attribs["mode"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "options": ["none", "E", "D"],
+            "default": "none",
+            "help": "Specifies type of applied dielectric field: none, external electric field (E) or electric displacement (D).",
+        },
+    )
+
+    attribs["where"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "options": ["client", "server"],
+            "default": "client",
+            "help": "Where the contribution to the forces that depends on the electric field is computed.\
+                If 'server', i-PI expects to receive all necessary information to evaluate the extra contribution (which depends on 'mode') and it will sum it to the forces returned by the client code/driver.\
+                If 'client', i-PI will send extra information to the driver (which will take care of evaluating the extra contribution to the forces) and it will simply read the provided forces.",
+        },
+    )
+
+    attribs["logfile"] = (
+        InputAttribute,
+        {
+            "dtype": str,
+            "default": "",
+            "help": "Log file to measure the execution time of the FFDielectric class.",
+        },
+    )
+
+    default_help = "still empty"
+    default_label = "FFDIELECTRIC"
+
+    def store(self, ff: FFDielectric):
+        """Store all the sub-forcefields"""
+        super().store(ff)
+
+        self.extra = [None]
+        _ii = 0
+        _obj = ff.forcefield
+        if isinstance(_obj, FFSocket):
+            _iobj = InputFFSocket()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffsocket", _iobj)
+        elif isinstance(_obj, FFDirect):
+            _iobj = InputFFDirect()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffdirect", _iobj)
+        elif isinstance(_obj, FFLennardJones):
+            _iobj = InputFFLennardJones()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("fflj", _iobj)
+        elif isinstance(_obj, FFdmd):
+            _iobj = InputFFdmd()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffdmd", _iobj)
+        elif isinstance(_obj, FFDebye):
+            _iobj = InputFFDebye()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffdebye", _iobj)
+        elif isinstance(_obj, FFPlumed):
+            _iobj = InputFFPlumed()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffplumed", _iobj)
+        elif isinstance(_obj, FFYaff):
+            _iobj = InputFFYaff()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffyaff", _iobj)
+        elif isinstance(_obj, FFsGDML):
+            _iobj = InputFFsGDML()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffsgdml", _iobj)
+        elif isinstance(_obj, FFCommittee):
+            _iobj = InputFFCommittee()
+            _iobj.store(_obj)
+            self.extra[_ii] = ("ffcommittee", _iobj)
+
+        # self.name.store(ff.name)
+        self.mode.store(ff.mode)
+        self.where.store(ff.where)
+        self.field.store(ff.field)
+        self.dipole.store(ff.dipole)
+        self.bec.store(ff.bec)
+        self.piezo.store(ff.piezo)
+        self.logfile.store(ff.logfile)
+
+    def fetch(self):
+        """Fetches all of the FF objects"""
+        super().fetch()
+
+        if len(self.extra) != 1:
+            raise ValueError("You must provide only one ForceField.")
+        ff = self.extra[0]
+        ff = ff[1].fetch()
+
+        return FFDielectric(
+            name=self.name.fetch(),
+            mode=self.mode.fetch(),
+            where=self.where.fetch(),
+            dipole=self.dipole.fetch(),
+            bec=self.bec.fetch(),
+            piezo=self.piezo.fetch(),
+            field=self.field.fetch(),  # this is a 'VectorField' object
+            forcefield=ff,
+            logfile=self.logfile.fetch(),
         )

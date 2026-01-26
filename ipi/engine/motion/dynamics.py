@@ -227,6 +227,9 @@ class Dynamics(Motion):
                     "You need to provide a positive value for temperature inside ensemble to run a PIMD simulation, even when choosing NVE propagation."
                 )
 
+        self._actual_time = depend_value(name="actual_time", value=ens.time)
+        dpipe(dfrom=self.integrator._actual_time, dto=self._actual_time)
+
     def get_ntemp(self):
         """Returns the PI simulation temperature (P times the physical T)."""
 
@@ -238,8 +241,16 @@ class Dynamics(Motion):
         self.integrator.step(step)
         self.ensemble.time += self.dt  # increments internal time
 
+        if np.abs(self.ensemble.time - self.actual_time) > self.dt / 100.0:
+            softexit.trigger(
+                status="bad", message=" @ SIMULATION: Error in the actual time update."
+            )
+        self.integrator.actual_time = (
+            self.ensemble.time
+        )  # overwrite to avoid accumulating numerical noise
 
-dproperties(Dynamics, ["dt", "nmts", "splitting", "ntemp"])
+
+dproperties(Dynamics, ["dt", "nmts", "splitting", "ntemp", "actual_time"])
 
 
 class DummyIntegrator:
@@ -343,6 +354,7 @@ class DummyIntegrator:
 
         # check stress tensor
         self._stresscheck = True
+        self._actual_time = depend_value(name="actual_time", value=self.ensemble.time)
 
     def pstep(self):
         """Dummy momenta propagator which does nothing."""
@@ -355,6 +367,10 @@ class DummyIntegrator:
     def step(self, step=None):
         """Dummy simulation time step which does nothing."""
         pass
+
+    def update_actual_time(self, qdt: float):
+        """Update the actual time of the simulation using the positions qdt"""
+        self.actual_time += qdt
 
     def pconstraints(self):
         """This removes the centre of mass contribution to the kinetic energy.
@@ -393,7 +409,18 @@ class DummyIntegrator:
 
 dproperties(
     DummyIntegrator,
-    ["splitting", "nmts", "dt", "inmts", "nmtslevels", "qdt", "pdt", "tdt", "qdt_on_m"],
+    [
+        "splitting",
+        "nmts",
+        "dt",
+        "inmts",
+        "nmtslevels",
+        "qdt",
+        "pdt",
+        "tdt",
+        "qdt_on_m",
+        "actual_time",
+    ],
 )
 
 
@@ -436,6 +463,7 @@ class NVEIntegrator(DummyIntegrator):
         """Velocity Verlet centroid position propagator."""
         # dt/inmts
         self.nm.qnm[0, :] += dstrip(self.nm.pnm)[0, :] * dstrip(self.qdt_on_m)
+        self.update_actual_time(self.qdt)
 
     # now the idea is that for BAOAB the MTS should work as follows:
     # take the BAB MTS, and insert the O in the very middle. This might imply breaking a A step in two, e.g. one could have
@@ -638,6 +666,7 @@ class NPTIntegrator(NVTIntegrator):
         """Velocity Verlet centroid position propagator."""
 
         self.barostat.qcstep()
+        self.update_actual_time(self.qdt)
 
     def tstep(self):
         """Velocity Verlet thermostat step"""
@@ -782,6 +811,7 @@ class SCNPTIntegrator(SCIntegrator):
         """Velocity Verlet centroid position propagator."""
 
         self.barostat.qcstep()
+        self.update_actual_time(self.qdt)
 
     def tstep(self):
         """Velocity Verlet thermostat step"""
