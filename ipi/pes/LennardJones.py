@@ -63,9 +63,7 @@ class LJdriver(Dummy_driver):
     ):
         assert has_energy, "LJWall_driver requires energy calculation."
         assert has_forces, "LJWall_driver requires forces calculation."
-        assert (
-            not has_stress
-        ), "LJWall_driver does not support stress calculation."
+        assert not has_stress, "LJWall_driver does not support stress calculation."
 
         super().__init__(self, *args, **kwargs)
 
@@ -116,18 +114,26 @@ class LJdriver(Dummy_driver):
             # ... but the user can also provide symbols directly
             self.symbols = symbols
 
-    def compute(self, cell:np.ndarray, pos:np.ndarray):
+    def compute(self, cell: np.ndarray, pos: np.ndarray):
         """
         Core method that calculates energy and forces for given atoms using
         the spherical Lennard-Jones potential.
         """
-        
+
         if not isinstance(cell, list):
             return self.compute([cell], [pos])
-        
-        assert len(cell) == len(pos), "Cell and position lists must have the same length."
-        assert cell.ndim == 3 and cell.shape[1:] == (3, 3), "Cell must be a list of 3x3 matrices."
-        assert pos.ndim == 3 and pos.shape[1:] == (len(self.symbols), 3), "Position must be a list of Nx3 matrices."
+
+        assert len(cell) == len(
+            pos
+        ), "Cell and position lists must have the same length."
+        assert cell.ndim == 3 and cell.shape[1:] == (
+            3,
+            3,
+        ), "Cell must be a list of 3x3 matrices."
+        assert pos.ndim == 3 and pos.shape[1:] == (
+            len(self.symbols),
+            3,
+        ), "Position must be a list of Nx3 matrices."
 
         potential, forces, vir, extras = super().compute(cell, pos)
 
@@ -138,27 +144,25 @@ class LJdriver(Dummy_driver):
             if symbol in self.instructions["symbols"]
         ]
 
-        potential, some_forces = self.compute_energy_and_forces(
-            pos[indices]
-        )
+        potential, some_forces = self.compute_energy_and_forces(pos[indices])
 
         forces[indices, :] = some_forces
 
         return potential, forces, vir, extras
-    
-    def compute_energy_and_forces(self,pos:np.ndarray)->tuple:
+
+    def compute_energy_and_forces(self, pos: np.ndarray) -> tuple:
         raise ValueError("This method should have been overridden.")
-    
-    def lennard_jones(self,r:np.ndarray):
+
+    def lennard_jones(self, r: np.ndarray):
         """
         Computes potential and analytical forces using NumPy.
 
         Returns:
             potential (float), forces (ndarray)
         """
-        
+
         assert r.ndim == 2, "Input positions must be a 2D array of distances."
-        
+
         sigma = float(self.instructions["sigma"])
         epsilon = float(self.instructions["epsilon"])
         first_power = int(self.instructions["first_power"])
@@ -166,13 +170,11 @@ class LJdriver(Dummy_driver):
 
         # Check if any atom is outside the spherical potential
         if np.any(r <= 0):
-            raise ValueError(
-                "Some atoms are wrongly located."
-            )
+            raise ValueError("Some atoms are wrongly located.")
 
         # Calculate the potential
         sr = sigma / r
-        potential = epsilon * ( sr**first_power - sr**second_power)
+        potential = epsilon * (sr**first_power - sr**second_power)
         potential = np.sum(potential)
 
         # Correct derivative of the potential including the 2/15 factor
@@ -180,7 +182,7 @@ class LJdriver(Dummy_driver):
             -first_power * (sigma**first_power) / (r ** (first_power + 1))
             + second_power * (sigma**second_power) / (r ** (second_power + 1))
         )
-        
+
         assert forces.shape == r.shape, "Forces shape mismatch."
 
         return potential, forces

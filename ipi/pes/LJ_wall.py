@@ -52,10 +52,6 @@ class LJWall_driver(LJdriver):
             "z_plane": "length",
         },
     }
-    
-    def compute_energy_and_forces(self,pos:np.ndarray)->tuple: 
+
+    def compute_energy_and_forces(self, pos: np.ndarray) -> tuple:
         pass
-
-    
-
-

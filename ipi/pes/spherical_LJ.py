@@ -206,4 +206,3 @@ def compute_energy_and_forces(pos, instructions):
     forces = -dU_dr[:, np.newaxis] * unit_vectors
 
     return potential, forces
-
