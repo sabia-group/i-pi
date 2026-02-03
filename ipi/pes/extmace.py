@@ -41,7 +41,7 @@ ase_like_properties = {
     "dipole": (3,),
     "atomic_dipoles": ("natoms", 3),
     "atomic-oxn-dipole": ("natoms", 3),
-    "BEC": ("natoms", 3, 3),
+    "BEC": ("natoms", 9),  # ("natoms", 3, 3) is not supported by ASE
     "piezoelectric": (3, 3, 3),
 }
 
