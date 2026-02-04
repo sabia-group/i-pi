@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Union, List
 from ipi.utils.messages import warning
 from ipi.pes.dummy import Dummy_driver
 from ipi.pes.tools import Instructions
@@ -8,7 +9,7 @@ __DRIVER_CLASS__ = "ConfiningPotential"
 
 
 # ---------------------- #
-class ConfiningPotential(Dummy_driver):
+class ConfiningPotential(Instructions,Dummy_driver):
     """
     Spherical Lennard-Jones potential driver.
     Driver implementing a Spherical Lennard-Jones (LJ) potential.
@@ -33,7 +34,7 @@ class ConfiningPotential(Dummy_driver):
         template: str,  # template file to extract atomic symbols if symbols not provided
         mode: str,  # mode of the confining potential, e.g. "LJ-wall"
         instructions: dict,  # instructions for the potential
-        species: list = None,  # list of species to which the potential applies
+        # species: list = None,  # list of species to which the potential applies
         symbols: list = None,  # list of atomic symbols
         has_energy=True,
         has_forces=True,
@@ -45,10 +46,15 @@ class ConfiningPotential(Dummy_driver):
         assert has_forces, "Radialdriver requires forces calculation."
         assert not has_stress, "Radialdriver does not support stress calculation."
 
-        super().__init__(self, *args, **kwargs)
+        super().__init__(instructions=instructions, *args, **kwargs)
+        self.species = self.instructions["species"] if "species" in self.instructions else None
+        del self.instructions
 
-        if mode == "LJ-wall":
+        mode = str(mode).lower()
+        if mode == "lj-wall":
             self.potential = LJWall(instructions)
+        elif mode == "morse-wall":
+            self.potential = MorseWall(instructions)
         else:
             raise ValueError(f"Unknown mode {mode}.")
 
@@ -69,31 +75,25 @@ class ConfiningPotential(Dummy_driver):
                 warning("Could not find or import the ASE module")
         else:
             # ... but the user can also provide symbols directly
-            self.symbols = symbols
-        self.species = species if species is not None else list(set(self.symbols))
+            self.symbols = symbols            
+        self.species = self.species if self.species is not None else list(set(self.symbols))
 
-    def compute(self, cell: np.ndarray, pos: np.ndarray):
+    def compute_structure(self, cell: np.ndarray, pos: np.ndarray):
         """
         Core method that calculates energy and forces for given atoms using
         the spherical Lennard-Jones potential.
         """
-
-        if not isinstance(cell, list):
-            return self.compute([cell], [pos])
-
-        assert len(cell) == len(
-            pos
-        ), "Cell and position lists must have the same length."
-        assert cell.ndim == 3 and cell.shape[1:] == (
+        
+        assert cell.shape == (
             3,
             3,
         ), "Cell must be a list of 3x3 matrices."
-        assert pos.ndim == 3 and pos.shape[1:] == (
+        assert pos.ndim == 2 and pos.shape == (
             len(self.symbols),
             3,
         ), "Position must be a list of Nx3 matrices."
 
-        potential, forces, vir, extras = super().compute(cell, pos)
+        potential, forces, vir, extras = super().compute_structure(cell, pos)
 
         # atoms to be considered
         indices = [n for n, symbol in enumerate(self.symbols) if symbol in self.species]
@@ -219,7 +219,7 @@ class MorsePotential(Instructions):
         assert r.ndim == 1, "Input positions must be a 1D array of distances."
 
         D0 = float(self.instructions["D0"])
-        a = float(self.instructions["a"])
+        a = 1.0/float(self.instructions["a-1"])
         z0 = float(self.instructions["z0"])
 
         if np.any(r <= 0):
@@ -241,7 +241,7 @@ class MorsePotential(Instructions):
 
 
 # ---------------------- #
-class MorseWall(LennardJonesPotential):
+class MorseWall(MorsePotential):
     """
     Driver implementing a Lennard-Jones wall potential.
     Parameters must be passed via a dictionary or a JSON file with the following keys:
