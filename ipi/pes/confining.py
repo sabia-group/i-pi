@@ -9,7 +9,7 @@ __DRIVER_CLASS__ = "ConfiningPotential"
 
 
 # ---------------------- #
-class ConfiningPotential(Instructions,Dummy_driver):
+class ConfiningPotential(Instructions, Dummy_driver):
     """
     Spherical Lennard-Jones potential driver.
     Driver implementing a Spherical Lennard-Jones (LJ) potential.
@@ -47,7 +47,9 @@ class ConfiningPotential(Instructions,Dummy_driver):
         assert not has_stress, "Radialdriver does not support stress calculation."
 
         super().__init__(instructions=instructions, *args, **kwargs)
-        self.species = self.instructions["species"] if "species" in self.instructions else None
+        self.species = (
+            self.instructions["species"] if "species" in self.instructions else None
+        )
         del self.instructions
 
         mode = str(mode).lower()
@@ -75,15 +77,17 @@ class ConfiningPotential(Instructions,Dummy_driver):
                 warning("Could not find or import the ASE module")
         else:
             # ... but the user can also provide symbols directly
-            self.symbols = symbols            
-        self.species = self.species if self.species is not None else list(set(self.symbols))
+            self.symbols = symbols
+        self.species = (
+            self.species if self.species is not None else list(set(self.symbols))
+        )
 
     def compute_structure(self, cell: np.ndarray, pos: np.ndarray):
         """
         Core method that calculates energy and forces for given atoms using
         the spherical Lennard-Jones potential.
         """
-        
+
         assert cell.shape == (
             3,
             3,
@@ -219,7 +223,7 @@ class MorsePotential(Instructions):
         assert r.ndim == 1, "Input positions must be a 1D array of distances."
 
         D0 = float(self.instructions["D0"])
-        a = 1.0/float(self.instructions["a-1"])
+        a = 1.0 / float(self.instructions["a-1"])
         z0 = float(self.instructions["z0"])
 
         if np.any(r <= 0):
