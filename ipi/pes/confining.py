@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Union, List
 from ipi.utils.messages import warning
 from ipi.pes.dummy import Dummy_driver
 from ipi.pes.tools import Instructions
