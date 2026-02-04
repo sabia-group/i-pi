@@ -1,7 +1,6 @@
 import json
 import numpy as np
 from ipi.utils.units import unit_to_internal, unit_to_user
-from ipi.pes.tools import convert, process_input
 
 
 class Instructions:
