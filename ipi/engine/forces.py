@@ -203,6 +203,7 @@ class ForceBead:
 
         # data has been collected, so the request can be released and a slot
         # freed up for new calculations
+        request = self.ff.post_process(request)  # request gets modified inplace
         result = request["result"]
 
         # reduce the reservation count (and wait for all calls to return)
@@ -823,9 +824,11 @@ class Forces:
             # the beads positions for this force components are obtained
             # automatically, when needed, as a contraction of the full beads
             newbeads._q._func = make_rpc(newrpc, beads)
+            newbeads.motion = beads.motion
             for b in newbeads:
                 # must update also indirect access to the beads coordinates
                 b._q._func = newbeads._q._func
+                b.motion = newbeads.motion
 
             # makes newbeads.q depend from beads.q
             beads._q.add_dependant(newbeads._q)

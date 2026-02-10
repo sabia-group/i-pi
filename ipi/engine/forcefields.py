@@ -17,6 +17,7 @@ from contextlib import nullcontext
 
 import numpy as np
 
+from ipi.engine.motion.driven_dynamics import VectorField
 from ipi.engine.cell import GenericCell
 from ipi.utils.prng import Random
 from ipi.utils.softexit import softexit
@@ -26,12 +27,14 @@ from ipi.utils.depend import dstrip
 from ipi.utils.io import read_file
 from ipi.utils.units import unit_to_internal
 from ipi.utils.distance import vector_separation
+from ipi.utils.inputvalue import ArrayFromDict
 from ipi.pes import load_pes
 from ipi.utils.mathtools import (
     get_rotation_quadrature_legendre,
     get_rotation_quadrature_lebedev,
     random_rotation,
 )
+from ipi.utils.timing import Timer, timeit
 
 plumed = None
 
@@ -182,6 +185,7 @@ class ForceField:
 
         if template is None:
             template = {}
+
         template.update(
             {
                 "id": reqid,
@@ -301,6 +305,19 @@ class ForceField:
         upon completion of a time step."""
 
         pass
+
+    def post_process(self, request: dict):
+        """Post-processes the request after it has been evaluated.
+
+        This is called after the request has been evaluated and the result
+        has been stored in the request dictionary. It can be used to perform
+        any additional processing on the results, such as logging or
+        updating internal state.
+        """
+        return request
+
+    def get_extra(self):
+        return {}
 
 
 class FFSocket(ForceField):
@@ -449,7 +466,11 @@ class FFDirect(ForceField):
                 raise ValueError(
                     "You must provide a pes_path for the custom PES driver."
                 )
+            from ipi.pes.dummy import Dummy_driver
+
             self.driver = load_pes(self.pes, self.pes_path)(**pars)
+            if not isinstance(self.driver, Dummy_driver):
+                raise ValueError("coding error")
         except ImportError:
             # specific errors have already been triggered
             raise
@@ -510,6 +531,8 @@ class FFDirect(ForceField):
         request["t_finished"] = time.time()
 
     def evaluate(self, request):
+        if "extra" in request:
+            self.driver.store_extra(request["extra"])
         if self.batch_size == 1:
             results = list(
                 self.driver(request["cell"][0], request["pos"].reshape(-1, 3))
@@ -2240,3 +2263,208 @@ class FFCavPhSocket(FFSocket):
         )
 
         return newreq
+
+
+class FFDielectric(ForceField):
+    def __init__(
+        self,
+        name: str,
+        mode: str,
+        where: str,
+        dipole: dict,
+        bec: dict,
+        piezo: dict,
+        field: VectorField,
+        forcefield: ForceField,
+        logfile: str,
+    ):
+        # self._requests = []
+        # self.ready = False
+        super().__init__()
+        self.name = name  # this might be useless
+        self.mode = mode
+        self.where = where
+        self.dipole = ArrayFromDict(
+            **dipole
+        )  # how to read the dipole from the client code
+        self.bec = ArrayFromDict(
+            **bec
+        )  # how to read the Born Charges from the client code
+        self.piezo = ArrayFromDict(
+            **piezo
+        )  # how to read the piezoelectric tensor from the client code
+        self.field = field  # what type of external field should be applied
+        self.forcefield = forcefield
+        self.template = {}
+        self.logfile = logfile
+        self.logger = Timer(logfile != "", logfile)
+        # self.ready = True
+
+    def bind(self, output_maker=None):
+        """Binds the FF, at present just to allow for
+        managed output"""
+
+        self.output_maker = output_maker
+        self.forcefield.bind(output_maker)
+
+    def start(self):
+        return self.forcefield.start()
+
+    def stop(self):
+        return self.forcefield.stop()
+
+    def update(self):
+        raise NotImplementedError("update should not be called on FFDielectric")
+
+    def poll(self):
+        raise NotImplementedError("poll should not be called on FFDielectric")
+
+    def release(self, request, lock=True):
+        """Releases a request from the forcefield.
+
+        Args:
+            request: The request to be released.
+            lock: Whether to use the thread lock or not.
+        """
+        self.forcefield.release(request, lock)
+
+    @timeit(name="get_extra", report=True)
+    def get_extra(self):
+        """Store all the templates used in a MD step so that the user can inspect them by printing them to file"""
+        return self.template.copy()
+
+    @timeit(name="queue", report=True)
+    def queue(self, atoms, cell, template=None, **kwargs) -> dict:
+        if template is None:
+            template = {}
+
+        # time-dependent information
+        with self.logger.section("getting time (1)"):
+            time = float(atoms.motion.actual_time)
+        with self.logger.section("getting field (2)"):
+            field = self.field.get(time)
+        with self.logger.section("getting dstrip field (3)"):
+            field = dstrip(field).tolist()
+        with self.logger.section("getting extra_template (4)"):
+            extra_template = {  # extra information
+                "time": time,  # necessary in 'fixed_E'
+                "extra": json.dumps(
+                    {
+                        "Efield": field,  # electric field
+                    }
+                ),
+            }
+        with self.logger.section("copy extra_template (5)"):
+            self.template = extra_template.copy()  # just for debugging
+
+        assert self.where in ["client", "server"], "coding error"
+
+        # send the extra information only if requested
+        with self.logger.section("getting template (6)"):
+            if self.where == "client":
+                template = {**template, **extra_template}
+
+        with self.logger.section("forcefield.queue (7)"):
+            newreq = self.forcefield.queue(atoms, cell, template=template, **kwargs)
+        return newreq
+
+    @timeit(name="post_process", report=True)
+    def post_process(self, r: dict):
+        """Post-processes the results of the forcefield request."""
+        # This is a no-op for now, but can be overridden in subclasses
+
+        # general safe checks
+        with self.logger.section("post_process status (1)"):
+            if r["status"] != "Done":
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} is not done, cannot post-process (this is coding error).",
+                )
+        with self.logger.section("post_process requests (2)"):
+            if r not in self.forcefield.requests:
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} is not in the forcefield's request list (this is coding error).",
+                )
+        with self.logger.section("post_process result (3)"):
+            if "result" not in r:
+                softexit.trigger(
+                    status="bad",
+                    message=f"Forcefield request {r['id']} does not have a result (this is coding error).",
+                )
+
+        if self.where == "server":
+            with self.logger.section("post_process apply_ensemble (4)"):
+                return self.apply_ensemble(r)
+        elif self.where == "client":
+            return r
+        else:
+            raise ValueError("coding error")
+
+    def apply_ensemble(self, request: dict) -> dict:
+        """
+        Apply the selected ensemble.
+        """
+        if self.mode == "none":
+            return request
+        elif self.mode == "E":  # fixed-E ensemble
+            with self.logger.section("post_process apply_ensemble fixed_E (5)"):
+                request["result"] = self.fixed_E(request)
+        elif self.mode == "D":  # fixed-D ensemble
+            request["result"] = self.fixed_D(request)
+        else:  # there is an error in the implementation
+            raise ValueError("coding error")
+        return request
+
+    def fixed_E(self, request: dict) -> tuple:
+
+        # Extract  energy, forces, virials and extra information
+        # from the results returned from the driver.
+        u, f, v, x = request["result"]
+
+        # Extract extra information from the driver.
+        # The values returned here will be already in atomic_unit
+        # even though the driver might return them with differnt units
+        dipole = self.dipole.get(x)  # electric dipole, with shape = (3,)
+        Z = self.bec.get(x)  # Born Effective Charges, with (natoms,3,3)
+        e = self.piezo.get(
+            x, np.zeros((3, 3, 3))
+        )  # piezoelectric tensor, with shape (3,3,3)
+
+        # Evaluate the (time-dependent) electric field
+        time = self.template["time"]
+        Efield = self.field.get(time)
+
+        # Compute the volume of the structure
+        cell = request["cell"][0]
+        volume = np.linalg.det(cell)
+
+        # Update energy, forces and virials
+        u -= dipole @ Efield
+        f += np.einsum("ijk,j->ik", Z, Efield).flatten()
+
+        # virials
+        ve = volume * e + dipole[:, None, None] * np.eye(3)[None, :, :]
+        ve = np.einsum("ijk,i->jk", ve, Efield)
+        # assert np.allclose(
+        #     ve, ve.T
+        # ), "E-dependent part of the virials tensor is not symmetric"
+        v += ve
+
+        return u, f, v, x
+
+    @timeit(name="fixed_D")
+    def fixed_D(self, request: dict):
+        raise ValueError("Not implemented yet")
+
+    # @property
+    # def requests(self):
+    #     if self.ready:
+    #         raise ValueError("FFDielectric does not have its own requests list")
+    #     return self._requests
+
+    # @requests.setter
+    # def requests(self, value):
+    #     if self.ready:
+    #         raise ValueError("FFDielectric does not have its own requests list")
+    #     self._requests = value
