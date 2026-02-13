@@ -256,6 +256,8 @@ class ExtendedMACECalculator(MACECalculator):
             compute_stress = not self.use_compile
         else:
             compute_stress = False
+            
+        assert compute_stress, "'compute_stress' is False"
 
         # -------------------#
         # Some extra parameters to the model
@@ -375,6 +377,8 @@ class ExtendedMACECalculator(MACECalculator):
         compute_bec: bool,
     ) -> Dict[str, torch.Tensor]:
 
+        mu = data["dipole"]
+        mu = proper_dipole(mu,data["displacement"])
         ensemble = str(self.instructions["ensemble"]).upper()
         if ensemble == "NONE":  # no ensemble (just for debugging purposes)
             data = self.get_forces_stress(data, batch, training)
@@ -384,7 +388,6 @@ class ExtendedMACECalculator(MACECalculator):
                 raise ValueError("The extra information dictionary is empty.")
             Efield = np.asarray(extras["Efield"])  # in atomic units
             Efield = unit_to_user("electric-field", "v/ang", Efield)
-            mu = data["dipole"]
             Efield = torch.from_numpy(Efield).to(device=self.device, dtype=mu.dtype)
 
             if ensemble == "E-DEBUG":  # fixed external electric field
@@ -411,13 +414,14 @@ class ExtendedMACECalculator(MACECalculator):
                         torch.einsum("ijkl,i->jkl", dmu_deta, Efield)
                         / volume[:, None, None]
                     )
+                    assert torch.allclose(stress_E, stress_E.transpose(-1, -2)), "The E-field induced stress tensor is not symmetric."
                     data["stress"] -= stress_E
 
                     dmu_deta = dmu_deta.moveaxis(
                         0, 1
                     )  # (mu_xyz,graph,eta_i,eta_j) --> (graph,mu_xyz,eta_i,eta_j)
                     data["piezoelectric"] = dmu_deta2piezoelectric(
-                        dmu_deta, data["dipole"], volume
+                        dmu_deta, mu, volume
                     )
                     if DEBUG:
                         # Eq. (16) of Computer Physics Communications 190 (2015) 33-50
@@ -428,7 +432,7 @@ class ExtendedMACECalculator(MACECalculator):
                         )
                         volume = torch.det(cell)
                         test = compute_dielectric_gradients(
-                            data["dipole"] / volume[:, None], [data["displacement"]]
+                            mu / volume[:, None], [data["displacement"]]
                         )[0]
                         test = test.moveaxis(
                             0, 1
@@ -436,10 +440,11 @@ class ExtendedMACECalculator(MACECalculator):
                         assert torch.allclose(
                             test, data["piezoelectric"]
                         ), "coding error"
-
+                        
+                        # e_ijk (improper piezoelectric tensor) + (mu_i / V) * δ_jk
                         test = (
                             data["piezoelectric"]
-                            + data["dipole"][:, :, None, None]
+                            + mu[:, :, None, None]
                             * torch.eye(3)[None, None, :, :]
                             / volume[:, None, None, None]
                         )
@@ -452,6 +457,7 @@ class ExtendedMACECalculator(MACECalculator):
                 interaction_energy = mu @ Efield
                 data["energy"] -= interaction_energy
 
+                # ToDo: here I need to have the dipole already being modified
                 data = self.get_forces_stress(data, batch, training)
 
             else:
@@ -467,7 +473,7 @@ class ExtendedMACECalculator(MACECalculator):
                 cell: torch.Tensor = batch["cell"].view((-1, 3, 3))
                 volume = torch.det(cell)
                 data["piezoelectric"] = dmu_deta2piezoelectric(
-                    dmu_deta, data["dipole"], volume
+                    dmu_deta, mu, volume
                 )
 
         return data
@@ -532,7 +538,8 @@ class ExtendedMACECalculator(MACECalculator):
                 f"The attribute 'positions' is not in the batch data provided to the MACE model.\nThe batch contains: {list(batch.keys())}"
             )
         dipole_components = 3
-        mu = data["dipole"]  # [:,:dipole_components] # uncomment to debug
+        displacement = data["displacement"]
+        mu = proper_dipole(data["dipole"],displacement)  # [:,:dipole_components] # uncomment to debug
         pos = batch["positions"]
         if not isinstance(mu, torch.Tensor):
             raise ValueError(f"The dipole is not a torch.Tensor rather a {type(mu)}")
@@ -541,7 +548,6 @@ class ExtendedMACECalculator(MACECalculator):
                 f"The positions are not a torch.Tensor rather a {type(pos)}"
             )
 
-        displacement = data["displacement"]
         if displacement.requires_grad:
             res = compute_dielectric_gradients(mu, [pos, displacement])
             bec = res[0]  # (3,n_nodes,3)
@@ -574,17 +580,28 @@ class ExtendedMACECalculator(MACECalculator):
         # Its shape is (3,*pos.shape).
         # This means that bec[0,3,2] will contain d mu_x / d R^3_z,
         # where mu_x is the x-component of the dipole and R^3_z is the z-component of the 4th (zero-indexed) atom i n the structure/batch.
+        
+        assert torch.allclose(dmu_deta, dmu_deta.transpose(-1, -2)), "The piezoelectric tensor is not symmetric."
 
         return bec, dmu_deta
 
 
 # --------------------------------------- #
+def proper_dipole(mu: torch.Tensor,strain: torch.Tensor)->torch.Tensor:
+    # ToDo: derive again this expression.
+    # I need to symmetrize because `mu` is a function of `strain` only through its symmetrized version.
+    # Have a look at the function `get_symmetric_displacement` in `mace/modules/utils.py`. 
+    sym_strain = 0.5*(strain+strain.transpose(-1,-2))
+    return mu - torch.einsum("bil,bl->bi",sym_strain,mu)
+    
+# --------------------------------------- #
+# ToDo: this should be written again.
 def dmu_deta2piezoelectric(
     dmu_deta: torch.Tensor, mu: torch.Tensor, volume: torch.Tensor
 ):
     """
     Convert the derivative of the dipole (mu) w.r.t. the lattice displacements (eta)
-    to the piezoelectric tensor e_{ijk}.
+    to the improper piezoelectric tensor e_{ijk}.
 
     e_{ijk} = [ ∂μ_i / ∂η_{jk} - μ_i δ_{jk} ] / V
     """
@@ -626,6 +643,7 @@ def dmu_deta2piezoelectric(
 
 # --------------------------------------- #
 # Function taken from https://github.com/davkovacs/mace/tree/mu_alpha
+# ToDo: this could be improved and generalized to higher dimensional tensors.
 def compute_dielectric_gradients(
     dielectric: torch.Tensor, inputs: List[torch.Tensor], clean: Optional[bool] = False
 ) -> List[torch.Tensor]:
