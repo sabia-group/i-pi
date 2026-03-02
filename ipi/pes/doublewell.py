@@ -33,14 +33,13 @@ class DoubleWell_driver(Dummy_driver):
         python driver.py -m DoubleWell -o 500,2085,1837,0.00 \n"""
 
     def __init__(self, w_b=None, v0=None, m=None, delta=None, *args, **kwargs):
-
         if w_b == None or v0 == None or m == None or delta == None:
             print("using default values from Craig-JCP-2005")
             # We used Craig's values (J. Chem. Phys. 122, 084106, 2005)
             w_b = 500 * invcm2au  # Tc = 115K
             v0 = 2085 * invcm2au
             m = 1837.36223469
-            self.delta = 00
+            self.delta = 0.0
         else:
             try:
                 w_b = w_b * invcm2au
@@ -61,7 +60,9 @@ class DoubleWell_driver(Dummy_driver):
         force3 = np.zeros(pos.shape)
 
         # DW
-        pot += self.A * (pos3[:, 0] - self.delta) ** 2 + self.B * (pos3[:, 0] ** 4)
+        pot += np.sum(
+            self.A * (pos3[:, 0] - self.delta) ** 2 + self.B * (pos3[:, 0] ** 4)
+        )
         force3[:, 0] = -2.0 * self.A * (pos3[:, 0] - self.delta) - 4.0 * self.B * (
             pos3[:, 0] ** 3
         )
