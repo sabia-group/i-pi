@@ -737,13 +737,25 @@ class ThermoGLE(Thermostat):
     def step(self):
         """Updates the bound momentum vector with a GLE thermostat"""
 
-        self.s[0, :] = self.p / self.sm
+        #Connor: FrictionGLE ,  keep s as only auxiliary.  -  s one less ,  T one less
+        # theta is read in from AP matrix.
+        self.s[0, :] = self.p / self.sm  # Connor: system momentum
 
         self.ethermo += np.dot(self.s[0], self.s[0]) * 0.5
-        self.s[:] = np.dot(self.T, self.s) + np.dot(
+        self.s[:] = np.dot(self.T, self.s) + np.dot(   # Connor: remove system momentum update roughly S38
             self.S, self.prng.gvec(self.s.shape)
         )
         self.ethermo -= np.dot(self.s[0], self.s[0]) * 0.5
+
+        # S39 in friction.py 
+
+        # S40  needs to be coded
+
+        # S42  is split - to tau/2 
+
+        # S41 done somewhere else.  automatic . propogation of system.
+
+
 
         self.p = self.s[0] * self.sm
 
