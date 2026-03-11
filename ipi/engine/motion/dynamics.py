@@ -206,7 +206,7 @@ class Dynamics(Motion):
 
         self.ensemble.add_econs(self.thermostat._ethermo)
         self.ensemble.add_econs(self.barostat._ebaro)
-        self.ensemble.add_econs(self.friction._emf)
+        self.ensemble.add_econs(self.friction._energy_mf)
 
         # adds the potential, kinetic energy and the cell Jacobian to the ensemble
         self.ensemble.add_xlpot(self.barostat._pot)
