@@ -152,46 +152,17 @@ class QReplicaExchange(Smotion):
             t0 = perf_counter()
             oldfi = sl[i].forces.dump_state()
             oldfj = sl[j].forces.dump_state()
-            beta_i = 1.0 / (Constants.kb * sl[i].ensemble.temp*sl[i].beads.nbeads)
-            beta_j = 1.0 / (Constants.kb * sl[j].ensemble.temp*sl[j].beads.nbeads)
+
             ##############-time measure-##############
-            Rg_i_before = ring_polymer_rg(sl[i].beads)
-            Rg_j_before = ring_polymer_rg(sl[j].beads)
-            pots_oldi = dstrip(sl[i].forces.pots)
-            std_oldi = np.std(pots_oldi)
-            pots_oldj = dstrip(sl[j].forces.pots)
-            std_oldj = np.std(pots_oldj)
-            pots_i_before = dstrip(sl[i].forces.pots).copy()
-            pots_j_before = dstrip(sl[j].forces.pots).copy()
             t_dump += perf_counter() - t0
             ##########-backup data-##########
-            oldforcei = sl[i].forces.pot
-            oldforcej = sl[j].forces.pot    
-            oldspringi = -sl[i].nm.vspring*beta_i
-            oldspringj = -sl[j].nm.vspring*beta_j
-            oldspringii = sl[i].nm.vspring
-            oldspringjj = sl[j].nm.vspring
-            oldkini = -sl[i].nm.kin*beta_i
-            oldkinj = -sl[j].nm.kin*beta_j
-            oldqnmi = sl[i].nm.qnm
-            oldqnmj = sl[j].nm.qnm
-            #ensemble temps and econs
+
             ti = sl[i].ensemble.temp
             tj = sl[j].ensemble.temp
             eci = sl[i].ensemble.econs
             ecj = sl[j].ensemble.econs
             lpensi = sl[i].ensemble.lpens
             lpensj = sl[j].ensemble.lpens
-            remd_pensi = sl[i].ensemble.lpens
-            remd_pensj = sl[j].ensemble.lpens
-            pots_before = sl[i].forces.pots.copy()
-
-            bmax_before = np.argmax(pots_before)
-            Vmax_before = pots_before[bmax_before]
-
-            #info(f"V_bead_max_before {Vmax_before} bead {bmax_before}",
-            #    verbosity.low)
-
 
             #coordinates not containing dependency, 
             qi = dstrip(sl[i].beads.q).copy()
@@ -201,21 +172,11 @@ class QReplicaExchange(Smotion):
             qi_scaled = qi_centroid + (ti / tj)**0.5 * (qi - qi_centroid) #qi auf temp j 
             qj_scaled = qj_centroid + (tj / ti)**0.5 * (qj - qj_centroid) #qj auf temp i
 
-
-
-
-            #set coordinates
             sl[i].beads.q = qi_scaled
             sl[j].beads.q = qj_scaled
             _ = sl[i].nm.qnm 
             _ = sl[j].nm.qnm
             pots_after = sl[i].forces.pots
-
-            bmax_after = np.argmax(pots_after)
-            Vmax_after = pots_after[bmax_after]
-
-            #info(f"V_bead_max_after {Vmax_after} bead {bmax_after}",
-            #    verbosity.low)
             #swap ensemble
             ensemble_swap(sl[i].ensemble, sl[j].ensemble)
             _ = sl[i].nm.qnm 
