@@ -1,14 +1,14 @@
+# pylint: disable=all
+
 import numpy as np
 import time
-
+from ipi.utils.units import *
 from ipi.engine.smotion import Smotion
 from ipi.engine.ensembles import ensemble_swap
 from ipi.utils.depend import dstrip
 from ipi.utils.messages import verbosity, info
-
-# from ipi.utils.units import Constants
-# import itertools
-
+from time import perf_counter
+from ipi.utils.units import Constants
 __all__ = ["QReplicaExchange"]
 
 
@@ -29,28 +29,36 @@ def motion_scale(motion, scale):
     if hasattr(motion, "barostat"):
         thermo_scale(motion.barostat.thermostat, scale)
 
-
 def gle_scale(sys, scale):
     motion_scale(sys.motion, scale)
 
+def ring_polymer_rg(beads):
+    q  = dstrip(beads.q)
+    qc = dstrip(beads.qc)
+    dq = q - qc
+    return np.sqrt(np.mean(np.sum(dq*dq, axis=1)))
+
+from ipi.utils.messages import info, verbosity
+import numpy as np
 
 class QReplicaExchange(Smotion):
     """quantum replica exchange (QREMD)."""
 
-    def __init__(self, stride=1.0, repindex=None, krescale=True, swapfile="PARATEMP"):
-        super().__init__()
+    def __init__(self, stride=1.0, repindex=None, krescale=True, swapfile="PARATEMP", rand_mix=0.0, sim_mode="nn", nnn_mix=0):  
+        super(QReplicaExchange, self).__init__()
         self.swapfile = swapfile
         self.rescalekin = krescale
         self.stride = int(stride)
-        self._cached_V = None
-
+        self.rand_mix = rand_mix # probability for random pairing (instead of nearest neighbor pairing)
+        self.sim_mode = sim_mode #"nn" for NN Swapping or random pairing, "all" for all-pairs swapping, window for NNN Swapping depending on window size
+        self.nnn_mix = nnn_mix
         if repindex is None:
             self.repindex = np.zeros(0, int)
         else:
             self.repindex = np.asarray(repindex, int).copy()
 
         self.mode = "qremd"
-
+        
     def bind(self, syslist, prng, omaker):
         super().bind(syslist, prng, omaker)
 
@@ -63,108 +71,237 @@ class QReplicaExchange(Smotion):
         self.sf = self.output_maker.get_output(self.swapfile)
 
     def step(self, step=None):
-        if self.stride <= 0.0:
+        t_dump = 0.0
+        t_load = 0.0
+        t_force = 0.0
+        
+        if self.stride <= 0:
             return
 
-        u = self.prng.u
-
-        # if step % self.stride != 0 or step == 0:
-        #    return
         info(f"\nTrying to exchange replicas on STEP {step}", verbosity.debug)
 
         t_start = time.time()
         fxc = False
         sl = self.syslist
-        self._cached_V = [s.forces.pot for s in sl]
+        N = len(sl)
+        mode = (self.sim_mode or "nn").strip().lower()
 
-        # offset = 0 if (step // self.stride) % 2 == 0 else 1
-        # pairs = [(k, k+1) for k in range(offset, len(sl)-1, 2)]
-        for i in range(len(sl)):
-            for j in range(i):
-                if 1.0 / self.stride < u:
-                    continue  # tries a swap with probability 1/stride
+        pairs = []
 
-                ti = sl[i].ensemble.temp
-                tj = sl[j].ensemble.temp
+        if mode == "all":
+            pairs = [(i, j) for i in range(N) for j in range(i + 1, N)]
+            self.prng.shuffle(pairs)
 
-                q1_orig = sl[i].beads.q.copy()
-                q2_orig = sl[j].beads.q.copy()
+        elif mode == "nn":
+            # alternierender even/odd shift
+            if self.prng.u < 0.5:
+                pairs = [(i, i + 1) for i in range(0, N - 1, 2)]
+            else:
+                pairs = [(i, i + 1) for i in range(1, N - 1, 2)]
 
-                q1_centroid = np.mean(q1_orig, axis=0)
-                q2_centroid = np.mean(q2_orig, axis=0)
+        elif mode == "nnn":
+            if self.prng.u < 0.5:
+                pairs = [(i, i + 2) for i in range(0, N - 2, 4)]
+            else:
+                pairs = [(i, i + 2) for i in range(1, N - 2, 4)]
 
-                f_12 = np.sqrt(tj / ti)
-                f_21 = np.sqrt(ti / tj)
+        elif mode == "mix":
+            # Wahrscheinlichkeiten sauber behandeln
+            p_random = float(self.rand_mix)
+            p_nnn = float(self.nnn_mix)
 
-                q1p = q1_centroid + f_12 * (q1_orig - q1_centroid)
-                q2p = q2_centroid + f_21 * (q2_orig - q2_centroid)
+            if p_random < 0 or p_nnn < 0 or (p_random + p_nnn) > 1.0:
+                raise ValueError("rand_mix and nnn_mix must satisfy 0<=p and p_random+p_nnn<=1")
 
-                sl[i].beads.q[:] = q2p
-                V_q2p = sl[i].forces.pot
-                sl[j].beads.q[:] = q1p
-                V_q1p = sl[j].forces.pot
+            u = self.prng.u
 
-                sl[i].beads.q[:] = q1_orig
-                # MR: NOTE THAT WITH THE DEPENDENCY MECHANISM, ONCE POT OR FORCE IS CALLED HERE AGAIN, IT WILL TRIGGER A CALCULATION OF THE FORCE THAT YOU DO NOT NEED BECAUSE YOU KNEW IT BEFORE.
-                sl[j].beads.q[:] = q2_orig
-                Vi = self._cached_V[i]
-                Vj = self._cached_V[j]
-                # Vi = sl[i].forces.pot
-                # Vj = sl[j].forces.pot
+            if u < p_random:
+                # random pairing
+                idx = np.arange(N)
+                self.prng.shuffle(idx)
+                pairs = [(idx[k], idx[k + 1]) for k in range(0, N - 1, 2)]
 
-                beta_i = 1.0 / ti
-                beta_j = 1.0 / tj
-                info(f"ti = {ti} K, beta_i = {beta_i} 1/Ha", verbosity.debug)
-                info(f"ti = {tj} K, beta_i = {beta_j} 1/Ha", verbosity.debug)
-                Delta1 = V_q2p - Vi
-                Delta2 = V_q1p - Vj
-                pxc = np.exp(-beta_i * Delta1 - beta_j * Delta2)
+            elif u < p_random + p_nnn:
+                # distance-2 pairing
+                if self.prng.u < 0.5:
+                    pairs = [(i, i + 2) for i in range(0, N - 2, 4)]
+                else:
+                    pairs = [(i, i + 2) for i in range(1, N - 2, 4)]
+
+            else:
+                # NN pairing
+                if self.prng.u < 0.5:
+                    pairs = [(i, i + 1) for i in range(0, N - 1, 2)]
+                else:
+                    pairs = [(i, i + 1) for i in range(1, N - 1, 2)]
+
+        else:
+            raise ValueError(f"Unknown sim_mode '{self.sim_mode}'. Use: nn, nnn, mix, all.")
+
+        #loop over all created pairs
+        for (i, j) in pairs:
+            if 1.0 / self.stride < self.prng.u:
+                continue  # tries a swap with probability 1/stride
+
+            #info(f"{i, j}",verbosity.low)
+            ##########-backup data-##########
+            dbeadsi = sl[i].beads.clone()
+            dcelli = sl[i].cell.clone()
+            dbeadsj = sl[j].beads.clone()
+            dcellj = sl[j].cell.clone()
+            t0 = perf_counter()
+            oldfi = sl[i].forces.dump_state()
+            oldfj = sl[j].forces.dump_state()
+            beta_i = 1.0 / (Constants.kb * sl[i].ensemble.temp*sl[i].beads.nbeads)
+            beta_j = 1.0 / (Constants.kb * sl[j].ensemble.temp*sl[j].beads.nbeads)
+            ##############-time measure-##############
+            Rg_i_before = ring_polymer_rg(sl[i].beads)
+            Rg_j_before = ring_polymer_rg(sl[j].beads)
+            pots_oldi = dstrip(sl[i].forces.pots)
+            std_oldi = np.std(pots_oldi)
+            pots_oldj = dstrip(sl[j].forces.pots)
+            std_oldj = np.std(pots_oldj)
+            pots_i_before = dstrip(sl[i].forces.pots).copy()
+            pots_j_before = dstrip(sl[j].forces.pots).copy()
+            t_dump += perf_counter() - t0
+            ##########-backup data-##########
+            oldforcei = sl[i].forces.pot
+            oldforcej = sl[j].forces.pot    
+            oldspringi = -sl[i].nm.vspring*beta_i
+            oldspringj = -sl[j].nm.vspring*beta_j
+            oldspringii = sl[i].nm.vspring
+            oldspringjj = sl[j].nm.vspring
+            oldkini = -sl[i].nm.kin*beta_i
+            oldkinj = -sl[j].nm.kin*beta_j
+            oldqnmi = sl[i].nm.qnm
+            oldqnmj = sl[j].nm.qnm
+            #ensemble temps and econs
+            ti = sl[i].ensemble.temp
+            tj = sl[j].ensemble.temp
+            eci = sl[i].ensemble.econs
+            ecj = sl[j].ensemble.econs
+            lpensi = sl[i].ensemble.lpens
+            lpensj = sl[j].ensemble.lpens
+            remd_pensi = sl[i].ensemble.lpens
+            remd_pensj = sl[j].ensemble.lpens
+            pots_before = sl[i].forces.pots.copy()
+
+            bmax_before = np.argmax(pots_before)
+            Vmax_before = pots_before[bmax_before]
+
+            #info(f"V_bead_max_before {Vmax_before} bead {bmax_before}",
+            #    verbosity.low)
+
+
+            #coordinates not containing dependency, 
+            qi = dstrip(sl[i].beads.q).copy()
+            qj = dstrip(sl[j].beads.q).copy()
+            qi_centroid = dstrip(sl[i].beads.qc).copy()
+            qj_centroid = dstrip(sl[j].beads.qc).copy()
+            qi_scaled = qi_centroid + (ti / tj)**0.5 * (qi - qi_centroid) #qi auf temp j 
+            qj_scaled = qj_centroid + (tj / ti)**0.5 * (qj - qj_centroid) #qj auf temp i
+
+
+
+
+            #set coordinates
+            sl[i].beads.q = qi_scaled
+            sl[j].beads.q = qj_scaled
+            _ = sl[i].nm.qnm 
+            _ = sl[j].nm.qnm
+            pots_after = sl[i].forces.pots
+
+            bmax_after = np.argmax(pots_after)
+            Vmax_after = pots_after[bmax_after]
+
+            #info(f"V_bead_max_after {Vmax_after} bead {bmax_after}",
+            #    verbosity.low)
+            #swap ensemble
+            ensemble_swap(sl[i].ensemble, sl[j].ensemble)
+            _ = sl[i].nm.qnm 
+            _ = sl[j].nm.qnm
+            _ = sl[i].nm.omegak
+            _ = sl[j].nm.omegak
+            if self.rescalekin:
+                sl[i].beads.p *= np.sqrt(tj / ti)
+                sl[j].beads.p *= np.sqrt(ti / tj)
+                try:
+                    sl[i].motion.barostat.p *= tj / ti
+                    sl[j].motion.barostat.p *= ti / tj
+                except AttributeError:
+                    pass
+
+            try:
+                bjh = dstrip(sl[j].motion.barostat.h0.h).copy()
+                sl[j].motion.barostat.h0.h[:] = sl[i].motion.barostat.h0.h[:]
+                sl[i].motion.barostat.h0.h[:] = bjh
+            except AttributeError:
+                pass
+
+            #ensure that lpens calls a new force calculation
+            t0 = perf_counter()
+            newpensi = sl[i].ensemble.lpens #Vi(qi')
+            newpensj = sl[j].ensemble.lpens #Vj(qj')
+            t_force += perf_counter() - t0
+            pxc = ((newpensi + newpensj) - (lpensi + lpensj))
+            #info(f"pxc value {pxc}", verbosity.low)
+            if pxc > np.log(self.prng.u):
+                #info(f"pxc value {pxc}", verbosity.low)
                 info(
-                    f" @ QREMD: Acceptance criterium:{pxc:.2e} and delta1: {Delta1:.2e} and delta2: {Delta2:.2e}",
-                    verbosity.medium,
+                    f" @ QREMD: SWAPPING replicas {i:5d} and {j:5d}.",
+                    verbosity.high,
                 )
-                if pxc > self.prng.u:
-                    info(
-                        f" @ QREMD: SWAPPING replicas {i:5d} and {j:5d}.",
-                        verbosity.high,
-                    )
 
-                    ensemble_swap(sl[i].ensemble, sl[j].ensemble)
+                gle_scale(sl[i], tj / ti)
+                gle_scale(sl[j], ti / tj)
 
-                    if self.rescalekin:
-                        sl[i].beads.p *= np.sqrt(tj / ti)
-                        sl[j].beads.p *= np.sqrt(ti / tj)
+                #update conserved energies
+                sl[i].ensemble.eens += eci - sl[i].ensemble.econs
+                sl[j].ensemble.eens += ecj - sl[j].ensemble.econs
+                #update replica indices
+                self.repindex[i], self.repindex[j] = (
+                    self.repindex[j],
+                    self.repindex[i],
+                )
+
+                fxc = True
+            else:
+                #undoes the changes before acceptance
+                ensemble_swap(sl[i].ensemble, sl[j].ensemble)
+
+                #undoes the kinetic energy rescaling
+                if self.rescalekin:
+                        sl[i].beads.p *= np.sqrt(ti / tj)
+                        sl[j].beads.p *= np.sqrt(tj / ti)
+        
                         try:
-                            sl[i].motion.barostat.p *= tj / ti
-                            sl[j].motion.barostat.p *= ti / tj
+                            sl[i].motion.barostat.p *= ti / tj
+                            sl[j].motion.barostat.p *= tj / ti
                         except AttributeError:
                             pass
+                try:
+                    bjh = dstrip(sl[j].motion.barostat.h0.h).copy()
+                    sl[j].motion.barostat.h0.h[:] = sl[i].motion.barostat.h0.h[:]
+                    sl[i].motion.barostat.h0.h[:] = bjh
+                except AttributeError:
+                    pass
 
-                    try:
-                        bjh = dstrip(sl[j].motion.barostat.h0.h).copy()
-                        sl[j].motion.barostat.h0.h[:] = sl[i].motion.barostat.h0.h[:]
-                        sl[i].motion.barostat.h0.h[:] = bjh
-                    except AttributeError:
-                        pass
+                t0 = perf_counter()
 
-                    gle_scale(sl[i], tj / ti)
-                    gle_scale(sl[j], ti / tj)
+                #return to original state, including forces etc. 
+                sl[i].beads.q = dbeadsi.q
+                sl[j].beads.q = dbeadsj.q
+                sl[i].cell.h = dcelli.h
+                sl[j].cell.h = dcellj.h
+                sl[i].forces.load_state(oldfi)
+                sl[j].forces.load_state(oldfj)
 
-                    self.repindex[i], self.repindex[j] = (
-                        self.repindex[j],
-                        self.repindex[i],
-                    )
-                    self._cached_V[i], self._cached_V[j] = (
-                        self._cached_V[j],
-                        self._cached_V[i],
-                    )
-                    # MR: ah above you are just updating the list of the replicas to attempt swapping again. yes?
-                    fxc = True
-                else:
-                    info(
-                        f" @ QREMD: SWAP REJECTED BETWEEN replicas {i:5d} and {j:5d}.",
-                        verbosity.high,
-                    )
+                t_load += perf_counter() - t0
+
+                info(
+                    f" @ QREMD: SWAP REJECTED BETWEEN replicas {i:5d} and {j:5d}.",
+                    verbosity.high,
+                )
 
         if fxc:
             self.sf.write(f"{step:10d}")
@@ -177,3 +314,6 @@ class QReplicaExchange(Smotion):
             f"# QREMD step evaluated in {time.time() - t_start:.6f} sec.",
             verbosity.debug,
         )
+
+        info(f"t_dump, t_load, t_extra_force {t_dump}, {t_load}, {t_force}", verbosity.high)
+

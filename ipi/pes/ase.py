@@ -1,5 +1,6 @@
 """Interface with ASE calculators"""
 
+import json
 import numpy as np
 from .dummy import Dummy_driver
 
@@ -33,7 +34,7 @@ class ASEDriver(Dummy_driver):
         has_forces=True,
         has_stress=True,
         *args,
-        **kwargs
+        **kwargs,
     ):
         global read
         try:
@@ -57,7 +58,7 @@ class ASEDriver(Dummy_driver):
     def check_parameters(self):
         """Check the arguments required to run the driver
 
-        This loads the potential and atoms template in metatensor
+        This loads the potential and atoms template for ASE
         """
 
         self.template_ase = read(self.template)
@@ -91,8 +92,19 @@ class ASEDriver(Dummy_driver):
         )
         stress = properties["stress"] if "stress" in self.capabilities else np.zeros(9)
         if len(stress) == 6:
-            # converts from voight notation
+            # converts from voigt notation
             stress = np.array(stress[[0, 5, 4, 5, 1, 3, 4, 3, 2]])
+        else:
+            # check that the stress tensor is symmetric
+            if stress.shape != (3, 3):
+                raise ValueError(
+                    f"The stress tensor should have shape (3,3) but it has shape {stress.shape}."
+                )
+            delta = np.abs(stress - stress.T).sum()
+            if delta > 1e-6:
+                warning(
+                    f"The stress tensor should be symmetric, but its antisymmetric part has norm {delta}."
+                )
 
         # converts to internal quantities
         pot_ipi = np.asarray(
@@ -103,6 +115,22 @@ class ASEDriver(Dummy_driver):
         vir_ipi = np.array(
             unit_to_internal("energy", "electronvolt", vir_calc.T), dtype=np.float64
         )
-        extras = ""
+
+        # Extra information apart from the "mandatory" ones (energy, forces, and stress).
+        # The model could return the dipole, polarizability, Born charges for example.
+        # These information will be stored in the 'extras' variable (a python dict)
+        # with the same keys as returned by the model and values converted to float or list.
+        extras = {}
+        for key in properties:
+            if key not in ["energy", "forces", "stress"]:
+                value = properties[key]
+                if isinstance(value, np.ndarray):
+                    extras[key] = value.tolist()
+                else:
+                    extras[key] = float(value)
+        if extras == {}:
+            extras = ""
+        else:
+            extras = json.dumps(extras)
 
         return pot_ipi, force_ipi, vir_ipi, extras

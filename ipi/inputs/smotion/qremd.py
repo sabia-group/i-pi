@@ -1,4 +1,4 @@
-"""Deals with creating the Replica Exchange class
+"""Deals with creating the Quantum Replica Exchange class
 
 Copyright (C) i-PI developers team.
 
@@ -67,6 +67,30 @@ class InputQReplicaExchange(InputDictionary):
                 "help": "List of current indices of the replicas compared to the starting indices",
             },
         ),
+        "rand_mix": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "How much random mixing to do in nearest-neighbor swapping (0.0-1.0)",
+            },
+        ),
+        "sim_mode": (
+            InputValue,
+            {
+                "dtype": str,
+                "default": "nn",
+                "help": "Should an all-pairs or nearest-neighbor swapping be performed (all/nn)",
+            },
+        ),
+        "nnn_mix": (
+            InputValue,
+            {
+                "dtype": float,
+                "default": 0.0,
+                "help": "Should NN be performed oder a larger window on NN Pairs?",
+            },
+        ),
     }
 
     default_help = "Q Replica Exchange"
@@ -80,6 +104,9 @@ class InputQReplicaExchange(InputDictionary):
         self.krescale.store(qremd.rescalekin)
         self.swapfile.store(qremd.swapfile)
 
+        self.rand_mix.store(qremd.rand_mix)
+        self.sim_mode.store(qremd.sim_mode)
+        self.nnn_mix.store(qremd.nnn_mix)
     def fetch(self):
         rv = super(InputQReplicaExchange, self).fetch()
         return rv
