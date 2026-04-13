@@ -45,6 +45,7 @@ class JSONLogger:
 
         if file is None:
             file = self.file
+        # ToDo: change it
         with open(file, "a") as f:
             f.write(json.dumps(safe_data, indent=4))
             f.write("\n")
