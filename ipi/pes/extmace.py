@@ -256,7 +256,7 @@ class ExtendedMACECalculator(MACECalculator):
             compute_stress = not self.use_compile
         else:
             compute_stress = False
-            
+
         assert compute_stress, "'compute_stress' is False"
 
         # -------------------#
@@ -343,7 +343,7 @@ class ExtendedMACECalculator(MACECalculator):
                 out["node_energy"] -= batch["node_e0"]
 
                 # collect the results
-                with self.logger.section("postprocess"):
+                with self.logger.section("postprocess pt.1"):
                     results_tensors = {}
                     for key, value in out.items():
                         if value is None:
@@ -360,7 +360,7 @@ class ExtendedMACECalculator(MACECalculator):
                     model_results[i].store(Natoms, results_tensors)
 
         # re-order results
-        with self.logger.section("postprocess"):
+        with self.logger.section("postprocess pt.2"):
             out = ModelResults.mean(model_results)
             [
                 self.results_logger.save(a, f"results.{n}.json")
@@ -377,8 +377,9 @@ class ExtendedMACECalculator(MACECalculator):
         compute_bec: bool,
     ) -> Dict[str, torch.Tensor]:
 
-        mu = data["dipole"]
-        mu = proper_dipole(mu,data["displacement"])
+        if "dipole" in data:
+            mu = data["dipole"]
+            mu = proper_dipole(mu, data["displacement"])
         ensemble = str(self.instructions["ensemble"]).upper()
         if ensemble == "NONE":  # no ensemble (just for debugging purposes)
             data = self.get_forces_stress(data, batch, training)
@@ -414,15 +415,15 @@ class ExtendedMACECalculator(MACECalculator):
                         torch.einsum("ijkl,i->jkl", dmu_deta, Efield)
                         / volume[:, None, None]
                     )
-                    assert torch.allclose(stress_E, stress_E.transpose(-1, -2)), "The E-field induced stress tensor is not symmetric."
+                    assert torch.allclose(
+                        stress_E, stress_E.transpose(-1, -2)
+                    ), "The E-field induced stress tensor is not symmetric."
                     data["stress"] -= stress_E
 
                     dmu_deta = dmu_deta.moveaxis(
                         0, 1
                     )  # (mu_xyz,graph,eta_i,eta_j) --> (graph,mu_xyz,eta_i,eta_j)
-                    data["piezoelectric"] = dmu_deta2piezoelectric(
-                        dmu_deta, mu, volume
-                    )
+                    data["piezoelectric"] = dmu_deta2piezoelectric(dmu_deta, mu, volume)
                     if DEBUG:
                         # Eq. (16) of Computer Physics Communications 190 (2015) 33-50
                         cell = torch.einsum(
@@ -440,7 +441,7 @@ class ExtendedMACECalculator(MACECalculator):
                         assert torch.allclose(
                             test, data["piezoelectric"]
                         ), "coding error"
-                        
+
                         # e_ijk (improper piezoelectric tensor) + (mu_i / V) * δ_jk
                         test = (
                             data["piezoelectric"]
@@ -472,9 +473,7 @@ class ExtendedMACECalculator(MACECalculator):
                 dmu_deta = dmu_deta.moveaxis(0, 1)
                 cell: torch.Tensor = batch["cell"].view((-1, 3, 3))
                 volume = torch.det(cell)
-                data["piezoelectric"] = dmu_deta2piezoelectric(
-                    dmu_deta, mu, volume
-                )
+                data["piezoelectric"] = dmu_deta2piezoelectric(dmu_deta, mu, volume)
 
         return data
 
@@ -539,7 +538,9 @@ class ExtendedMACECalculator(MACECalculator):
             )
         dipole_components = 3
         displacement = data["displacement"]
-        mu = proper_dipole(data["dipole"],displacement)  # [:,:dipole_components] # uncomment to debug
+        mu = proper_dipole(
+            data["dipole"], displacement
+        )  # [:,:dipole_components] # uncomment to debug
         pos = batch["positions"]
         if not isinstance(mu, torch.Tensor):
             raise ValueError(f"The dipole is not a torch.Tensor rather a {type(mu)}")
@@ -580,20 +581,23 @@ class ExtendedMACECalculator(MACECalculator):
         # Its shape is (3,*pos.shape).
         # This means that bec[0,3,2] will contain d mu_x / d R^3_z,
         # where mu_x is the x-component of the dipole and R^3_z is the z-component of the 4th (zero-indexed) atom i n the structure/batch.
-        
-        assert torch.allclose(dmu_deta, dmu_deta.transpose(-1, -2)), "The piezoelectric tensor is not symmetric."
+
+        assert torch.allclose(
+            dmu_deta, dmu_deta.transpose(-1, -2)
+        ), "The piezoelectric tensor is not symmetric."
 
         return bec, dmu_deta
 
 
 # --------------------------------------- #
-def proper_dipole(mu: torch.Tensor,strain: torch.Tensor)->torch.Tensor:
+def proper_dipole(mu: torch.Tensor, strain: torch.Tensor) -> torch.Tensor:
     # ToDo: derive again this expression.
     # I need to symmetrize because `mu` is a function of `strain` only through its symmetrized version.
-    # Have a look at the function `get_symmetric_displacement` in `mace/modules/utils.py`. 
-    sym_strain = 0.5*(strain+strain.transpose(-1,-2))
-    return mu - torch.einsum("bil,bl->bi",sym_strain,mu)
-    
+    # Have a look at the function `get_symmetric_displacement` in `mace/modules/utils.py`.
+    sym_strain = 0.5 * (strain + strain.transpose(-1, -2))
+    return mu - torch.einsum("bil,bl->bi", sym_strain, mu)
+
+
 # --------------------------------------- #
 # ToDo: this should be written again.
 def dmu_deta2piezoelectric(
