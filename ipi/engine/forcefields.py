@@ -250,6 +250,9 @@ class ForceField:
 
         """Frees up a request."""
 
+        if "thread" in request:
+            request["thread"].join()
+
         with self._threadlock if lock else nullcontext():
             if request in self.requests:
                 try:
@@ -317,7 +320,7 @@ class FFSocket(ForceField):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -377,6 +380,11 @@ class FFEval(ForceField):
     to compute the potential, force and virial.
     """
 
+    def _eval_thread(self, request):
+        """Evaluates a single request and applies the offset."""
+        self.evaluate(request)
+        request["result"][0] -= self.offset
+
     def poll(self):
         """Polls the forcefield checking if there are requests that should
         be answered, and if necessary evaluates the associated forces and energy."""
@@ -384,12 +392,20 @@ class FFEval(ForceField):
         # We have to be thread-safe, as in multi-system mode this might get
         # called by many threads at once.
         with self._threadlock:
+            new_requests = []
             for r in self.requests:
                 if r["status"] == "Queued":
                     r["status"] = "Running"
                     r["t_dispatched"] = time.time()
-                    self.evaluate(r)
-                    r["result"][0] -= self.offset  # subtract constant offset
+                    new_requests.append(r)
+
+        for r in new_requests:
+            if self.threaded:
+                r["thread"] = threading.Thread(target=self._eval_thread, args=(r,))
+                r["thread"].start()
+            else:
+                with self._threadlock:
+                    self._eval_thread(r)
 
     def evaluate(self, request):
         request["result"] = [
@@ -404,7 +420,7 @@ class FFEval(ForceField):
 class FFDirect(ForceField):
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -430,7 +446,10 @@ class FFDirect(ForceField):
             active: Indexes of active atoms in this forcefield
             pes: The name of the potential-energy surface to be used
             batch_size: The number of structures that should be combined and evaluated
-                at once in a single batch.
+                at once in a single batch. NB: program will hang if the number of force
+                evaluations is not a multiple of batch_size, unless threaded is set to
+                True.
+
         """
 
         super().__init__(latency, offset, name, pars, dopbc, active, threaded)
@@ -443,6 +462,9 @@ class FFDirect(ForceField):
         self.pes_path = pes_path
         self.batch_size = batch_size
         self.request_batch = []
+        self._batch_idle_cycles = 0
+        # wait longer to flush the queue if the batch size is large
+        self._batch_idle_threshold = self.batch_size
 
         try:
             if self.pes == "custom" and self.pes_path == "":
@@ -466,11 +488,23 @@ class FFDirect(ForceField):
         # called by many threads at once.
         # This is slightly different than for FFEval because of the batched evaluation
         with self._threadlock:
+            new_requests = False
             for r in self.requests:
                 if r["status"] == "Queued":
                     r["status"] = "Running"
                     r["t_dispatched"] = time.time()
                     self.evaluate(r)
+                    new_requests = True
+
+            # for batched evaluation, flush incomplete batches
+            # if the poll loop has been idle for a few cycles
+            if self.batch_size > 1 and len(self.request_batch) > 0:
+                if new_requests:
+                    self._batch_idle_cycles = 0
+                else:
+                    self._batch_idle_cycles += 1
+                if self._batch_idle_cycles >= self._batch_idle_threshold:
+                    self.launch_batch()
 
     def _process_results(self, results, request):
         # ensure forces and virial have the correct shape to fit the results
@@ -509,6 +543,22 @@ class FFDirect(ForceField):
         request["status"] = "Done"
         request["t_finished"] = time.time()
 
+    def launch_batch(self):
+        """Dispatches the current batch for evaluation."""
+
+        info(
+            f"Launching batch evaluation, "
+            f"{len(self.request_batch)} / {self.batch_size}",
+            verbosity.high,
+        )
+        cell_batch = [r["cell"][0] for r in self.request_batch]
+        pos_batch = [r["pos"].reshape(-1, 3) for r in self.request_batch]
+        results_batch = self.driver(cell_batch, pos_batch)
+        for results, request in zip(results_batch, self.request_batch):
+            self._process_results(list(results), request)
+        self.request_batch = []
+        self._batch_idle_cycles = 0
+
     def evaluate(self, request):
         if self.batch_size == 1:
             results = list(
@@ -517,16 +567,8 @@ class FFDirect(ForceField):
             self._process_results(results, request)
         else:
             self.request_batch.append(request)
-            if len(self.request_batch) == self.batch_size:
-                cell_batch = [request["cell"][0] for request in self.request_batch]
-                pos_batch = [
-                    request["pos"].reshape(-1, 3) for request in self.request_batch
-                ]
-                results_batch = self.driver(cell_batch, pos_batch)
-                for results, request in zip(results_batch, self.request_batch):
-                    self._process_results(list(results), request)
-
-                self.request_batch = []
+            if len(self.request_batch) >= self.batch_size:
+                self.launch_batch()
 
 
 class FFLennardJones(FFEval):
@@ -547,7 +589,7 @@ class FFLennardJones(FFEval):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -724,7 +766,7 @@ class FFDebye(FFEval):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         H=None,
@@ -801,7 +843,7 @@ class FFPlumed(FFEval):
 
     def __init__(
         self,
-        latency=1.0e-3,
+        latency=1.0e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -830,6 +872,13 @@ class FFPlumed(FFEval):
         super(FFPlumed, self).__init__(
             latency, offset, name, pars, dopbc=False, threaded=threaded
         )
+
+        if self.threaded:
+            warning(
+                "PLUMED is not thread-safe, overriding threaded execution",
+                verbosity.low,
+            )
+            self.threaded = False
         self.plumed = plumed.Plumed()
         self.plumed_dat = plumed_dat
         self.plumed_step = plumed_step
@@ -916,15 +965,21 @@ class FFPlumed(FFEval):
         self.plumed.cmd("setMasses", self.masses)
 
         # these instead are set properly. units conversion is done on the PLUMED side
-        self.plumed.cmd("setBox", r["cell"][0].T.copy())
-        pos = r["pos"].reshape(-1, 3)
-
         if self.system_force is not None:
+            # setup to use energy as CV
             f[:] = dstrip(self.system_force.f).reshape((-1, 3))
             vir[:] = -dstrip(self.system_force.vir)
             self.plumed.cmd("setEnergy", dstrip(self.system_force.pot))
 
-        self.plumed.cmd("setPositions", pos)
+        # must hold a copy of cell and positions because plumed stores a pointer!
+        # there is potential for memory corruption if these are overwritten before
+        # next time getBias is called
+        self.box = r["cell"][0].T.copy()
+        self.plumed.cmd("setBox", self.box)
+
+        self.pos = r["pos"].reshape(-1, 3).copy()
+        self.plumed.cmd("setPositions", self.pos)
+
         self.plumed.cmd("setForces", f)
         self.plumed.cmd("setVirial", vir)
         self.plumed.cmd("prepareCalc")
@@ -963,18 +1018,22 @@ class FFPlumed(FFEval):
         bias_before = np.zeros(1, float)
         bias_after = np.zeros(1, float)
 
-        if self.compute_work:
-            self.plumed.cmd("getBias", bias_before)
-
         # Checks that the update is called on the right position.
         # this should be the case for most workflows - if this error
         # is triggered and your input makes sense, the right thing to
         # do is to perform a full plumed-side update (which will have a cost,
         # so see if you can avoid it)
         if np.linalg.norm(self.lastq - pos) > 1e-10:
-            raise ValueError(
-                "Metadynamics update is performed using an incorrect position"
+            warning(
+                "mtd_update: Positions moved since last PLUMED evaluation: "
+                "triggering a full PLUMED update.",
+                verbosity.medium,
             )
+            request = {"pos": dstrip(pos), "cell": (dstrip(cell), None), "result": None}
+            self.evaluate(request)
+
+        if self.compute_work:
+            self.plumed.cmd("getBias", bias_before)
 
         # sets the step and does the actual update
         self.plumed.cmd("setStep", self.plumed_step)
@@ -995,7 +1054,7 @@ class FFYaff(FFEval):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         threaded=False,
@@ -1112,7 +1171,7 @@ class FFsGDML(FFEval):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         threaded=False,
@@ -1245,7 +1304,7 @@ class FFCommittee(ForceField):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -1559,7 +1618,7 @@ class FFRotations(ForceField):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
@@ -1730,13 +1789,17 @@ class FFRotations(ForceField):
         # "dissolve" the extras dictionaries into a list
         if isinstance(xtrs[0], dict):
             for k in xtrs[0].keys():
-                r["result"][3][k] = []
-                for x in xtrs:
-                    r["result"][3][k].append(x[k])
+                if k == "raw":
+                    # "raw" must stay a string for compatibility with extra_combine
+                    r["result"][3][k] = (
+                        "[ " + ", ".join(x.get(k, "") for x in xtrs) + " ]"
+                    )
+                else:
+                    r["result"][3][k] = []
+                    for x in xtrs:
+                        r["result"][3][k].append(x[k])
         else:
-            r["result"][3]["raw"] = []
-            for x in xtrs:
-                r["result"][3]["raw"].append(x)
+            r["result"][3]["raw"] = "[ " + ", ".join(str(x) for x in xtrs) + " ]"
 
         for ff_r in r["ff_handles"]:
             self.ff.release(ff_r)
@@ -1957,7 +2020,7 @@ class FFCavPhSocket(FFSocket):
 
     def __init__(
         self,
-        latency=1.0,
+        latency=1e-4,
         offset=0.0,
         name="",
         pars=None,
