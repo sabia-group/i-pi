@@ -1026,18 +1026,18 @@ class Forces:
                 )
             self._vary_dec_idx = dec_indices[0]
             self._vary_inc_idx = 1 - self._vary_dec_idx
+            dec = self.mforces[self._vary_dec_idx]
+            inc = self.mforces[self._vary_inc_idx]
             info(
                 " @forces: vary_weight mode enabled. rate=%.6e, "
-                "decreasing component: '%s' (ffield='%s', w=%.4f), "
-                "increasing component: '%s' (ffield='%s', w=%.4f)"
+                "decreasing component: '%s' (w=%.4f), "
+                "increasing component: '%s' (w=%.4f)"
                 % (
                     self._vary_rate,
-                    self.mforces[self._vary_dec_idx].name,
-                    self.mforces[self._vary_dec_idx].ffield,
-                    self.mforces[self._vary_dec_idx].weight,
-                    self.mforces[self._vary_inc_idx].name,
-                    self.mforces[self._vary_inc_idx].ffield,
-                    self.mforces[self._vary_inc_idx].weight,
+                    dec.name if dec.name else dec.ffield,
+                    dec.weight,
+                    inc.name if inc.name else inc.ffield,
+                    inc.weight,
                 ),
                 verbosity.low,
             )
@@ -1057,6 +1057,14 @@ class Forces:
         # keep fcomp in sync so checkpoints store the current weights
         self.fcomp[self._vary_dec_idx].weight -= self._vary_rate
         self.fcomp[self._vary_inc_idx].weight += self._vary_rate
+        info(
+            " @forces: vary_weight updated: "
+            + ", ".join(
+                "'%s' w=%.6f" % (ff.name if ff.name else ff.ffield, ff.weight)
+                for ff in self.mforces
+            ),
+            verbosity.high,
+        )
 
     def clone(self, beads, cell):
         """Duplicates the force object, so that it can be used to compute forces
