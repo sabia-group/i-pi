@@ -41,7 +41,16 @@ class System:
     """
 
     def __init__(
-        self, init, beads, nm, cell, fcomponents, vary_weight="", ensemble=None, motion=None, prefix=""
+        self,
+        init,
+        beads,
+        nm,
+        cell,
+        fcomponents,
+        vary_weight="",
+        ensemble=None,
+        motion=None,
+        prefix="",
     ):
         """Initialises System class.
 

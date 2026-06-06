@@ -1103,11 +1103,13 @@ class FFYaff(FFEval):
 
         """
 
-        warning("""
+        warning(
+            """
                 <ffyaff> is deprecated and might be removed in a future release of i-PI.
                 If you are interested in using it, please help port it to the PES
                 infrastructure.
-                """)
+                """
+        )
 
         from yaff import System, ForceField, log
         import codecs
@@ -1202,11 +1204,13 @@ class FFsGDML(FFEval):
 
         """
 
-        warning("""
+        warning(
+            """
                 <ffsgdml> is deprecated and might be removed in a future release of i-PI.
                 If you are interested in using it, please help port it to the PES
                 infrastructure.
-                """)
+                """
+        )
 
         # a socket to the communication library is created or linked
         super(FFsGDML, self).__init__(

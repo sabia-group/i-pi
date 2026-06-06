@@ -747,7 +747,17 @@ class Forces:
         self._virs.add_dependency(nforces._virs)
         self._extras.add_dependency(nforces._extras)
 
-    def bind(self, beads, cell, fcomponents, fflist, open_paths, output_maker, vary_weight=False, tsteps=None):
+    def bind(
+        self,
+        beads,
+        cell,
+        fcomponents,
+        fflist,
+        open_paths,
+        output_maker,
+        vary_weight=False,
+        tsteps=None,
+    ):
         """Binds beads, cell and forces to the forcefield.
 
 
@@ -1015,9 +1025,7 @@ class Forces:
             # Identify the decreasing component by its ffield name — explicit and
             # restart-safe regardless of the current weight values.
             dec_ffield = vary_weight
-            dec_indices = [
-                k for k in range(2) if self.mforces[k].ffield == dec_ffield
-            ]
+            dec_indices = [k for k in range(2) if self.mforces[k].ffield == dec_ffield]
             if len(dec_indices) != 1:
                 raise ValueError(
                     "vary_weight: could not find a unique force component with "
