@@ -222,6 +222,24 @@ class InputFFSocket(InputForceField):
                 "help": "This gives the number of seconds before assuming a calculation has died. If 0 there is no timeout.",
             },
         ),
+        "max_workers": (
+            InputValue,
+            {
+                "dtype": int,
+                "default": 128,
+                "help": "This gives the maximum number of job threads that are active simultaneously.",
+            },
+        ),
+        "consolidate_messages": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": True,
+                "help": """If True, fuse the STATUS/POSDATA/GETFORCE exchange into a single send and uses 
+                a single thread to collect the FORCEREADY responses. Lower latency, but assumes clients 
+                strictly follow the base protocol.""",
+            },
+        ),
     }
     attribs = {
         "mode": (
@@ -281,6 +299,8 @@ class InputFFSocket(InputForceField):
         self.mode.store(ff.socket.mode)
         self.matching.store(ff.socket.match_mode)
         self.exit_on_disconnect.store(ff.socket.exit_on_disconnect)
+        self.max_workers.store(ff.socket.max_workers)
+        self.consolidate_messages.store(ff.socket.consolidate_messages)
         self.threaded.store(True)  # hard-coded
 
     def fetch(self):
@@ -317,7 +337,9 @@ class InputFFSocket(InputForceField):
                 mode=self.mode.fetch(),
                 timeout=self.timeout.fetch(),
                 match_mode=self.matching.fetch(),
+                max_workers=self.max_workers.fetch(),
                 exit_on_disconnect=self.exit_on_disconnect.fetch(),
+                consolidate_messages=self.consolidate_messages.fetch(),
             ),
         )
 
@@ -1111,6 +1133,22 @@ class InputFFCavPhSocket(InputFFSocket):
                 "help": "Determines if additional photonic degrees of freedom is included or not.",
             },
         ),
+        "evaluate_photon": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": True,
+                "help": "When multiple drivers are used, determines if the photon forces are evaluated. This should be set to False for all but one driver, to avoid double counting of the photon forces. If only one driver is used, this should be set to True by default.",
+            },
+        ),
+        "dipole_surface": (
+            InputValue,
+            {
+                "dtype": bool,
+                "default": False,
+                "help": "Determines if use dipole surface to propagate or not.",
+            },
+        ),
         "E0": (
             InputValue,
             {
@@ -1166,6 +1204,8 @@ class InputFFCavPhSocket(InputFFSocket):
 
         self.charge_array.store(ff.charge_array)
         self.apply_photon.store(ff.apply_photon)
+        self.dipole_surface.store(ff.dipole_surface)
+        self.evaluate_photon.store(ff.evaluate_photon)
         self.E0.store(ff.E0)
         self.omega_c.store(ff.omega_c)
         self.ph_rep.store(ff.ph_rep)
@@ -1200,6 +1240,8 @@ class InputFFCavPhSocket(InputFFSocket):
             ),
             charge_array=self.charge_array.fetch(),
             apply_photon=self.apply_photon.fetch(),
+            dipole_surface=self.dipole_surface.fetch(),
+            evaluate_photon=self.evaluate_photon.fetch(),
             E0=self.E0.fetch(),
             omega_c=self.omega_c.fetch(),
             ph_rep=self.ph_rep.fetch(),

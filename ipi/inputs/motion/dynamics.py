@@ -19,7 +19,6 @@ from ipi.inputs.barostats import InputBaro
 from ipi.inputs.thermostats import InputThermo
 from ipi.inputs.friction import InputFriction
 
-
 __all__ = ["InputDynamics"]
 
 

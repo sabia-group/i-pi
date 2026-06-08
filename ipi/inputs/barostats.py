@@ -14,7 +14,6 @@ from ipi.inputs.thermostats import *
 from ipi.engine.cell import Cell
 from ipi.inputs.cell import *
 
-
 __all__ = ["InputBaro"]
 
 
@@ -163,10 +162,18 @@ class InputBaro(Input):
                 "Diagonal cell entries cannot be fixed while constraining the volume."
             )
         if self.mode.fetch() == "isotropic":
+            if len(self.hfix.fetch()) > 0:
+                raise ValueError(
+                    "Cannot fix individual cell components with an 'isotropic' barostat"
+                )
             baro = BaroBZP(thermostat=self.thermostat.fetch(), tau=self.tau.fetch())
             if self.p._explicit:
                 baro.p = self.p.fetch()
         elif self.mode.fetch() == "sc-isotropic":
+            if len(self.hfix.fetch()) > 0:
+                raise ValueError(
+                    "Cannot fix individual cell components with an 'sc-isotropic' barostat"
+                )
             baro = BaroSCBZP(thermostat=self.thermostat.fetch(), tau=self.tau.fetch())
             if self.p._explicit:
                 baro.p = self.p.fetch()

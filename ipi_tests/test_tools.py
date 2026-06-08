@@ -40,6 +40,7 @@ fortran_driver_models = [
     "doublewell",
     "gas",
     "noo3-h2o",
+    "water_dip_pol",
 ]
 
 # We should do this automatically but for now we do it explicitly here
@@ -327,13 +328,34 @@ class Runner(object):
                         else:
                             time.sleep(0.2)
                     if not f_connected:
+                        # Check if i-pi finished successfully
+                        if ipi.poll() is not None:
+                            ipi_out, ipi_error = ipi.communicate(timeout=TIMEOUT)
+                            if ipi.returncode == 0:
+                                print(
+                                    "i-PI finished before socket check. Assuming success."
+                                )
+                                return None
+                            else:
+                                print(
+                                    "i-PI failed with return code {}".format(
+                                        ipi.returncode
+                                    )
+                                )
+                                print("i-PI Output:", ipi_out.decode("ascii"))
+                                print("i-PI Error:", ipi_error.decode("ascii"))
+                                return "i-PI failed with return code {}".format(
+                                    ipi.returncode
+                                )
+
                         print("Could not find the i-PI UNIX socket.")
                         print("Current client {}".format(client))
                         print("List all files  /tmp/ipi_*")
                         for filename in glob.glob("/tmp/ipi_*"):
                             print(filename)
-                        ipi_error = ipi.communicate(timeout=TIMEOUT)[1].decode("ascii")
-                        print(ipi_error)
+                        ipi_out, ipi_error = ipi.communicate(timeout=TIMEOUT)
+                        print("i-PI Output:", ipi_out.decode("ascii"))
+                        print("i-PI Error:", ipi_error.decode("ascii"))
                         return "Could not find the i-PI UNIX socket"
 
             # Run drivers by defining cmd2 which will be called, eventually
@@ -392,11 +414,14 @@ class Runner(object):
             for driver in drivers:
                 # if i-PI has ended, we can wait for the driver to quit
                 driver_out, driver_err = driver.communicate(timeout=TIMEOUT)
-                assert (
-                    driver.returncode == 0
-                ), "Driver error occurred: {}\n Driver Output: {}".format(
-                    driver_err, driver_out
-                )
+                if driver.returncode != 0:
+                    ipi.kill()
+                    ipi_out, ipi_error = ipi.communicate()
+                    assert (
+                        driver.returncode == 0
+                    ), "Driver error occurred: {}\n Driver Output: {}\n i-PI Output: {}\n i-PI Error: {}".format(
+                        driver_err, driver_out, ipi_out, ipi_error
+                    )
 
         except sp.TimeoutExpired:
             ipi.kill()
@@ -413,18 +438,14 @@ class Runner(object):
                 driver_out, driver_err = "", "Could not get outputs from drivers"
                 pass
 
-            print(
-                "Timeout during {} test \
+            print("Timeout during {} test \
               **** i-PI output **** \
               stdout {} \
               stderr {} \
               **** driver output **** \
               stdout {} \
               stderr {} \
-              ".format(
-                    str(cwd), ipi_out, ipi_error, driver_out, driver_err
-                )
-            )
+              ".format(str(cwd), ipi_out, ipi_error, driver_out, driver_err))
             raise
 
             raise RuntimeError(

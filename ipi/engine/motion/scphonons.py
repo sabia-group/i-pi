@@ -26,7 +26,6 @@ from ipi.engine.motion.motion import Motion
 
 from ipi.utils.depend import dstrip
 from ipi.utils.phonontools import apply_asr
-from ipi.utils.softexit import softexit
 from ipi.utils.messages import verbosity, info
 from ipi.utils.mathtools import gaussian_inv
 
@@ -186,10 +185,11 @@ class SCPhononsMover(Motion):
 
     def step(self, step=None):
         if self.isc == self.max_iter:
-            softexit.trigger(
+            self.finish(
                 status="bad",
                 message=" @SCP: Reached maximum iterations. Terminating the SCP calculation.",
             )
+            return
         if self.imc == 0:
             self.phononator.reset()
         elif self.imc >= 1 and self.imc <= self.max_steps:
@@ -502,7 +502,11 @@ class SCPhononator(DummyPhononator):
             self.apply_hpf()
             self.get_KnD()
 
-            info(" @SCP: <f> =  %10.8f +/-  %10.8f: " % (f, f_err), verbosity.medium)
+            info(
+                " @SCP: <f> =  %10.8f +/-  %10.8f: "
+                % (np.linalg.norm(f).item(), np.linalg.norm(f_err).item()),
+                verbosity.medium,
+            )
             info(
                 " @SCP: OPTMODE = sd : Using the displacement correlation as a preconditioner.",
                 verbosity.medium,
@@ -530,7 +534,11 @@ class SCPhononator(DummyPhononator):
             self.apply_hpf()
             self.get_KnD()
 
-            info(" @SCP: <f> =  %10.8f +/-  %10.8f: " % (f, f_err), verbosity.medium)
+            info(
+                " @SCP: <f> =  %10.8f +/-  %10.8f: "
+                % (np.linalg.norm(f).item(), np.linalg.norm(f_err).item()),
+                verbosity.medium,
+            )
             info(
                 " @SCP: OPTMODE = iK : Using the inverse Hessian as a preconditioner.",
                 verbosity.medium,
@@ -655,11 +663,10 @@ class SCPhononator(DummyPhononator):
                             self.wthreshold,
                             sum(batch_w > self.wthreshold),
                             len(batch_w),
-                            batch_w[-1],
+                            batch_w[-1].item(),
                         ),
                         verbosity.medium,
                     )
-
                 # Calculates the hessian.
                 # Applies acoustic sum rule to project out zero modes.
                 # Applies a high pass filter to zero out low frequency modes.

@@ -12,7 +12,6 @@ from ipi.engine.ensembles import *
 from ipi.utils.inputvalue import *
 from ipi.utils.units import *
 
-
 __all__ = ["InputEnsemble"]
 
 
@@ -52,7 +51,7 @@ class InputEnsemble(Input):
             InputValue,
             {
                 "dtype": float,
-                "default": -12345,  # hard-coded to signal unset pressure
+                "default": np.nan,  # hard-coded to signal unset pressure
                 "help": "The external pressure.",
                 "dimension": "pressure",
             },
@@ -61,7 +60,7 @@ class InputEnsemble(Input):
             InputArray,
             {
                 "dtype": float,
-                "default": -12345.0
+                "default": np.nan
                 * np.identity(3, float),  # hard-coded to signal unset stress
                 "help": "The external stress.",
                 "dimension": "pressure",

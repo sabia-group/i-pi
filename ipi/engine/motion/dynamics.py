@@ -15,8 +15,7 @@ import numpy as np
 from ipi.engine.motion import Motion
 from ipi.utils.depend import *
 from ipi.engine.thermostats import Thermostat
-from ipi.engine.barostats import Barostat
-from ipi.utils.softexit import softexit
+from ipi.engine.barostats import Barostat, BaroRGB
 from ipi.utils.messages import warning, verbosity
 from ipi.engine.friction import Friction
 
@@ -76,12 +75,12 @@ class Dynamics(Motion):
         if thermostat is None:
             self.thermostat = Thermostat()
         else:
-            if (
-                thermostat.__class__.__name__ is ("ThermoPILE_G" or "ThermoNMGLEG ")
-            ) and (len(fixatoms_dof) > 0):
-                softexit.trigger(
-                    status="bad",
-                    message="!! Sorry, fixed atoms and global thermostat on the centroid not supported. Use a local thermostat. !!",
+            if (thermostat.__class__.__name__ == "ThermoNMGLEG") and (
+                len(fixatoms_dof) > 0
+            ):
+                raise ValueError(
+                    "Fixed atoms and global thermostat on the centroid with NMGLE "
+                    "are not supported. Use a local thermostat."
                 )
             self.thermostat = thermostat
 
@@ -185,7 +184,9 @@ class Dynamics(Motion):
         dpipe(self._ntemp, self.thermostat._temp)
 
         # depending on the kind, the thermostat might work in the normal mode or the bead representation.
-        self.thermostat.bind(beads=self.beads, nm=self.nm, prng=prng, fixdof=fixdof)
+        self.thermostat.bind(
+            beads=self.beads, nm=self.nm, prng=prng, fixdof=fixdof, fixcom=self.fixcom
+        )
 
         # first makes sure that the barostat has the correct stress and timestep, then proceeds with binding it.
         dpipe(self._ntemp, self.barostat._temp)
@@ -232,11 +233,15 @@ class Dynamics(Motion):
                     raise ValueError(
                         "The barostat and its mode have to be specified for constant-p integrators"
                     )
-                if np.allclose(self.ensemble.pext, -12345):
+                if np.any(np.isnan(self.ensemble.pext)):
                     raise ValueError("Unspecified pressure for a constant-p integrator")
             elif self.enstype == "nst":
-                if np.allclose(self.ensemble.stressext.diagonal(), -12345):
+                if np.any(np.isnan(self.ensemble.stressext)):
                     raise ValueError("Unspecified stress for a constant-s integrator")
+                if type(self.barostat) is not BaroRGB:
+                    raise ValueError(
+                        "NST ensemble only supported with the RGB ('anisotropic') barostat."
+                    )
         if self.enstype == "nve" and self.beads.nbeads > 1:
             if self.ensemble.temp < 0:
                 raise ValueError(
@@ -408,13 +413,14 @@ class DummyIntegrator:
 
             self.ensemble.eens += np.sum(vcom**2) * 0.5 * Mnb  # COM kinetic energy.
 
+        # Here we remove momenta in the nm basis because it is equivalent to cartesian but ensures we treat CMD setups consistently.
         if len(self.fixatoms_dof) > 0:
-            m3 = dstrip(beads.m3)
-            p = dstrip(beads.p)
+            pnm = dstrip(self.nm.pnm)
+            dynm3 = dstrip(self.nm.dynm3)
             self.ensemble.eens += 0.5 * np.sum(
-                p[:, self.fixatoms_dof] ** 2 / m3[:, self.fixatoms_dof]
+                pnm[:, self.fixatoms_dof] ** 2 / dynm3[:, self.fixatoms_dof]
             )
-            beads.p[:, self.fixatoms_dof] = 0.0
+            self.nm.pnm[:, self.fixatoms_dof] = 0.0
 
 
 dproperties(
@@ -741,7 +747,9 @@ class NVTCCIntegrator(NVTIntegrator):
         self.nm.pnm[0, :] = 0.0
         self.pconstraints()
 
-        # self.qcstep() # for the moment I just avoid doing the centroid step.
+        # The centroid is constrained, so qcstep is skipped, but the internal
+        # ring-polymer modes still need the two half-step free propagations.
+        self.nm.free_qstep()
         self.nm.free_qstep()
 
         self.pstep()
