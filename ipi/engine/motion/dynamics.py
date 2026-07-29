@@ -231,9 +231,6 @@ class Dynamics(Motion):
                     "You need to provide a positive value for temperature inside ensemble to run a PIMD simulation, even when choosing NVE propagation."
                 )
 
-        self._actual_time = depend_value(name="actual_time", value=ens.time)
-        dpipe(dfrom=self.integrator._actual_time, dto=self._actual_time)
-
     def get_ntemp(self):
         """Returns the PI simulation temperature (P times the physical T)."""
 
@@ -245,7 +242,10 @@ class Dynamics(Motion):
         self.integrator.step(step)
         self.ensemble.time += self.dt  # increments internal time
 
-        if np.abs(self.ensemble.time - self.actual_time) > self.dt / 100.0:
+        if (
+            np.abs(self.ensemble.time - self.integrator.actual_time)
+            > self.dt / 100.0
+        ):
             softexit.trigger(
                 status="bad", message=" @ SIMULATION: Error in the actual time update."
             )
@@ -254,7 +254,7 @@ class Dynamics(Motion):
         )  # overwrite to avoid accumulating numerical noise
 
 
-dproperties(Dynamics, ["dt", "nmts", "splitting", "ntemp", "actual_time"])
+dproperties(Dynamics, ["dt", "nmts", "splitting", "ntemp"])
 
 
 class DummyIntegrator:

@@ -2340,7 +2340,7 @@ class FFDielectric(ForceField):
 
         # time-dependent information
         with self.logger.section("getting time (1)"):
-            time = float(atoms.motion.actual_time)
+            time = float(atoms.motion.integrator.actual_time)
         with self.logger.section("getting field (2)"):
             field = self.field.get(time)
         with self.logger.section("getting dstrip field (3)"):
