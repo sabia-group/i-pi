@@ -107,6 +107,7 @@ class InputQReplicaExchange(InputDictionary):
         self.rand_mix.store(qremd.rand_mix)
         self.sim_mode.store(qremd.sim_mode)
         self.nnn_mix.store(qremd.nnn_mix)
+
     def fetch(self):
         rv = super(InputQReplicaExchange, self).fetch()
         return rv

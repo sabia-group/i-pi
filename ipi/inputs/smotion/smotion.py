@@ -22,7 +22,14 @@ Classes:
 """
 
 from copy import copy
-from ipi.engine.smotion import Smotion, ReplicaExchange, MetaDyn, MultiSmotion, DMD, QReplicaExchange
+from ipi.engine.smotion import (
+    Smotion,
+    ReplicaExchange,
+    MetaDyn,
+    MultiSmotion,
+    DMD,
+    QReplicaExchange,
+)
 from ipi.utils.inputvalue import *
 from .remd import InputReplicaExchange
 from .metad import InputMetaDyn
@@ -62,7 +69,10 @@ class InputSmotionBase(Input):
         ),
         "metad": (InputMetaDyn, {"default": {}, "help": "Option for REMD simulation"}),
         "dmd": (InputDMD, {"default": {}, "help": "Option for driven MD simulation"}),
-        "qremd": (InputQReplicaExchange, {"default": {}, "help": "Option for accelerated REMD simulation"}),
+        "qremd": (
+            InputQReplicaExchange,
+            {"default": {}, "help": "Option for accelerated REMD simulation"},
+        ),
     }
 
     dynamic = {}
