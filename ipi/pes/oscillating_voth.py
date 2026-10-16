@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from ipi.utils import units
 import os
 
 try:
@@ -10,6 +9,7 @@ except ImportError:
 
 __DRIVER_NAME__ = "VOTH_OSC"
 __DRIVER_CLASS__ = "Oscillating_Voth_driver"
+
 
 class Oscillating_Voth_driver(Dummy_driver):
 
@@ -33,25 +33,21 @@ class Oscillating_Voth_driver(Dummy_driver):
 
     def __call__(self, cell, pos):
         x = pos.reshape(-1, 3)[:, 0]  # nur x-Koordinate
-        
+
         i = np.searchsorted(self.x_knots, x, side="right") - 1
         i = np.clip(i, 0, self.n_intervals - 1)
-        
+
         dx = x - self.x_knots[i]
-        
-        V  = ((self.c0[i] * dx + self.c1[i]) * dx + self.c2[i]) * dx + self.c3[i]
+
+        V = ((self.c0[i] * dx + self.c1[i]) * dx + self.c2[i]) * dx + self.c3[i]
         dV = (3.0 * self.c0[i] * dx + 2.0 * self.c1[i]) * dx + self.c2[i]
-        
+
         pot = np.sum(V)
-        
+
         force = np.zeros_like(pos.reshape(-1, 3))
         force[:, 0] = -dV
         force = force.reshape(-1, 1)
-        
+
         vir = np.zeros((3, 3))
-        
+
         return pot, force, vir, "VOTH_OSC_1D"
-
-
-
-
